@@ -449,6 +449,8 @@ export function apply(ctx: AppContext, config: Config): void {
           })
 
           roomManager.resetInteractionRound(roomId)
+          roomManager.createCaptainTaskProtocol(roomId, envelope.messageId, content, taskTier)
+          persistRoomState(roomId)
 
           // Host plugin entry: REST API, message dispatch, workflow actions, and lifecycle-safe registration.
           const autoIntent = classifyAutoSetupIntent(content, Boolean(room.pendingAutoSetup), locale)
@@ -597,6 +599,64 @@ export function apply(ctx: AppContext, config: Config): void {
           if (updated) persistRoomState(roomId)
           res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' })
           res.end(JSON.stringify({ success: !!updated, room: updated }))
+          return
+        }
+
+        if (method === 'POST' && pathname === '/coordination/event') {
+          const body = await readJsonBody(req)
+          const roomId = body.roomId || 'dev-team-alpha'
+          const locale = normalizeApiLocale(body.locale)
+          const type = String(body.type || '') as any
+          if (!['claim','block','handoff','report','close','resume'].includes(type)) {
+            res.writeHead(400, { 'Content-Type': 'application/json; charset=utf-8' })
+            res.end(JSON.stringify({ success: false, error: 'valid coordination event type is required' }))
+            return
+          }
+          const event = roomManager.recordCoordinationEvent(roomId, {
+            type,
+            actorRoleId: String(body.actorRoleId || 'commander'),
+            targetRoleId: body.targetRoleId ? String(body.targetRoleId) : undefined,
+            assignmentId: body.assignmentId ? String(body.assignmentId) : undefined,
+            taskId: body.taskId ? String(body.taskId) : undefined,
+            content: String(body.content || ''),
+          })
+          if (event) persistRoomState(roomId)
+          res.writeHead(event ? 200 : 404, { 'Content-Type': 'application/json; charset=utf-8' })
+          res.end(JSON.stringify({ success: !!event, message: event ? (locale === 'en-US' ? 'Coordination event recorded.' : '协同事件已记录。') : 'Room not found', event }))
+          return
+        }
+
+        if (method === 'POST' && pathname === '/transaction/create') {
+          const body = await readJsonBody(req)
+          const roomId = body.roomId || 'dev-team-alpha'
+          const locale = normalizeApiLocale(body.locale)
+          const tx = roomManager.createApprovalTransaction(
+            roomId,
+            String(body.title || (locale === 'en-US' ? 'Approve & Run' : '确认后执行')),
+            String(body.summary || ''),
+            Array.isArray(body.willChange) ? body.willChange.map(String) : [],
+            Array.isArray(body.rollbackPlan) ? body.rollbackPlan.map(String) : [],
+            String(body.createdByRoleId || 'commander'),
+          )
+          if (tx) persistRoomState(roomId)
+          res.writeHead(tx ? 200 : 404, { 'Content-Type': 'application/json; charset=utf-8' })
+          res.end(JSON.stringify({ success: !!tx, transaction: tx }))
+          return
+        }
+
+        if (method === 'POST' && pathname === '/transaction/action') {
+          const body = await readJsonBody(req)
+          const roomId = body.roomId || 'dev-team-alpha'
+          const action = String(body.action || '') as any
+          if (!['approve','reject','rollback'].includes(action)) {
+            res.writeHead(400, { 'Content-Type': 'application/json; charset=utf-8' })
+            res.end(JSON.stringify({ success: false, error: 'valid transaction action is required' }))
+            return
+          }
+          const tx = roomManager.resolveApprovalTransaction(roomId, String(body.transactionId || ''), action, String(body.resolvedByRoleId || 'commander'))
+          if (tx) persistRoomState(roomId)
+          res.writeHead(tx ? 200 : 404, { 'Content-Type': 'application/json; charset=utf-8' })
+          res.end(JSON.stringify({ success: !!tx, transaction: tx }))
           return
         }
 

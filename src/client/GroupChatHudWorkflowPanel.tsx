@@ -1,6 +1,6 @@
 import React, {useEffect, useState} from 'react'
 import {AvatarBadge} from './AvatarBadge.js'
-import type {GroupMessageData, StructuredAgentResult, WorkflowTask} from './group-chat-hud-types.js'
+import type {ApprovalTransaction, CaptainTaskNode, GroupMessageData, StructuredAgentResult, WorkflowTask} from './group-chat-hud-types.js'
 import {hudCardStyle, hudGhostButtonStyle, hudPanelStackStyle, hudPrimaryButtonStyle, hudTokens} from './group-chat-hud-styles.js'
 import {tx, type GroupChatLocale} from './i18n.js'
 
@@ -68,6 +68,11 @@ export function GroupChatHudWorkflowPanel({room, messages, onApproveStage, onUpd
   const commanderInbox = room?.mailboxes?.[commanderId] || []
   const unreadCommanderReports = commanderInbox.filter((item:any) => !item.readAt).length
   const subagentReportCount = commanderInbox.filter((item:any) => item.fromRoleId !== commanderId).length
+  const protocol = room?.captainTaskProtocol
+  const pendingTransactions: ApprovalTransaction[] = (room?.approvalTransactions || []).filter((item:ApprovalTransaction) => item.status === 'pending')
+  const protocolTasks: CaptainTaskNode[] = protocol?.tasks || []
+  const protocolDone = protocolTasks.filter(task => task.status === 'passed').length
+  const protocolActive = protocolTasks.find(task => task.status === 'running' || task.status === 'ready')
   const qualityState = failedAssignments.length
     ? {label: tx(locale,'未完成','Incomplete'), tone:'#fca5a5', detail: tx(locale,'存在模型/任务失败，主 Agent 需要重试或换模型。','Model/task failures exist. Master Agent should retry or switch models.')}
     : completedAssignments.length && subagentReportCount
@@ -89,6 +94,22 @@ export function GroupChatHudWorkflowPanel({room, messages, onApproveStage, onUpd
       <div style={{display:'grid',gridTemplateColumns:'repeat(3,minmax(0,1fr))',gap:6}}><MiniStat label={tx(locale,'已完成','Done')} value={completedAssignments.length}/><MiniStat label={tx(locale,'失败','Failed')} value={failedAssignments.length}/><MiniStat label={tx(locale,'上报','Reports')} value={subagentReportCount}/></div>
       <div style={{fontSize:10,lineHeight:1.45,color:hudTokens.labelSecondary}}>{qualityState.detail}</div>
     </div>
+
+    {protocol && <div data-dsh-gc-captain-protocol style={{...hudCardStyle,display:'grid',gap:6,padding:'8px 10px',border:'1px solid rgba(77,107,254,0.22)'}}>
+      <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',gap:8}}><span style={{fontSize:11,fontWeight:800,color:hudTokens.labelPrimary}}>{tx(locale,'队长路线图','Captain plan')}</span><span style={{fontSize:10,color:'#60a5fa'}}>{protocol.status}</span></div>
+      <div style={{fontSize:10,color:hudTokens.labelSecondary}}>{protocol.title} · {protocolDone}/{protocolTasks.length} {tx(locale,'已收口','closed')}</div>
+      {protocolActive && <div title={protocolActive.brief} style={{fontSize:11,color:hudTokens.labelPrimary,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>@{protocolActive.ownerRoleId} · {protocolActive.title}</div>}
+    </div>}
+
+    {!!pendingTransactions.length && <div data-dsh-gc-approval-transactions style={{...hudCardStyle,display:'grid',gap:7,padding:'8px 10px',border:'1px solid rgba(234,179,8,0.30)',background:'rgba(234,179,8,0.08)'}}>
+      <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',gap:8}}><span style={{fontSize:11,fontWeight:800,color:hudTokens.labelPrimary}}>{tx(locale,'确认后执行','Approve & Run')}</span><span style={{fontSize:10,color:'#fbbf24'}}>{pendingTransactions.length}</span></div>
+      {pendingTransactions.slice(-2).map(item => <div key={item.transactionId} style={{display:'grid',gap:3,fontSize:10,color:hudTokens.labelSecondary,borderTop:'1px solid rgba(255,255,255,0.08)',paddingTop:6}}>
+        <b style={{fontSize:11,color:hudTokens.labelPrimary,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{item.title}</b>
+        <span>{item.summary}</span>
+        <span>{tx(locale,'将改动','Will change')}：{item.willChange.slice(0,3).join(' / ') || '—'}</span>
+        <span>{tx(locale,'回滚','Rollback')}：{item.rollbackPlan.slice(0,2).join(' / ') || '—'}</span>
+      </div>)}
+    </div>}
 
     <div style={{...hudCardStyle,display:'grid',gap:7,padding:'9px 10px',border:isWaitingApproval?'1px solid rgba(234,179,8,0.34)':`1px solid ${hudTokens.borderL1}`}}>
       <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',gap:8}}><span style={{fontSize:11,fontWeight:700,color:hudTokens.labelPrimary}}>{tx(locale,'当前阶段','Current stage')} · {currentIndex + 1}/{stages.length || 0}</span><span style={{fontSize:10,color:isWaitingApproval?'#fbbf24':'#60a5fa'}}>{room?.workflow?.isCompleted ? tx(locale,'已完成','Completed') : currentStage?.status || 'pending'}</span></div>

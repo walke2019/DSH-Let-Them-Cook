@@ -391,3 +391,29 @@
 - [x] 修正 HUD 展开时对中间视图的避让算法：基于中间 tab 宽度上限计算，不再用 `100vw` 把聊天区挤成窄条。
 - [x] 窄视口下 docked HUD 自动变为 44px 露出条，保障消息流和 composer 可见可用。
 - [x] 增加回归守卫：`npm run test:chat-ui-composer-progression`。
+
+
+## P65 — Captain Task Protocol（队长路线图）
+- [x] 将对标差距放入计划：从“群聊消息流”升级为“主 Agent 任务路线图”。
+- [x] 每次中间 Agent 群聊投递任务时生成 workspace-scoped `captainTaskProtocol`。
+- [x] 路线图明确 commander、SubAgent、依赖、当前状态和最新上报。
+
+## P66 — Durable SubAgent Resume（可恢复 SubAgent 协同）
+- [x] 增加 `CoordinationEvent`：claim / block / handoff / report / close / resume。
+- [x] 支持 blocked 状态，避免失败/阻塞只在聊天里散落。
+- [x] 路线图可由协同事件推进，便于重启后继续复盘。
+
+## P67 — Approve & Run Transaction Card（确认后执行事务卡）
+- [x] 增加工作区级 `ApprovalTransaction`。
+- [x] 记录 willChange 与 rollbackPlan，默认 pending，确认后才进入 approved。
+- [x] HUD 显示待确认事务，减少“直接改了什么我不知道”的心智负担。
+
+## P68 — Team Coordination Tools（团队协同工具）
+- [x] 暴露 `group_chat_task_claim/block/handoff/report/close` 给群聊 Agent。
+- [x] 暴露 `group_chat_transaction_create/action` 给 commander 创建和处理确认卡。
+- [x] SubAgent report 同步写入主 Agent mailbox，保留主从闭环。
+
+## P69 — Task Cockpit Productization（任务驾驶舱化）
+- [x] HUD 保留轻量导演台 + 闭环质量卡，同时新增队长路线图和确认后执行卡。
+- [x] 默认信息层级继续保持：顶部看当前状态，展开后看完整详情。
+- [x] 目标从“好玩群聊”推进为“好玩但靠谱的多 Agent 项目推进台”。

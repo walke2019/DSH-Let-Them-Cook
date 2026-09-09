@@ -65,6 +65,11 @@ const steps = [
   ['node', ['Docs/p62-runtime-agent-watchdog/test-p62-runtime-agent-watchdog.cjs']],
   ['node', ['Docs/p63-assignment-watchdog-timeout/test-p63-assignment-watchdog-timeout.cjs']],
   ['node', ['Docs/p64-chat-ui-composer-progression/test-p64-chat-ui-composer-progression.cjs']],
+  ['node', ['Docs/p65-captain-task-protocol/test-p65-captain-task-protocol.cjs']],
+  ['node', ['Docs/p66-durable-subagent-resume/test-p66-durable-subagent-resume.cjs']],
+  ['node', ['Docs/p67-approve-run-transaction-card/test-p67-approve-run-transaction-card.cjs']],
+  ['node', ['Docs/p68-team-coordination-tools/test-p68-team-coordination-tools.cjs']],
+  ['node', ['Docs/p69-task-cockpit-productization/test-p69-task-cockpit-productization.cjs']],
   ['node', ['scripts/e2e-no-llm.cjs']],
   ['npm', ['run', 'preflight']],
 ]

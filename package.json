@@ -81,6 +81,11 @@
     "test:english-source-bilingual-runtime": "node Docs/p61-english-source-bilingual-runtime/test-p61-english-source-bilingual-runtime.cjs",
     "test:runtime-agent-watchdog": "node Docs/p62-runtime-agent-watchdog/test-p62-runtime-agent-watchdog.cjs",
     "test:assignment-watchdog-timeout": "node Docs/p63-assignment-watchdog-timeout/test-p63-assignment-watchdog-timeout.cjs",
-    "test:chat-ui-composer-progression": "node Docs/p64-chat-ui-composer-progression/test-p64-chat-ui-composer-progression.cjs"
+    "test:chat-ui-composer-progression": "node Docs/p64-chat-ui-composer-progression/test-p64-chat-ui-composer-progression.cjs",
+    "test:captain-task-protocol": "node Docs/p65-captain-task-protocol/test-p65-captain-task-protocol.cjs",
+    "test:durable-subagent-resume": "node Docs/p66-durable-subagent-resume/test-p66-durable-subagent-resume.cjs",
+    "test:approve-run-transaction-card": "node Docs/p67-approve-run-transaction-card/test-p67-approve-run-transaction-card.cjs",
+    "test:team-coordination-tools": "node Docs/p68-team-coordination-tools/test-p68-team-coordination-tools.cjs",
+    "test:task-cockpit-productization": "node Docs/p69-task-cockpit-productization/test-p69-task-cockpit-productization.cjs"
   }
 }

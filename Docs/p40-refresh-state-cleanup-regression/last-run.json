@@ -21,7 +21,7 @@
     "gcTabVisible": false,
     "hasComposer": true,
     "hasAgentLabel": false,
-    "hasOfficialDialogLabel": true,
+    "hasOfficialDialogLabel": false,
     "bodyFlags": {
       "tabActive": null,
       "hudOpen": null

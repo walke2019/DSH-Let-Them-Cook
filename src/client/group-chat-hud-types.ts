@@ -22,7 +22,7 @@ export interface AssignmentEnvelope {
   taskTier?: 'quick' | 'long'
   expectedMs?: number
   brief: string
-  status: 'queued' | 'running' | 'completed' | 'failed' | 'cancelled'
+  status: 'queued' | 'running' | 'completed' | 'failed' | 'blocked' | 'cancelled'
   resultMessageId?: string
   error?: string
   createdAt: number
@@ -88,4 +88,29 @@ export interface LedgerData {
     metrics?: RuntimeMetrics
     modelStats?: Record<string, ModelLedgerData>
   }>
+}
+
+
+export interface CaptainTaskNode {
+  taskId: string
+  title: string
+  ownerRoleId: string
+  taskType: string
+  status: string
+  dependsOn: string[]
+  brief: string
+  assignmentId?: string
+  latestReport?: string
+  createdAt: number
+  updatedAt: number
+}
+
+export interface ApprovalTransaction {
+  transactionId: string
+  title: string
+  summary: string
+  status: 'pending' | 'approved' | 'rejected' | 'rolled_back'
+  willChange: string[]
+  rollbackPlan: string[]
+  createdByRoleId: string
 }

@@ -2,12 +2,12 @@
   "ok": true,
   "failures": [],
   "result": {
-    "openedBodyText": "新会话\n任务看板\n记忆系统\n工作区\ndsh-group-chat\n规范开发与参考项目调研\n1天\nAinvyou-DataCollector\nVelocine\nGSYVideoPlayer\nmail\nha\n原尺寸压缩GIF至1MB\n5小时\n开始对话\n5小时\nDSH多Agent群聊插件方案\n1天\nAI Agent浏览器测试开源项目调研\n2天\n检查本地Hermes定时任务\n2天\n展开其余 5 个会话\nMovie-App\nzhuji\nDesign-Learn\n未分组\n≡\n工作台\n🖥️\n控制室\n›\n设置\nDSH多Agent群聊插件方案\n标准模式\n7 个子代理\nSession log\n对话\n轨迹\nAgent 群聊\nAgent 状态 拖动\n隐藏\n小队蹲点待命中，暂时没人被抓去干活。\n@writer P53_PERSIST_1788966839602 快速持久化测试：只用于验证消息刷新恢复。\n复制\n23:13\nCancel setup\n复制\n23:44\nCancel setup\n复制\n23:46\nCancel setup\n复制\n01:05\n\nDraft tossed into the meme bin. Current config stayed untouched.\n\n@\n角色\n快活\n长活\nEnter 发送 · Shift+Enter 换行\n快速：有 @ 只叫被点名角色；没 @ 只叫主 Agent。\n详情\n点击消息流中的工具行查看详情\n🧭\n群聊控制台 (HUD)\nAI 小队工作台\n浮动\n✕\n角色主题\n默认（沙雕整活）\n沙雕整活\n原神提瓦特\n现代精英\n三国风云\n科技传奇\n调度模式\n默认（工作流）\n仅 @ 角色\n工作流\n主持人调度\n自由讨论\n?\n语言\n中文\nEnglish\n团队\n工作流\n黑板\n账本\n执行导演台\n主 Agent 控场 · SubAgent 干活\n🍏\n当前：史蒂夫·乔布斯 在排队\nCancel setup\n执行中\n0\n待处理\n0\n邮箱\n3\n闭环质量\n未完成\n已完成\n7\n失败\n14\n上报\n3\n存在模型/任务失败，主 Agent 需要重试或换模型。\n当前阶段 · 2/5\nin_progress\n拆活别拆家\n把任务拆成可执行清单，明确前后依赖、角色分工和最小可交付版本。\n当前任务\n@commander · 拆活别拆家 / commander\n把任务拆成可执行清单，明确前后",
+    "openedBodyText": "新会话\n任务看板\n记忆系统\n工作区\ndsh-group-chat\nAinvyou-DataCollector\nVelocine\nGSYVideoPlayer\nmail\nha\n原尺寸压缩GIF至1MB\n8小时\n开始对话\n8小时\nDSH多Agent群聊插件方案\n2天\nAI Agent浏览器测试开源项目调研\n2天\n检查本地Hermes定时任务\n2天\n展开其余 5 个会话\nMovie-App\nzhuji\nDesign-Learn\n未分组\n≡\n工作台\n🖥️\n控制室\n›\n设置\nDSH多Agent群聊插件方案\n标准模式\n7 个子代理\nSession log\n对话\n轨迹\nAgent 群聊\nAgent 状态 拖动\n隐藏\n小队蹲点待命中，暂时没人被抓去干活。\n正在加载…\n@\n角色\n快活\n长活\nEnter 发送 · Shift+Enter 换行\n快速：有 @ 只叫被点名角色；没 @ 只叫主 Agent。\n详情\n点击消息流中的工具行查看详情\n🧭\n群聊控制台 (HUD)\nAI 小队工作台\n浮动\n✕\n角色主题\n默认（沙雕整活）\n沙雕整活\n原神提瓦特\n现代精英\n三国风云\n科技传奇\n调度模式\n默认（工作流）\n仅 @ 角色\n工作流\n主持人调度\n自由讨论\n?\n语言\n中文\nEnglish\n团队\n工作流\n黑板\n账本\n执行导演台\n主 Agent 控场 · SubAgent 干活\n🍏\n当前：史蒂夫·乔布斯 在排队\n接续 张小龙 的阶段汇报：收到 UI 复测。\n执行中\n0\n待处理\n0\n邮箱\n7\n闭环质量\n未完成\n已完成\n14\n失败\n18\n上报\n7\n存在模型/任务失败，主 Agent 需要重试或换模型。\n当前阶段 · 3/5\nin_progress\n原型开整\n按分工产出第一版结果，保留关键取舍，少空话，多可验证产物。\n当前任务\n@frontend · 原型开整 / frontend\n按分工产出第一版结果，保留关键取舍，少空话，多可验证产物。\n高级详情\n阶段 / 任务 / 回执",
     "hasConversation": true,
     "hasComposer": true,
     "hasHud": true,
-    "hasFriendlyEntry": false,
-    "hasExistingConversation": true,
+    "hasFriendlyEntry": true,
+    "hasExistingConversation": false,
     "hasHudTabs": true,
     "hasCompactWorkflow": true,
     "hasOldLabels": false,
@@ -27,16 +27,16 @@
       "conversation": {
         "left": 280,
         "right": 1272,
-        "top": 66,
-        "bottom": 1068.375,
+        "top": 76,
+        "bottom": 730,
         "width": 992,
-        "height": 1002.375
+        "height": 654
       },
       "composer": {
         "left": 280,
         "right": 980,
-        "top": 842.375,
-        "bottom": 1068.375,
+        "top": 504,
+        "bottom": 730,
         "width": 700,
         "height": 226
       }

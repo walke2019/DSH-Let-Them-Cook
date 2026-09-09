@@ -51,13 +51,23 @@ const code = String.raw`async (page) => {
   // 回归测试必须进入实际承载插件讨论的 DSH 任务；历史上它位于 ha 工作区，
   // 但测试仍保留 dsh-group-chat / 当前页兜底，避免不同机器侧栏记忆不一致。
   const openKnownGroupChatTask = async () => {
-    if (await clickText('ha')) {
-      if (await clickText('DSH多Agent群聊插件方案')) return true
+    for (let attempt = 0; attempt < 8; attempt++) {
+      const clicked = await page.evaluate(() => {
+        const visible = (el) => { const r = el.getBoundingClientRect(); const st = getComputedStyle(el); return r.width > 0 && r.height > 0 && st.display !== 'none' && st.visibility !== 'hidden' }
+        const names = ['DSH多Agent群聊插件方案', '规范开发与参考项目调研']
+        const nodes = [...document.querySelectorAll('[role="treeitem"],button,div,span')].filter(el => visible(el))
+        const hit = nodes.sort((a,b) => (a.getAttribute('role') === 'treeitem' ? 0 : 1) - (b.getAttribute('role') === 'treeitem' ? 0 : 1) || a.getBoundingClientRect().height - b.getBoundingClientRect().height).find(el => names.some(name => (el.textContent || '').includes(name)))
+        if (!hit) return false
+        hit.dispatchEvent(new MouseEvent('mousedown', {bubbles:true, cancelable:true, view:window}))
+        hit.dispatchEvent(new MouseEvent('mouseup', {bubbles:true, cancelable:true, view:window}))
+        hit.dispatchEvent(new MouseEvent('click', {bubbles:true, cancelable:true, view:window}))
+        return true
+      }).catch(()=>false)
+      if (clicked) { await wait(1600); return true }
+      await clickText('ha', 'dsh-group-chat')
+      await wait(700)
     }
-    if (await clickText('dsh-group-chat')) {
-      if (await clickText('DSH多Agent群聊插件方案', '规范开发与参考项目调研')) return true
-    }
-    return await clickText('DSH多Agent群聊插件方案', 'Agent 群聊') !== ''
+    return await clickText('Agent 群聊') !== ''
   }
   await openKnownGroupChatTask()
   for (let i=0;i<12;i++) { if (await page.getByText('Agent 群聊', {exact:true}).first().isVisible().catch(()=>false)) break; await wait(500) }

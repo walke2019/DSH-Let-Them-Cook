@@ -142,3 +142,12 @@
 
 - [Git release checklist](./git-release-checklist.md)：提交/推送前状态、验证命令、忽略规则与首次初始化 Git 命令。
 
+
+
+## P65-P69 Task Cockpit Iteration
+
+- [P65 Captain Task Protocol](./p65-captain-task-protocol/README.md): every central Agent chat task now creates a commander-led task route map.
+- [P66 Durable SubAgent Resume](./p66-durable-subagent-resume/README.md): SubAgent claim/block/handoff/report/close/resume events are recorded for workspace recovery.
+- [P67 Approve & Run Transaction Card](./p67-approve-run-transaction-card/README.md): change-oriented work can expose will-change and rollback plans before approval.
+- [P68 Team Coordination Tools](./p68-team-coordination-tools/README.md): Agent-callable coordination tools keep master/subagent reporting auditable.
+- [P69 Task Cockpit Productization](./p69-task-cockpit-productization/README.md): HUD now emphasizes current work, loop quality, captain plan and approval cards instead of chat-only novelty.

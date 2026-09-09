@@ -274,6 +274,151 @@ export function registerGroupChatTools(
     }),
 
     defineTool({
+      name: 'group_chat_task_claim',
+      description: '团队协同工具：Agent 领取/恢复任务，写入 Captain Task Protocol 便于主 Agent 统筹。',
+      parameters: {
+        roomId: { type: 'string', description: '群聊房间 ID' },
+        actorRoleId: { type: 'string', required: true, description: '领取任务的角色 ID' },
+        assignmentId: { type: 'string', description: '关联 assignment ID' },
+        taskId: { type: 'string', description: '关联路线图 task ID' },
+        content: { type: 'string', description: '领取说明' },
+        locale: { type: 'string', description: '输出语言：zh-CN 或 en-US（默认 zh-CN）' },
+      },
+      output: { schema: { type: 'string' }, render: (_args: unknown, value: unknown) => [{ type: 'text', text: String(value) }] },
+      async execute(args: { roomId?: string; actorRoleId: string; assignmentId?: string; taskId?: string; content?: string; locale?: string }) {
+        const roomId = args.roomId || roomManager.getAllRooms()[0]?.roomId || 'dev-team-alpha'
+        const locale = normalizeToolLocale(args.locale)
+        const event = roomManager.recordCoordinationEvent(roomId, { type: 'claim', actorRoleId: args.actorRoleId, assignmentId: args.assignmentId, taskId: args.taskId, content: args.content || 'Task claimed.' })
+        return event ? (locale === 'en-US' ? `Task claimed by @${args.actorRoleId}.` : `任务已由 @${args.actorRoleId} 领取。`) : (locale === 'en-US' ? 'Room not found.' : '未找到房间。')
+      },
+    }),
+
+    defineTool({
+      name: 'group_chat_task_block',
+      description: '团队协同工具：Agent 标记任务阻塞，并把阻塞原因上报给主 Agent。',
+      parameters: {
+        roomId: { type: 'string', description: '群聊房间 ID' },
+        actorRoleId: { type: 'string', required: true, description: '阻塞角色 ID' },
+        assignmentId: { type: 'string', description: '关联 assignment ID' },
+        taskId: { type: 'string', description: '关联路线图 task ID' },
+        reason: { type: 'string', required: true, description: '阻塞原因与需要补充的信息' },
+        locale: { type: 'string', description: '输出语言：zh-CN 或 en-US（默认 zh-CN）' },
+      },
+      output: { schema: { type: 'string' }, render: (_args: unknown, value: unknown) => [{ type: 'text', text: String(value) }] },
+      async execute(args: { roomId?: string; actorRoleId: string; assignmentId?: string; taskId?: string; reason: string; locale?: string }) {
+        const roomId = args.roomId || roomManager.getAllRooms()[0]?.roomId || 'dev-team-alpha'
+        const locale = normalizeToolLocale(args.locale)
+        const event = roomManager.recordCoordinationEvent(roomId, { type: 'block', actorRoleId: args.actorRoleId, assignmentId: args.assignmentId, taskId: args.taskId, content: args.reason })
+        return event ? (locale === 'en-US' ? `Task blocked by @${args.actorRoleId}: ${args.reason}` : `任务被 @${args.actorRoleId} 标记阻塞：${args.reason}`) : (locale === 'en-US' ? 'Room not found.' : '未找到房间。')
+      },
+    }),
+
+    defineTool({
+      name: 'group_chat_task_handoff',
+      description: '团队协同工具：Agent 将任务移交给指定角色，避免多个 Agent 乱抢同一个工具任务。',
+      parameters: {
+        roomId: { type: 'string', description: '群聊房间 ID' },
+        actorRoleId: { type: 'string', required: true, description: '发起移交角色 ID' },
+        targetRoleId: { type: 'string', required: true, description: '接手角色 ID' },
+        assignmentId: { type: 'string', description: '关联 assignment ID' },
+        taskId: { type: 'string', description: '关联路线图 task ID' },
+        content: { type: 'string', description: '移交原因/上下文' },
+        locale: { type: 'string', description: '输出语言：zh-CN 或 en-US（默认 zh-CN）' },
+      },
+      output: { schema: { type: 'string' }, render: (_args: unknown, value: unknown) => [{ type: 'text', text: String(value) }] },
+      async execute(args: { roomId?: string; actorRoleId: string; targetRoleId: string; assignmentId?: string; taskId?: string; content?: string; locale?: string }) {
+        const roomId = args.roomId || roomManager.getAllRooms()[0]?.roomId || 'dev-team-alpha'
+        const locale = normalizeToolLocale(args.locale)
+        const event = roomManager.recordCoordinationEvent(roomId, { type: 'handoff', actorRoleId: args.actorRoleId, targetRoleId: args.targetRoleId, assignmentId: args.assignmentId, taskId: args.taskId, content: args.content || '' })
+        if (event && onTriggerAgentTurn) void onTriggerAgentTurn(roomId, args.targetRoleId).catch(console.error)
+        return event ? (locale === 'en-US' ? `Task handed off from @${args.actorRoleId} to @${args.targetRoleId}.` : `任务已从 @${args.actorRoleId} 移交给 @${args.targetRoleId}。`) : (locale === 'en-US' ? 'Room not found.' : '未找到房间。')
+      },
+    }),
+
+    defineTool({
+      name: 'group_chat_task_report',
+      description: '团队协同工具：SubAgent 向主 Agent 上报结果，写入 mailbox 和路线图。',
+      parameters: {
+        roomId: { type: 'string', description: '群聊房间 ID' },
+        actorRoleId: { type: 'string', required: true, description: '上报角色 ID' },
+        assignmentId: { type: 'string', description: '关联 assignment ID' },
+        taskId: { type: 'string', description: '关联路线图 task ID' },
+        content: { type: 'string', required: true, description: '结果摘要、证据、下一步建议' },
+        locale: { type: 'string', description: '输出语言：zh-CN 或 en-US（默认 zh-CN）' },
+      },
+      output: { schema: { type: 'string' }, render: (_args: unknown, value: unknown) => [{ type: 'text', text: String(value) }] },
+      async execute(args: { roomId?: string; actorRoleId: string; assignmentId?: string; taskId?: string; content: string; locale?: string }) {
+        const roomId = args.roomId || roomManager.getAllRooms()[0]?.roomId || 'dev-team-alpha'
+        const locale = normalizeToolLocale(args.locale)
+        const room = roomManager.getRoom(roomId)
+        const masterRoleId = room?.orchestration?.masterAgentId || room?.moderatorAgentId || 'commander'
+        const event = roomManager.recordCoordinationEvent(roomId, { type: 'report', actorRoleId: args.actorRoleId, assignmentId: args.assignmentId, taskId: args.taskId, content: args.content })
+        if (event && args.actorRoleId !== masterRoleId) roomManager.addMailboxMessage(roomId, { fromRoleId: args.actorRoleId, toRoleId: masterRoleId, assignmentId: args.assignmentId, content: args.content })
+        return event ? (locale === 'en-US' ? `Report sent to @${masterRoleId}.` : `结果已上报给 @${masterRoleId}。`) : (locale === 'en-US' ? 'Room not found.' : '未找到房间。')
+      },
+    }),
+
+    defineTool({
+      name: 'group_chat_task_close',
+      description: '团队协同工具：主 Agent 收口一条任务路线图节点。',
+      parameters: {
+        roomId: { type: 'string', description: '群聊房间 ID' },
+        actorRoleId: { type: 'string', description: '收口角色 ID，默认 commander' },
+        taskId: { type: 'string', description: '路线图 task ID' },
+        content: { type: 'string', description: '收口结论' },
+        locale: { type: 'string', description: '输出语言：zh-CN 或 en-US（默认 zh-CN）' },
+      },
+      output: { schema: { type: 'string' }, render: (_args: unknown, value: unknown) => [{ type: 'text', text: String(value) }] },
+      async execute(args: { roomId?: string; actorRoleId?: string; taskId?: string; content?: string; locale?: string }) {
+        const roomId = args.roomId || roomManager.getAllRooms()[0]?.roomId || 'dev-team-alpha'
+        const locale = normalizeToolLocale(args.locale)
+        const actorRoleId = args.actorRoleId || 'commander'
+        const event = roomManager.recordCoordinationEvent(roomId, { type: 'close', actorRoleId, taskId: args.taskId, content: args.content || 'Closed by commander.' })
+        return event ? (locale === 'en-US' ? `Task closed by @${actorRoleId}.` : `任务已由 @${actorRoleId} 收口。`) : (locale === 'en-US' ? 'Room not found.' : '未找到房间。')
+      },
+    }),
+
+    defineTool({
+      name: 'group_chat_transaction_create',
+      description: '创建确认后执行卡片：列出将改动内容与回滚路径，等待用户/主 Agent 批准。',
+      parameters: {
+        roomId: { type: 'string', description: '群聊房间 ID' },
+        title: { type: 'string', required: true, description: '事务标题' },
+        summary: { type: 'string', required: true, description: '事务摘要' },
+        willChange: { type: 'array', description: '将改动的事项列表' },
+        rollbackPlan: { type: 'array', description: '回滚步骤列表' },
+        createdByRoleId: { type: 'string', description: '创建角色 ID' },
+        locale: { type: 'string', description: '输出语言：zh-CN 或 en-US（默认 zh-CN）' },
+      },
+      output: { schema: { type: 'string' }, render: (_args: unknown, value: unknown) => [{ type: 'text', text: String(value) }] },
+      async execute(args: { roomId?: string; title: string; summary: string; willChange?: string[]; rollbackPlan?: string[]; createdByRoleId?: string; locale?: string }) {
+        const roomId = args.roomId || roomManager.getAllRooms()[0]?.roomId || 'dev-team-alpha'
+        const locale = normalizeToolLocale(args.locale)
+        const tx = roomManager.createApprovalTransaction(roomId, args.title, args.summary, Array.isArray(args.willChange) ? args.willChange : [], Array.isArray(args.rollbackPlan) ? args.rollbackPlan : [], args.createdByRoleId || 'commander')
+        return tx ? (locale === 'en-US' ? `Approve & Run card created: ${tx.transactionId}` : `确认后执行卡片已创建：${tx.transactionId}`) : (locale === 'en-US' ? 'Room not found.' : '未找到房间。')
+      },
+    }),
+
+    defineTool({
+      name: 'group_chat_transaction_action',
+      description: '处理确认后执行卡片：approve / reject / rollback。',
+      parameters: {
+        roomId: { type: 'string', description: '群聊房间 ID' },
+        transactionId: { type: 'string', required: true, description: '事务 ID' },
+        action: { type: 'string', required: true, description: 'approve | reject | rollback' },
+        resolvedByRoleId: { type: 'string', description: '处理角色 ID' },
+        locale: { type: 'string', description: '输出语言：zh-CN 或 en-US（默认 zh-CN）' },
+      },
+      output: { schema: { type: 'string' }, render: (_args: unknown, value: unknown) => [{ type: 'text', text: String(value) }] },
+      async execute(args: { roomId?: string; transactionId: string; action: string; resolvedByRoleId?: string; locale?: string }) {
+        const roomId = args.roomId || roomManager.getAllRooms()[0]?.roomId || 'dev-team-alpha'
+        const locale = normalizeToolLocale(args.locale)
+        const tx = roomManager.resolveApprovalTransaction(roomId, args.transactionId, args.action as any, args.resolvedByRoleId || 'commander')
+        return tx ? (locale === 'en-US' ? `Transaction ${tx.transactionId} is now ${tx.status}.` : `事务 ${tx.transactionId} 已更新为 ${tx.status}。`) : (locale === 'en-US' ? 'Transaction not found.' : '未找到事务。')
+      },
+    }),
+
+    defineTool({
       name: 'group_chat_export_summary',
       description: '导出群聊协作讨论纪要、工作流流转过程与消耗账本（Markdown 格式）。',
       parameters: {

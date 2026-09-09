@@ -103,7 +103,23 @@ const code = String.raw`async (page) => {
   await wait(900)
   const officialBefore = await snapshot()
 
-  await clickSidebarConversation('DSH多Agent群聊插件方案')
+  for (let attempt = 0; attempt < 8; attempt++) {
+    const clickedTask = await page.evaluate(() => {
+      const visible = el => { const r = el.getBoundingClientRect(); const st = getComputedStyle(el); return r.width > 0 && r.height > 0 && st.display !== 'none' && st.visibility !== 'hidden' }
+      const nodes = [...document.querySelectorAll('[role="treeitem"],button,a,span,div')]
+        .filter(el => visible(el) && (el.textContent || '').includes('DSH多Agent群聊插件方案'))
+        .sort((a,b) => (a.getAttribute('role') === 'treeitem' ? 0 : 1) - (b.getAttribute('role') === 'treeitem' ? 0 : 1) || a.getBoundingClientRect().height - b.getBoundingClientRect().height)
+      const hit = nodes[0]
+      if (!hit) return false
+      hit.dispatchEvent(new MouseEvent('mousedown', {bubbles:true, cancelable:true, view:window}))
+      hit.dispatchEvent(new MouseEvent('mouseup', {bubbles:true, cancelable:true, view:window}))
+      hit.dispatchEvent(new MouseEvent('click', {bubbles:true, cancelable:true, view:window}))
+      return true
+    }).catch(()=>false)
+    if (clickedTask) { await wait(1200); break }
+    await clickVisibleText('ha')
+    await wait(500)
+  }
   for (let i = 0; i < 12; i++) {
     const s = await snapshot()
     if (s.hasAgentTabLabel) break

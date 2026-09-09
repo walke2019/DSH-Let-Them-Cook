@@ -114,3 +114,12 @@ See [`Docs/README.md`](Docs/README.md).
 ## License
 
 MIT License
+
+
+## P65-P69 Task Cockpit Iteration
+
+- [P65 Captain Task Protocol](./Docs/p65-captain-task-protocol/README.md): every central Agent chat task now creates a commander-led task route map.
+- [P66 Durable SubAgent Resume](./Docs/p66-durable-subagent-resume/README.md): SubAgent claim/block/handoff/report/close/resume events are recorded for workspace recovery.
+- [P67 Approve & Run Transaction Card](./Docs/p67-approve-run-transaction-card/README.md): change-oriented work can expose will-change and rollback plans before approval.
+- [P68 Team Coordination Tools](./Docs/p68-team-coordination-tools/README.md): Agent-callable coordination tools keep master/subagent reporting auditable.
+- [P69 Task Cockpit Productization](./Docs/p69-task-cockpit-productization/README.md): HUD now emphasizes current work, loop quality, captain plan and approval cards instead of chat-only novelty.

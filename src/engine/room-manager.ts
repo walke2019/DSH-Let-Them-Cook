@@ -18,6 +18,10 @@ import type {
   AssignmentTaskType,
   GroupTaskTier,
   AgentMailboxMessage,
+  CaptainTaskProtocol,
+  CaptainTaskNode,
+  CoordinationEvent,
+  ApprovalTransaction,
 } from '../types.js'
 import { DispatchArbiter } from './arbiter.js'
 import { ContextProjection } from './projection.js'
@@ -66,7 +70,7 @@ export class RoomManager {
           level: 'admin',
           canWriteScratchpad: true,
           canApproveWorkflow: true,
-          allowedTools: ['group_chat_workflow_advance', 'group_chat_workflow_reject', 'group_chat_update_scratchpad', 'group_chat_export_summary', 'group_chat_room_status', 'group_chat_set_mode'],
+          allowedTools: ['group_chat_workflow_advance', 'group_chat_workflow_reject', 'group_chat_update_scratchpad', 'group_chat_export_summary', 'group_chat_room_status', 'group_chat_set_mode', 'group_chat_task_claim', 'group_chat_task_report', 'group_chat_task_close', 'group_chat_task_handoff', 'group_chat_transaction_create', 'group_chat_transaction_action'],
         },
         groupChatRules: {
           mentionKeywords: ['@commander', '@指挥官', '@总指挥', `@${mappings.commander.name}`],
@@ -95,7 +99,7 @@ export class RoomManager {
           level: 'read_write',
           canWriteScratchpad: false,
           canApproveWorkflow: false,
-          allowedTools: ['web_search', 'stealth_read_page', 'stealth_navigate', 'stealth_extract', 'group_chat_room_status', 'group_chat_export_summary'],
+          allowedTools: ['web_search', 'stealth_read_page', 'stealth_navigate', 'stealth_extract', 'group_chat_room_status', 'group_chat_export_summary', 'group_chat_task_claim', 'group_chat_task_report', 'group_chat_task_block', 'group_chat_task_handoff'],
         },
         groupChatRules: {
           mentionKeywords: ['@researcher', '@调研', '@搜索', `@${mappings.researcher.name}`],
@@ -124,7 +128,7 @@ export class RoomManager {
           level: 'read_write',
           canWriteScratchpad: false,
           canApproveWorkflow: false,
-          allowedTools: ['tool_fs', 'tool_jobs', 'group_chat_room_status'],
+          allowedTools: ['tool_fs', 'tool_jobs', 'group_chat_room_status', 'group_chat_task_claim', 'group_chat_task_report', 'group_chat_task_block', 'group_chat_task_handoff'],
         },
         groupChatRules: {
           mentionKeywords: ['@backend', '@后端', '@架构', `@${mappings.backend.name}`],
@@ -153,7 +157,7 @@ export class RoomManager {
           level: 'read_write',
           canWriteScratchpad: false,
           canApproveWorkflow: false,
-          allowedTools: ['tool_fs', 'modlens_read_image', 'group_chat_room_status'],
+          allowedTools: ['tool_fs', 'modlens_read_image', 'group_chat_room_status', 'group_chat_task_claim', 'group_chat_task_report', 'group_chat_task_block', 'group_chat_task_handoff'],
         },
         groupChatRules: {
           mentionKeywords: ['@frontend', '@前端', '@UI', `@${mappings.frontend.name}`],
@@ -182,7 +186,7 @@ export class RoomManager {
           level: 'audit_only',
           canWriteScratchpad: false,
           canApproveWorkflow: false,
-          allowedTools: ['group_chat_room_status', 'group_chat_export_summary'],
+          allowedTools: ['group_chat_room_status', 'group_chat_export_summary', 'group_chat_task_claim', 'group_chat_task_report', 'group_chat_task_block'],
         },
         groupChatRules: {
           mentionKeywords: ['@qa', '@测试', '@安全', '@审计', `@${mappings.qa.name}`],
@@ -211,7 +215,7 @@ export class RoomManager {
           level: 'read_write',
           canWriteScratchpad: true,
           canApproveWorkflow: false,
-          allowedTools: ['group_chat_update_scratchpad', 'group_chat_export_summary', 'group_chat_room_status'],
+          allowedTools: ['group_chat_update_scratchpad', 'group_chat_export_summary', 'group_chat_room_status', 'group_chat_task_claim', 'group_chat_task_report', 'group_chat_task_close'],
         },
         groupChatRules: {
           mentionKeywords: ['@writer', '@文档', '@写手', '@纪要', `@${mappings.writer.name}`],
@@ -238,6 +242,9 @@ export class RoomManager {
       members: fleet,
       workflow,
       assignments: [],
+      captainTaskProtocol: undefined,
+      coordinationEvents: [],
+      approvalTransactions: [],
       mailboxes: {},
       orchestration: createMasterSubagentStrategy(fleet),
       scratchpad: '## 阶段共识与项目全局黑板\n- 机制：总指挥审核把关 + 调研先行 + 权限隔离 + 工作流流水线\n- 当前阶段：阶段一·需求深潜与搜索调研',
@@ -272,6 +279,8 @@ export class RoomManager {
     }
     if (room.workflow) WorkflowOrchestrator.ensureTaskDag(room.workflow)
     room.assignments ||= []
+    room.coordinationEvents ||= []
+    room.approvalTransactions ||= []
     room.mailboxes ||= {}
   }
 
@@ -388,6 +397,109 @@ export class RoomManager {
     return this.applyGeneratedTheme(roomId, draft.members, `custom_${Date.now()}` as PersonaThemeKey, draft.workflow, draft.orchestration)
   }
 
+
+
+  public createCaptainTaskProtocol(roomId: string, sourceMessageId: string | undefined, brief: string, taskTier: GroupTaskTier = 'quick'): CaptainTaskProtocol | undefined {
+    const room = this.getRoom(roomId)
+    if (!room) return undefined
+    const now = Date.now()
+    const masterId = room.orchestration?.masterAgentId || room.moderatorAgentId || 'commander'
+    const pick = (roleId: string, title: string, taskType: CaptainTaskNode['taskType'], taskBrief: string, dependsOn: string[] = []): CaptainTaskNode => ({
+      taskId: `${taskType}.${now}.${roleId}`,
+      title,
+      ownerRoleId: roleId,
+      taskType,
+      status: dependsOn.length ? 'pending' : 'ready',
+      dependsOn,
+      brief: taskBrief,
+      createdAt: now,
+      updatedAt: now,
+    })
+    const needsResearch = /搜索|调研|资料|竞品|research|crawl|web/i.test(brief)
+    const needsUi = /UI|界面|前端|样式|布局|视觉|frontend|design/i.test(brief)
+    const needsCode = /代码|后端|接口|状态|实现|bug|修复|backend|api|fix/i.test(brief)
+    const needsDocs = /文档|README|说明|双语|英文|中文|docs|copy|i18n/i.test(brief)
+    const tasks: CaptainTaskNode[] = [pick(masterId, '主 Agent 判断任务路线', 'review', brief)]
+    if (needsResearch) tasks.push(pick('researcher', '调研专员收集情报', 'research', brief, [tasks[0].taskId]))
+    if (needsCode) tasks.push(pick('backend', '工程实现与状态收口', 'backend', brief, [tasks[0].taskId]))
+    if (needsUi) tasks.push(pick('frontend', '前端体验与视觉推进', 'frontend', brief, [tasks[0].taskId]))
+    if (needsDocs) tasks.push(pick('writer', '双语文档与业务文案收口', 'docs', brief, [tasks[0].taskId]))
+    tasks.push(pick('qa', '质量验收与回归阻断', 'qa', brief, tasks.slice(1).map(task => task.taskId)))
+    const protocol: CaptainTaskProtocol = {
+      protocolId: randomUUID(),
+      roomId,
+      sourceMessageId,
+      title: taskTier === 'quick' ? '快速任务路线图' : '长任务协同路线图',
+      commanderRoleId: masterId,
+      taskTier,
+      status: 'running',
+      tasks,
+      dependencies: tasks.flatMap(task => task.dependsOn.map(dep => ({ fromTaskId: dep, toTaskId: task.taskId, reason: '主 Agent 编排依赖' }))),
+      createdAt: now,
+      updatedAt: now,
+    }
+    room.captainTaskProtocol = protocol
+    this.saveRoom(room)
+    this.broadcast({ type: 'coordination:updated', roomId, payload: protocol, timestamp: Date.now() })
+    return protocol
+  }
+
+  public recordCoordinationEvent(roomId: string, event: Omit<CoordinationEvent, 'eventId' | 'roomId' | 'createdAt'>): CoordinationEvent | undefined {
+    const room = this.getRoom(roomId)
+    if (!room) return undefined
+    const envelope: CoordinationEvent = { eventId: randomUUID(), roomId, createdAt: Date.now(), ...event }
+    room.coordinationEvents ||= []
+    room.coordinationEvents.push(envelope)
+    room.coordinationEvents = room.coordinationEvents.slice(-120)
+    this.applyCoordinationToProtocol(room, envelope)
+    this.saveRoom(room)
+    this.broadcast({ type: 'coordination:updated', roomId, payload: envelope, timestamp: Date.now() })
+    return envelope
+  }
+
+  private applyCoordinationToProtocol(room: GroupChatRoom, event: CoordinationEvent): void {
+    const protocol = room.captainTaskProtocol
+    if (!protocol) return
+    const task = protocol.tasks.find(item => item.taskId === event.taskId || item.assignmentId === event.assignmentId || item.ownerRoleId === event.actorRoleId)
+    if (!task) return
+    if (event.type === 'claim' || event.type === 'resume') task.status = 'running'
+    if (event.type === 'block') task.status = 'blocked'
+    if (event.type === 'report') { task.latestReport = event.content; task.status = 'passed' }
+    if (event.type === 'close') task.status = 'passed'
+    if (event.type === 'handoff' && event.targetRoleId) { task.status = 'passed'; task.latestReport = `Handoff to @${event.targetRoleId}: ${event.content}` }
+    task.updatedAt = Date.now()
+    const passed = new Set(protocol.tasks.filter(item => item.status === 'passed').map(item => item.taskId))
+    for (const item of protocol.tasks) {
+      if (item.status === 'pending' && item.dependsOn.every(dep => passed.has(dep))) { item.status = 'ready'; item.updatedAt = Date.now() }
+    }
+    protocol.status = protocol.tasks.some(item => item.status === 'blocked') ? 'blocked' : protocol.tasks.every(item => item.status === 'passed') ? 'awaiting_approval' : 'running'
+    protocol.updatedAt = Date.now()
+  }
+
+  public createApprovalTransaction(roomId: string, title: string, summary: string, willChange: string[], rollbackPlan: string[], createdByRoleId = 'commander'): ApprovalTransaction | undefined {
+    const room = this.getRoom(roomId)
+    if (!room) return undefined
+    const now = Date.now()
+    const tx: ApprovalTransaction = { transactionId: randomUUID(), roomId, title, summary, status: 'pending', willChange, rollbackPlan, createdByRoleId, createdAt: now, updatedAt: now }
+    room.approvalTransactions ||= []
+    room.approvalTransactions.push(tx)
+    this.saveRoom(room)
+    this.broadcast({ type: 'transaction:updated', roomId, payload: tx, timestamp: Date.now() })
+    return tx
+  }
+
+  public resolveApprovalTransaction(roomId: string, transactionId: string, action: 'approve' | 'reject' | 'rollback', resolvedByRoleId = 'commander'): ApprovalTransaction | undefined {
+    const room = this.getRoom(roomId)
+    const tx = room?.approvalTransactions?.find(item => item.transactionId === transactionId)
+    if (!room || !tx) return undefined
+    tx.status = action === 'approve' ? 'approved' : action === 'rollback' ? 'rolled_back' : 'rejected'
+    tx.resolvedByRoleId = resolvedByRoleId
+    tx.resolvedAt = Date.now()
+    tx.updatedAt = Date.now()
+    this.saveRoom(room)
+    this.broadcast({ type: 'transaction:updated', roomId, payload: tx, timestamp: Date.now() })
+    return tx
+  }
 
 
   public createAssignment(roomId: string, ownerRoleId: string, brief: string, options: { stageId?: string; workflowTaskId?: string; sourceMessageId?: string; createdByRoleId?: string; taskType?: AssignmentTaskType; taskTier?: GroupTaskTier; expectedMs?: number } = {}): AssignmentEnvelope | undefined {

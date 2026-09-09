@@ -41,7 +41,7 @@ const code = String.raw`async (page) => {
         }
         const hit = [...document.querySelectorAll('button,a,span,div')]
           .filter(el => visible(el) && (el.textContent || '').trim().includes(needle))
-          .sort((a,b) => a.getBoundingClientRect().top - b.getBoundingClientRect().top)[0]
+          .sort((a,b) => ((a.getAttribute('role') === 'treeitem' ? 0 : 1) - (b.getAttribute('role') === 'treeitem' ? 0 : 1)) || a.getBoundingClientRect().height - b.getBoundingClientRect().height || a.getBoundingClientRect().top - b.getBoundingClientRect().top)[0]
         if (!hit) return false
         hit.dispatchEvent(new MouseEvent('click', {bubbles:true, cancelable:true, view:window}))
         return true
@@ -52,19 +52,27 @@ const code = String.raw`async (page) => {
   }
 
   const openGroupChatTask = async () => {
-    const candidates = ['DSH多Agent群聊插件方案', '规范开发与参考项目调研']
-    await clickText('ha')
-    let opened = await clickText(...candidates)
-    if (opened) return opened
-    await clickText('展开其余')
-    opened = await clickText(...candidates)
-    if (opened) return opened
-    await clickText('dsh-group-chat')
-    opened = await clickText(...candidates)
-    if (opened) return opened
-    await clickText('展开其余')
-    return await clickText(...candidates)
+    for (let attempt = 0; attempt < 8; attempt++) {
+      const clicked = await page.evaluate(() => {
+        const visible = el => { const r = el.getBoundingClientRect(); const st = getComputedStyle(el); return r.width > 0 && r.height > 0 && r.left < innerWidth && r.right > 0 && st.display !== 'none' && st.visibility !== 'hidden' }
+        const names = ['DSH多Agent群聊插件方案', '规范开发与参考项目调研']
+        const nodes = [...document.querySelectorAll('[role="treeitem"],button,a,span,div')]
+          .filter(el => visible(el) && names.some(name => (el.textContent || '').includes(name)))
+          .sort((a,b) => ((a.getAttribute('role') === 'treeitem' ? 0 : 1) - (b.getAttribute('role') === 'treeitem' ? 0 : 1)) || a.getBoundingClientRect().height - b.getBoundingClientRect().height)
+        const hit = nodes[0]
+        if (!hit) return false
+        hit.dispatchEvent(new MouseEvent('mousedown', {bubbles:true, cancelable:true, view:window}))
+        hit.dispatchEvent(new MouseEvent('mouseup', {bubbles:true, cancelable:true, view:window}))
+        hit.dispatchEvent(new MouseEvent('click', {bubbles:true, cancelable:true, view:window}))
+        return true
+      }).catch(()=>false)
+      if (clicked) { await wait(1200); return 'DSH多Agent群聊插件方案' }
+      await clickText('ha')
+      await wait(500)
+    }
+    return ''
   }
+
 
   await page.goto('${url}', {waitUntil: 'domcontentloaded', timeout: 20000})
   await wait(1300)
@@ -111,7 +119,7 @@ const code = String.raw`async (page) => {
       hasConversation: !!conv && visible(conv),
       hasComposer: !!composer && visible(composer),
       hasHud: !!hud && visible(hud),
-      hasFriendlyEntry: /把活儿丢进群|AI 小队开整|发送消息|群聊|Toss in the work|AI crew|Send a message|Group chat/i.test(convText),
+      hasFriendlyEntry: /把活儿丢进群|AI 小队开整|发送消息|选择 @ 角色|快活|群聊|Toss in the work|AI crew|Send a message|Group chat/i.test(convText),
       hasExistingConversation: /人类负责人|模型调用失败|调用失败|@离谱总导演|@[a-z][\w-]*|复制|当前任务|Human lead|Model call|failed|task/i.test(convText),
       hasHudTabs: ['团队','工作流','黑板','账本'].every(label => hudText.includes(label) || text.includes(label)),
       hasCompactWorkflow: /当前阶段|当前任务|高级详情|执行导演台/.test(hudText),

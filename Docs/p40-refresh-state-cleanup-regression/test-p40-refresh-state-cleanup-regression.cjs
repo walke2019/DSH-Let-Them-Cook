@@ -52,7 +52,11 @@ const code = String.raw`async (page) => {
   }
 
   const openGroupChatTask = async () => {
-    if (await clickSidebarConversation('DSH多Agent群聊插件方案', '规范开发与参考项目调研')) return true
+    for (let attempt = 0; attempt < 8; attempt++) {
+      if (await clickSidebarConversation('DSH多Agent群聊插件方案', '规范开发与参考项目调研')) return true
+      await clickText('ha')
+      await wait(500)
+    }
     await clickText('展开其余')
     if (await clickSidebarConversation('DSH多Agent群聊插件方案', '规范开发与参考项目调研')) return true
     await clickText('dsh-group-chat')
@@ -71,7 +75,7 @@ const code = String.raw`async (page) => {
           .filter(el => visible(el) && (el.textContent || '').trim().includes(needle))
           .map(el => ({el, r: el.getBoundingClientRect(), text: (el.textContent || '').trim()}))
           .filter(x => x.r.left < 330 && x.r.top > 60 && x.r.height < 90 && x.text.length <= 80)
-          .sort((a,b) => Math.abs(a.r.left - 40) - Math.abs(b.r.left - 40) || a.r.top - b.r.top)
+          .sort((a,b) => ((a.el.getAttribute('role') === 'treeitem' ? 0 : 1) - (b.el.getAttribute('role') === 'treeitem' ? 0 : 1)) || Math.abs(a.r.left - 40) - Math.abs(b.r.left - 40) || a.r.top - b.r.top)
         const hit = candidates[0]?.el
         if (!hit) return false
         hit.dispatchEvent(new MouseEvent('click', {bubbles:true, cancelable:true, view:window}))

@@ -297,9 +297,71 @@ export interface WorkflowDefinition {
 }
 
 
-export type AssignmentStatus = 'queued' | 'running' | 'completed' | 'failed' | 'cancelled'
+export type AssignmentStatus = 'queued' | 'running' | 'completed' | 'failed' | 'blocked' | 'cancelled'
 export type GroupTaskTier = 'quick' | 'long'
-export type AssignmentTaskType = 'research' | 'backend' | 'frontend' | 'qa' | 'docs' | 'review' | 'general'
+export type AssignmentTaskType = 'research' | 'backend' | 'frontend' | 'qa' | 'docs' | 'review' | 'handoff' | 'general'
+
+
+export interface CaptainTaskDependency {
+  fromTaskId: string
+  toTaskId: string
+  reason: string
+}
+
+export interface CaptainTaskNode {
+  taskId: string
+  title: string
+  ownerRoleId: string
+  taskType: AssignmentTaskType
+  status: WorkflowTaskStatus | 'blocked'
+  dependsOn: string[]
+  brief: string
+  assignmentId?: string
+  latestReport?: string
+  createdAt: number
+  updatedAt: number
+}
+
+export interface CaptainTaskProtocol {
+  protocolId: string
+  roomId: string
+  sourceMessageId?: string
+  title: string
+  commanderRoleId: string
+  taskTier: GroupTaskTier
+  status: 'draft' | 'running' | 'awaiting_approval' | 'completed' | 'blocked'
+  tasks: CaptainTaskNode[]
+  dependencies: CaptainTaskDependency[]
+  createdAt: number
+  updatedAt: number
+}
+
+export interface CoordinationEvent {
+  eventId: string
+  roomId: string
+  type: 'claim' | 'block' | 'handoff' | 'report' | 'close' | 'resume'
+  actorRoleId: string
+  targetRoleId?: string
+  assignmentId?: string
+  taskId?: string
+  content: string
+  createdAt: number
+}
+
+export interface ApprovalTransaction {
+  transactionId: string
+  roomId: string
+  title: string
+  summary: string
+  status: 'pending' | 'approved' | 'rejected' | 'rolled_back'
+  willChange: string[]
+  rollbackPlan: string[]
+  createdByRoleId: string
+  createdAt: number
+  updatedAt: number
+  resolvedByRoleId?: string
+  resolvedAt?: number
+}
 
 export interface AssignmentEnvelope {
   assignmentId: string
@@ -371,6 +433,9 @@ export interface GroupChatRoom {
  * Core public contract type field.
  */
   assignments?: AssignmentEnvelope[]
+  captainTaskProtocol?: CaptainTaskProtocol
+  coordinationEvents?: CoordinationEvent[]
+  approvalTransactions?: ApprovalTransaction[]
   /**
  * Core public contract type field.
  */
@@ -544,6 +609,8 @@ export type GroupChatEventType =
   | 'assignment:updated'
   | 'mailbox:new'
   | 'mailbox:updated'
+  | 'coordination:updated'
+  | 'transaction:updated'
 
 export interface GroupChatEvent {
   type: GroupChatEventType

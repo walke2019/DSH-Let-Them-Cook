@@ -189,3 +189,11 @@
 - User input must be tested through the real browser textarea for bilingual content; API probes with Chinese must send UTF-8 bytes to avoid false mojibake diagnostics.
 - When the docked HUD is open, center avoidance must be capped by the middle tab width (`100%`), not `100vw`; narrow viewports must keep the message log and composer usable through a slim HUD reveal strip.
 - A valid UI smoke check confirms: draft typed -> send button enabled -> send clicked -> user bubble appended -> composer cleared -> no permanent source dialog pollution.
+
+
+## 八、P65-P69 对标迭代守则
+- 每条中央 Agent 群聊任务必须形成 `captainTaskProtocol` 路线图：主 Agent 判断路线，SubAgent 按职责执行，依赖和最新上报可在 HUD 查看。
+- SubAgent 不只“说一句话”，必须可用 `group_chat_task_claim/block/handoff/report/close` 记录协同事件；阻塞要显式进入 `blocked`，不要伪装完成。
+- 写入类、配置类和项目变更类任务优先创建 `ApprovalTransaction`，展示 willChange 与 rollbackPlan，用户/主 Agent 批准后再推进。
+- HUD 的默认层级必须像任务驾驶舱：当前谁在干活、路线图进度、待确认卡和闭环质量优先；完整流水只放在高级详情/账本。
+- 对标 `dsh-agent-teams` 时，保持本项目差异化：工作区作用域、DSH seam 零污染、主题化人话、官方 workflow 并发保留、主 Agent + SubAgent 可审计闭环。
