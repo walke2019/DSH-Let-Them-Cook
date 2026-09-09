@@ -1,0 +1,62 @@
+DSH group-chat extension repair
+Changed fields/branches:
+- src/index.ts inject: tools, webServer, agents, systemPrompt, agentDefaultModel.
+- Removed direct llm property/chat access; invoke host agents.create and scoped agent/request waterfall.
+- Removed fixed-role success replies and simulated research invocation from the live path.
+- New agent-runtime.ts installs a complete role prompt and tools.restrict({allow:[]}); awaits turn/end and disposes each agent in finally.
+- Default role provider/model empty means inherit DSH's configured default, replacing invalid deepseek/deepseek-chat literals.
+- Timeout and unload abort native turns; retry timers and delayed dispatches are cleaned; SSE subscriptions/end are cleaned on unload.
+- Model errors become system notices, not invented agent answers. Token usage is no longer guessed from string length.
+Original src/index.ts SHA256: 011B729D959C7D92E712C9BF46140EB35A61A05DE4321DA1F9DAAC2AF79245BF
+No DSH core source modified. Other market/task-board plugins not changed.
+
+MODIFIED_FILE: C:/项目/dsh-group-chat/Docs/extension-repair/MODIFIED_FILE.ts (verified copy of deployed src/index.ts)
+DIFF_FILE: C:/项目/dsh-group-chat/Docs/extension-repair/DIFF_FILE.patch
+VERIFICATION: C:/项目/dsh-group-chat/Docs/extension-repair/VERIFICATION.txt
+ROLLBACK: C:/项目/dsh-group-chat/Docs/extension-repair/ROLLBACK.sh
+Deployed source: C:/项目/dsh-group-chat/src/index.ts
+Deployed host entry: C:/项目/dsh-group-chat/lib/index.js
+
+Working directory for all commands: C:/项目/dsh-group-chat
+BASELINE command: node Docs/extension-repair/check.mjs "C:/项目/dsh-group-chat/Docs/extension-repair/original/lib/index.js"
+Input: registered group_chat_send_message, @backend test; scoped host-agent double and throwing llm getter.
+Literal stdout:
+FAIL: must invoke native agent runtime, not llm.chat or fixed text
+
+0 !== 1
+
+Exit: 1. Stderr reproduced cannot get property "llm" without inject.
+MODIFIED command: node Docs/extension-repair/check.mjs "C:/项目/dsh-group-chat/lib/index.js"
+Input: same group message and host-agent double.
+Literal stdout: PASS: native routing, scoped tool isolation, disposal, silence, real-output-only (5 checks)
+Exit: 0.
+Additional command: node Docs/extension-repair/runtime-check.mjs
+Input: failed/empty turn, abortable hanging turn, unload, 429 then backup success.
+Literal stdout: PASS: failed/empty output, timeout cancellation, unload disposal, 429 fallback (5 checks)
+Exit: 0.
+ROLLBACK command: & 'C:/Program Files/Git/bin/bash.exe' Docs/extension-repair/ROLLBACK.sh Docs/extension-repair/rollback-test
+Input: separate copy of modified source and lib; never the live project.
+Literal stdout: PASS: original source and host build restored
+Exit: 0.
+Restored behavior command: node Docs/extension-repair/check.mjs "C:/项目/dsh-group-chat/Docs/extension-repair/rollback-test/lib/index.js"
+Literal stdout:
+FAIL: must invoke native agent runtime, not llm.chat or fixed text
+
+0 !== 1
+
+Exit: 1 (expected original regression). Restored source and lib compared byte-for-byte by rollback script. Live files and MODIFIED_FILE.ts remain modified.
+
+Build command: npm run build:host
+Result: tsc -p tsconfig.json succeeded; exit 0.
+Typecheck command: npm run typecheck
+Result: tsc -p tsconfig.json --noEmit succeeded; exit 0.
+Live command: node Docs/extension-repair/live-check.mjs
+Input: POST /dsh-group-chat/api/message, @backend 这是扩展连接回归测试，请仅回复 GROUP_CHAT_RUNTIME_OK，不调用工具。
+Literal stdout: PASS: live group-chat reply GROUP_CHAT_RUNTIME_OK; provider=cpa; model=gemini-3.8-flash-high
+Exit: 0.
+Details: C:/项目/dsh-group-chat/Docs/extension-repair/live-success.json. Test temporarily used mention_only and restored original dispatch mode.
+Plugin was initially inactive; explicit UTF-8 inject through the existing super-injector API mounted host and client. Subsequent host build was hot-reloaded by the injector.
+Main model regression command: node C:/项目/dsh-group-chat/Docs/scope-repair/check-api.mjs
+Literal stdout: {"ok":true,"keys":["ok","value"]}
+Exit: 0.
+Remaining independent notices: duplicate market route ownership and task-board old session/list endpoint. This repair targets the local group-chat extension, not those third-party plugins.

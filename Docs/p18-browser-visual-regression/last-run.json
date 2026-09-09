@@ -1,0 +1,74 @@
+{
+  "ok": true,
+  "failures": [],
+  "metrics": {
+    "title": "规范开发与参考项目调研 — DeepSeek Harness",
+    "viewport": {
+      "width": 1280,
+      "height": 720
+    },
+    "bodyFlags": {
+      "tabActive": "true",
+      "hudOpen": "true"
+    },
+    "labels": {
+      "hasAgentTab": true,
+      "hudTitle": ".dsh-gc-sidebar-host,.dsh-gc-sidebar-host *{box-sizing:border-box;min-width:0;}\n          .dsh-gc-sidebar-host{overflow:hidden;}\n          .dsh-gc-sidebar-host :is(div,span,button,summary,details,p,small,b){max-width:100%;overflow-wrap:anywhere;}\n          .dsh-gc-sidebar-host [style*=\"white-space:nowrap\"]{overflow:hidden!important;text-overflow:ellipsis!important;}\n          .dsh-gc-sidebar-host details{width:auto!important;max-width:100%!important;overflow:hidden!important;}\n          .dsh-gc-sidebar-host summary{max-width:100%!important;overflow:hidden!important;}\n          .dsh-gc-sidebar-host select{min-width:0;max-width:100%;}\n        🧭群聊控制台 (HUD)AI 小队工作台浮动✕\n      .dsh-gc-top-controls{padding:8px 10px;display:grid;grid-template-columns:46px minmax(0,1fr) 46px minmax(0,1fr) 24px;column-gap:4px;row-gap:6px;font-size:11px;align-items:center;white-space:nowrap;overflow:hidden;}\n      .dsh-gc-top-label{color:var(--dsw-alias-label-secondary,#cbd5e1);height:30px;display:inline-flex;align-items:center;}\n      .dsh-gc-select-wrap{position:relative;display:block;min-width:0;}\n      .dsh-gc-top-select{width:100%;height:30px;box-sizing:border-box;appearance:none;-webkit-appearance:none;border:1px solid var(--dsw-alias-border-l2,rgba(255,255,255,0.14));border-radius:10px;background:var(--dsw-alias-bg-layer-2,#202025);color:var(--dsw-alias-label-primary,#f8fafc);font:inherit;font-size:12px;padding:0 28px 0 10px;outline:none;}\n      .dsh-gc-top-select:focus-visible,.dsh-gc-help-button:focus-visible{outline:2px solid #8196ff;outline-offset:1px;}\n      .dsh-gc-top-chevron{position:absolute;right:9px;top:50%;width:14px;height:14px;transform:translateY(-50%);pointer-events:none;color:var(--dsw-alias-label-tertiary,#9ca3af);}\n      .dsh-gc-help-button{width:24px;height:28px;border-radius:9px;border:1px solid var(--dsw-alias-border-l2,rgba(255,255,255,0.14));background:var(--dsw-alias-bg-layer-2,#202025);color:var(--dsw-alias-label-secondary,#cbd5e1);font-size:13px;font-weight:700;cursor:pointer;}\n      .dsh-gc-top-error{grid-column:1 / -1;color:#fca5a5;white-space:normal;}\n      .dsh-gc-help-backdrop{position:fixed;inset:0;z-index:1000;display:grid;place-items:center;background:rgba(0,0,0,0.52);pointer-events:auto;}\n      .dsh-gc-help-dialog{width:min(560px,calc(100vw - 32px));max-height:calc(100vh - 80px);overflow-y:auto;border:1px solid var(--dsw-alias-border-l2,rgba(255,255,255,0.14));border-radius:16px;background:var(--dsw-alias-bg-layer-1,#1f1f23);box-shadow:var(--dsw-shadow-lv3,0 20px 60px rgba(0,0,0,0.45));color:var(--dsw-alias-label-primary,#f8fafc);}\n      .dsh-gc-help-head{display:flex;align-items:center;justify-content:space-between;padding:14px 16px;border-bottom:1px solid var(--dsw-alias-border-l1,rgba(255,255,255,0.08));gap:12px;}\n      .dsh-gc-help-title{font-size:14px;font-weight:700;}\n      .dsh-gc-help-subtitle{font-size:11px;color:var(--dsw-alias-label-tertiary,#94a3b8);margin-top:2px;}\n      .dsh-gc-help-close{width:28px;height:28px;border-radius:8px;border:1px solid var(--dsw-alias-border-l2,rgba(255,255,255,0.14));background:var(--dsw-alias-bg-layer-2,#202025);color:inherit;cursor:pointer;}\n      .dsh-gc-help-body{display:grid;gap:10px;padding:14px 16px;font-size:12px;line-height:1.55;}\n      .dsh-gc-help-current{padding:10px 12px;border-radius:12px;background:rgba(77,107,254,0.10);border:1px solid rgba(77,107,254,0.26);color:var(--dsw-alias-label-secondary,#cbd5e1);}\n      .dsh-gc-help-current b,.dsh-gc-help-mode b,.dsh-gc-help-scope b{color:var(--dsw-alias-label-primary,#f8fafc);}\n      .dsh-gc-help-mode{padding:10px 12px;border-radius:12px;background:var(--dsw-alias-bg-layer-2,#242428);border:1px solid var(--dsw-alias-border-l1,rgba(255,255,255,0.08));}\n      .dsh-gc-help-mode b{display:block;margin-bottom:4px;}\n      .dsh-gc-help-mode div,.dsh-gc-help-scope{color:var(--dsw-alias-label-secondary,#cbd5e1);}\n      .dsh-gc-help-scope{padding:10px 12px;border-radius:12px;background:rgba(16,185,129,0.08);border:1px solid rgba(16,185,129,0.24);}\n    角色主题默认（沙雕整活）沙雕整活原神提瓦特现代精英三国风云现代传奇调度模式默认（工作流）仅 @ 角色工作流主持人调度自由讨论?团队工作流黑板账本团队主 Agent：离谱总导演 · 成员 6造人/造工作流工具箱用一句话描述世界观和项目任务；先出草案，确认后再写入当前工作区。套用沙雕整活套用原神沙雕但靠谱的互联网项目小队，说人话、有梗、能交付；顺手按任务生成工作流生成草案生成并套用成员列表（6/6 人）🧃离谱总导演全局控场·拒绝尬住0 轮0 T编辑🍉瓜田侦探吃瓜不信瓜·证据挖掘机0 轮0 T编辑🍳后端锅王背锅但不糊锅·接口炼丹师0 轮0 T编辑🪩像素显眼包好看能打·按钮别乱蹦0 轮0 T编辑🧨阴间测试员专治侥幸·边界爆破0 轮0 T编辑🧻废话压缩师人话翻译·文档去油0 轮0 T编辑",
+      "hasOldHudName": false,
+      "hasOldSquadSubtitle": false,
+      "hasHudDuplicateChatInput": false
+    },
+    "rects": {
+      "left": {
+        "left": 0,
+        "top": 0,
+        "right": 280,
+        "bottom": 720,
+        "width": 280,
+        "height": 720
+      },
+      "hud": {
+        "left": 980,
+        "top": 0,
+        "right": 1280,
+        "bottom": 720,
+        "width": 300,
+        "height": 720
+      },
+      "conversation": {
+        "left": 280,
+        "top": 76,
+        "right": 1272,
+        "bottom": 720,
+        "width": 992,
+        "height": 644
+      },
+      "composer": {
+        "left": 280,
+        "top": 556,
+        "right": 980,
+        "bottom": 720,
+        "width": 700,
+        "height": 164
+      },
+      "messages": {
+        "left": 280,
+        "top": 76,
+        "right": 980,
+        "bottom": 546,
+        "width": 700,
+        "height": 470
+      }
+    },
+    "spacing": {
+      "composerPaddingLeft": 8,
+      "composerPaddingRight": 8,
+      "messagesPaddingLeft": 8,
+      "messagesPaddingRight": 8,
+      "conversationToHudGap": -292,
+      "composerToHudGap": 0
+    },
+    "visibleOverflow": []
+  },
+  "screenshot": "C:/项目/dsh-group-chat/Docs/p18-browser-visual-regression/last-run.png"
+}

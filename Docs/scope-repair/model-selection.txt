@@ -1,0 +1,29 @@
+## Request http://127.0.0.1:3080/api/session.selectModel
+Status: 200
+### Request Headers
+- sec-ch-ua-platform:"Windows"
+- referer:http://127.0.0.1:3080/
+- user-agent:Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/152.0.0.0 Safari/537.36
+- sec-ch-ua:"Chromium";v="152", "Not?A_Brand";v="24", "Google Chrome";v="152"
+- content-type:application/json
+- sec-ch-ua-mobile:?0
+- accept:*/*
+- accept-encoding:gzip, deflate, br, zstd
+- accept-language:zh-CN,zh;q=0.9
+- connection:keep-alive
+- content-length:214
+- host:127.0.0.1:3080
+- origin:http://127.0.0.1:3080
+- sec-fetch-dest:empty
+- sec-fetch-mode:cors
+- sec-fetch-site:same-origin
+### Request Body
+{"type":"client-request","rpcId":"c370537b-65f5-4a72-9642-5213d5e7109b","method":"session.selectModel","payload":{"sessionId":"session-4817c79b-c4c2-48ec-888b-957288f918b2","provider":"cpa","model":"gpt-5.6-luna"}}
+### Response Headers
+- connection:keep-alive
+- date:Tue, 08 Sep 2026 09:29:11 GMT
+- keep-alive:timeout=5
+- transfer-encoding:chunked
+- content-type:application/json
+### Response Body
+{"type":"server-response","rpcId":"c370537b-65f5-4a72-9642-5213d5e7109b","result":{"ok":true,"value":{"selected":{"provider":"cpa","model":"gpt-5.6-luna"}}}}

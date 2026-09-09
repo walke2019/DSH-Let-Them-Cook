@@ -1,0 +1,14 @@
+import { createRequire, registerHooks } from 'node:module';
+import { pathToFileURL } from 'node:url';
+import { join } from 'node:path';
+// Share the complete scope module (including its WeakMaps), not just its Symbol.
+const base = createRequire(join(process.env.APPDATA, 'npm/node_modules/@deepseek-ai/dsh-base/package.json'));
+const canonical = pathToFileURL(base.resolve('@deepseek-ai/dsh-scope')).href;
+registerHooks({
+  resolve(specifier, context, nextResolve) {
+    if (specifier === '@deepseek-ai/dsh-scope') {
+      return { url: canonical, shortCircuit: true };
+    }
+    return nextResolve(specifier, context);
+  },
+});

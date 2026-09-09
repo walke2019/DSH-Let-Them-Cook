@@ -1,0 +1,18 @@
+const fs = require('node:fs')
+const path = require('node:path')
+const root = path.resolve(__dirname, '../..')
+const dock = fs.readFileSync(path.join(root, 'src/client/GroupChatSideDock.tsx'), 'utf8')
+const workflowPanel = fs.readFileSync(path.join(root, 'src/client/GroupChatHudWorkflowPanel.tsx'), 'utf8')
+const hudSurface = dock + '\n' + workflowPanel
+const doc = fs.readFileSync(path.join(root, 'Docs/p17-hud-director-console.md'), 'utf8')
+function assert(cond,msg){if(!cond){console.error('[P17] '+msg);process.exit(1)}}
+assert(doc.includes('HUD 执行导演台增强'), 'P17 doc exists')
+assert(workflowPanel.includes('data-dsh-gc-director-card'), 'director card has stable marker')
+assert(workflowPanel.includes('执行导演台'), 'director card title exists')
+assert(workflowPanel.includes('主 Agent 控场 · SubAgent 干活'), 'master/subagent explanation exists')
+assert(workflowPanel.includes('runningAssignments') && workflowPanel.includes('queuedAssignments'), 'director card derives running/queued assignments')
+assert(workflowPanel.includes('当前模型') && workflowPanel.includes('下一棒'), 'model and next handoff fields exist')
+assert(workflowPanel.includes('routeChips') && workflowPanel.includes('搜索/爬取') && workflowPanel.includes('前端/UI'), 'tool routing chips exist')
+assert(!dock.includes("label: '特遣对话'"), 'HUD chat tab remains removed')
+assert(!dock.includes('GroupChatComposer'), 'HUD does not reintroduce chat composer')
+console.log('P17_HUD_DIRECTOR_CONSOLE_EXIT:0')

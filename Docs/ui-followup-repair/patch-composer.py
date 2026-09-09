@@ -1,0 +1,5 @@
+from pathlib import Path
+p=Path('src/client/GroupChatComposer.tsx');s=p.read_text(encoding='utf-8-sig')
+s=s.replace("      .gc-mention-trigger { display:flex; align-items:center; gap:6px; padding:6px 9px; border:0; border-radius:9px; background:transparent; color:var(--dsw-alias-label-secondary,#cbd5e1); font:inherit; font-size:12px; cursor:pointer; }", "      .gc-mention-trigger { display:flex; align-items:center; gap:6px; padding:6px 9px; border:0; border-radius:9px; background:transparent; color:var(--dsw-alias-label-secondary,#cbd5e1); font:inherit; font-size:12px; cursor:pointer; }\n      .gc-mention-chevron{width:14px;height:14px;display:block;transition:transform .15s ease;opacity:.8;}\n      .gc-mention-trigger[aria-expanded=true] .gc-mention-chevron{transform:rotate(180deg);}")
+s=s.replace("<span aria-hidden=\"true\">⌄</span></button>", "<svg className=\"gc-mention-chevron\" viewBox=\"0 0 16 16\" fill=\"none\" stroke=\"currentColor\" strokeWidth=\"1.8\" strokeLinecap=\"round\" strokeLinejoin=\"round\" aria-hidden=\"true\"><path d=\"M4 6l4 4 4-4\"/></svg></button>")
+p.write_text(s,encoding='utf-8')

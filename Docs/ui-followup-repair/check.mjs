@@ -1,0 +1,5 @@
+import {readFileSync} from 'node:fs';
+const root=process.argv[2]||'.';
+const files={panel:readFileSync(root+'/src/client/GroupChatPanel.tsx','utf8'),model:readFileSync(root+'/src/client/GroupChatModelSettings.tsx','utf8'),composer:readFileSync(root+'/src/client/GroupChatComposer.tsx','utf8'),dock:readFileSync(root+'/src/client/GroupChatSideDock.tsx','utf8'),types:readFileSync(root+'/src/types.ts','utf8')};
+const result={safeBottom:files.panel.includes('calc(var(--gc-bottom-height,150px) + 24px)'),agentFloat:files.panel.includes('gc-agent-float')&&files.types.includes("'agent:status'"),searchModelPicker:files.model.includes('SearchableModelPicker')&&files.model.includes('ctx.llm.listProviders/listModels'),composerSvgArrow:files.composer.includes('gc-mention-chevron')&&!files.composer.includes('>⌄</span>'),rightDispatchRemoved:!files.dock.includes('quickCmd')&&!files.dock.includes('派发')&&!files.dock.includes('下达快捷'),inlineLedger:files.dock.includes("whiteSpace:'nowrap'")};
+console.log(JSON.stringify(result));process.exit(Object.values(result).every(Boolean)?0:1);

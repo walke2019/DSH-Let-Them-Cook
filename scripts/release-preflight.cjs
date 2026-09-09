@@ -1,0 +1,72 @@
+const fs = require('node:fs')
+const path = require('node:path')
+
+const root = path.resolve(__dirname, '..')
+const errors = []
+const exists = p => fs.existsSync(path.join(root, p))
+const read = p => fs.readFileSync(path.join(root, p), 'utf8')
+
+for (const file of fs.readdirSync(root)) {
+  if (/\.(md|txt)$/i.test(file) && !['README.md', 'AGENTS.md'].includes(file)) errors.push(`root document must live under Docs/: ${file}`)
+}
+const tempDocs = fs.readdirSync(path.join(root, 'Docs')).filter(file => /^_patch/i.test(file))
+if (tempDocs.length) errors.push(`temporary patch docs remain: ${tempDocs.join(', ')}`)
+
+const required = ['README.md','AGENTS.md','Docs/TODO.md','Docs/p4-dsh-compat-and-test-matrix/README.md','Docs/p10-end-to-end-small-task/README.md','Docs/p28-roster-style-tokens/README.md','src/compat/dsh.ts','src/engine/agent-runtime.ts','src/engine/auto-setup.ts','src/engine/model-recommender.ts','src/engine/structured-result.ts','src/client/GroupChatSideDock.tsx','src/client/group-chat-hud-types.ts','src/client/group-chat-hud-styles.ts','src/client/GroupChatConversationTab.tsx','scripts/test-matrix.cjs','scripts/api-smoke.cjs','scripts/e2e-no-llm.cjs','Docs/p39-source-agent-tab-switch-regression/README.md','Docs/p39-source-agent-tab-switch-regression/test-p39-source-agent-tab-switch-regression.cjs','Docs/p40-refresh-state-cleanup-regression/README.md','Docs/p40-refresh-state-cleanup-regression/test-p40-refresh-state-cleanup-regression.cjs','Docs/p42-agent-chat-entry-usable-regression/README.md','Docs/p42-agent-chat-entry-usable-regression/test-p42-agent-chat-entry-usable-regression.cjs','Docs/p43-final-closure-audit/README.md','Docs/p43-final-closure-audit/test-p43-final-closure-audit.cjs','Docs/p44-source-dialog-prepare-diagnostic/README.md','Docs/p44-source-dialog-prepare-diagnostic/test-p44-source-dialog-prepare-diagnostic.cjs','Docs/p45-theme-aware-central-copy/README.md','Docs/p45-theme-aware-central-copy/test-p45-theme-aware-central-copy.cjs','Docs/p46-i18n-panel-task-smoke/README.md',
+  'Docs/p47-bilingual-ui-and-tool-scope/README.md','Docs/p47-bilingual-ui-and-tool-scope/test-p47-bilingual-ui-and-tool-scope.cjs','Docs/p48-real-agent-loop-quality/README.md','Docs/p48-real-agent-loop-quality/test-p48-real-agent-loop-quality.cjs','Docs/p49-agent-timeout-diagnostic/README.md','Docs/p49-agent-timeout-diagnostic/test-p49-agent-timeout-diagnostic.cjs','Docs/p50-real-moderator-led-loop/README.md','Docs/p50-real-moderator-led-loop/test-p50-real-moderator-led-loop.cjs','Docs/p51-task-tier-progress/README.md','Docs/p51-task-tier-progress/test-p51-task-tier-progress.cjs','Docs/p52-autosetup-dispatch-guard/README.md','Docs/p52-autosetup-dispatch-guard/test-p52-autosetup-dispatch-guard.cjs','Docs/p53-message-ledger-persistence/README.md','Docs/p53-message-ledger-persistence/test-p53-message-ledger-persistence.cjs','Docs/p54-interrupted-assignment-recovery/README.md','Docs/p54-interrupted-assignment-recovery/test-p54-interrupted-assignment-recovery.cjs','Docs/p55-bilingual-export-summary/README.md','Docs/p55-bilingual-export-summary/test-p55-bilingual-export-summary.cjs','Docs/p56-runtime-autosetup-i18n/README.md','Docs/p56-runtime-autosetup-i18n/test-p56-runtime-autosetup-i18n.cjs','Docs/p57-agent-runtime-prompt-i18n/README.md','Docs/p57-agent-runtime-prompt-i18n/test-p57-agent-runtime-prompt-i18n.cjs','Docs/p58-tool-workflow-api-i18n/README.md','Docs/p58-tool-workflow-api-i18n/test-p58-tool-workflow-api-i18n.cjs','Docs/p59-theme-workflow-content-i18n/README.md','Docs/p59-theme-workflow-content-i18n/test-p59-theme-workflow-content-i18n.cjs','Docs/p60-tech-legends-theme/README.md','Docs/p60-tech-legends-theme/test-p60-tech-legends-theme.cjs','Docs/p61-english-source-bilingual-runtime/README.md','Docs/p61-english-source-bilingual-runtime/test-p61-english-source-bilingual-runtime.cjs','Docs/p46-i18n-panel-task-smoke/test-p46-i18n-panel-task-smoke.cjs']
+for (const file of required) if (!exists(file)) errors.push(`missing required artifact: ${file}`)
+
+const pkg = JSON.parse(read('package.json'))
+for (const script of ['typecheck','build:all','test:matrix','smoke:api','test:e2e:no-llm','test:ui:visual','test:ui:switch','test:ui:refresh','test:ui:entry','test:diagnostic:prepare','test:theme-copy','test:i18n-panel-smoke',
+  'test:bilingual-ui','test:agent-loop-quality','test:agent-timeout-diagnostic','test:real-moderator-loop','test:task-tier-progress','test:autosetup-dispatch-guard','test:message-ledger-persistence','test:interrupted-assignment-recovery','test:bilingual-export-summary','test:runtime-autosetup-i18n','test:agent-runtime-prompt-i18n','test:tool-workflow-api-i18n','test:theme-workflow-content-i18n','test:tech-legends-theme','test:english-source-bilingual-runtime','preflight']) if (!pkg.scripts?.[script]) errors.push(`missing package script: ${script}`)
+if (pkg.main !== './lib/index.js') errors.push('package main must point to ./lib/index.js')
+if (!pkg.dsh?.client?.inject?.includes('@deepseek-ai/dsh-client-runtime')) errors.push('dsh client runtime injection missing')
+
+const agents = read('AGENTS.md')
+if (!agents.includes('严禁修改 `@deepseek-ai/dsh` 核心源码')) errors.push('AGENTS.md core-source guard missing')
+if (!agents.includes('/Docs')) errors.push('AGENTS.md Docs placement guard missing')
+if (!agents.includes('源版对话 / Agent 群聊切换守则') || !agents.includes('npm run test:ui:refresh')) errors.push('AGENTS.md source/agent tab refresh guard missing')
+if (!agents.includes('工具调度器 prepare 报错排查守则') || !agents.includes('@deepseek-ai/dsh-tools')) errors.push('AGENTS.md backend prepare diagnostic guard missing')
+if (/ctx\.version/.test(read('src/compat/dsh.ts'))) errors.push('compat must not access ctx.version directly')
+
+const layout = read('src/client/layout-push.ts')
+if (layout.includes('padding-right: var(--dsh-group-chat-width')) errors.push('layout must not squeeze official center view')
+if (layout.includes('body[data-dsh-group-chat-active="true"]')) errors.push('layout must not use legacy global full-view body takeover')
+if (layout.includes('display: none !important') && !layout.includes('body[data-dsh-group-chat-tab-active="true"] [data-composer-seat]')) errors.push('layout composer hiding must be scoped to active extension tab')
+
+const clientEntry = read('src/client/index.ts')
+const safeTab = read('src/client/GroupChatConversationTab.tsx')
+if (!clientEntry.includes('ctx.slots.inject("conversation.view"')) errors.push('safe middle conversation.view tab missing')
+if (!clientEntry.includes('GroupChatConversationView')) errors.push('client entry must use safe conversation view adapter')
+if (clientEntry.includes('GroupChatPanel')) errors.push('client entry must not import GroupChatPanel directly')
+if (!clientEntry.includes('prepare: GroupChatConversationView.prepare') || !safeTab.includes('prepare: () => ({})')) errors.push('safe conversation.view adapter missing prepare')
+if (!clientEntry.includes('component: () => createElement(GroupChatConversationView)')) errors.push('safe conversation.view adapter missing component factory')
+if (!safeTab.includes('<GroupChatPanel mode="dock" />') || safeTab.includes('mode="full"')) errors.push('safe middle tab must mount GroupChatPanel in dock mode only')
+if (!safeTab.includes('data-dsh-group-chat-tab-active') || !layout.includes('body[data-dsh-group-chat-tab-active="true"] [data-composer-seat]')) errors.push('official composer hiding must be scoped to active extension tab')
+
+const dock = read('src/client/GroupChatSideDock.tsx')
+const topControls = read('src/client/GroupChatHudTopControls.tsx')
+const workflowPanel = read('src/client/GroupChatHudWorkflowPanel.tsx')
+const rosterPanel = read('src/client/GroupChatHudRosterPanel.tsx')
+const scratchpadPanel = read('src/client/GroupChatHudScratchpadPanel.tsx')
+const hudSurface = dock + '\n' + topControls + '\n' + workflowPanel + '\n' + rosterPanel + '\n' + scratchpadPanel
+if (dock.includes('GroupChatPanel') || dock.includes("label: '特遣对话'")) errors.push('HUD must not duplicate extension chat entry')
+for (const marker of ['浮动','停靠','结构化结果','标记已读','默认（沙雕整活）','默认（工作流）']) if (!hudSurface.includes(marker)) errors.push(`HUD marker missing: ${marker}`)
+
+const todo = read('Docs/TODO.md')
+for (const phase of ['P0','P1','P2','P3','P4','P5','P6','P7','P8','P9','P10']) if (!todo.includes(`## ${phase}`)) errors.push(`TODO missing ${phase}`)
+
+if (errors.length) { console.error(JSON.stringify({P11_PREFLIGHT_EXIT:1, errors}, null, 2)); process.exit(1) }
+console.log(JSON.stringify({P11_PREFLIGHT_EXIT:0, rootDocumentsOk:true, tempPatchDocs:0, requiredArtifacts:required.length, packageScripts:['typecheck','build:all','test:matrix','smoke:api','test:e2e:no-llm','test:ui:visual','test:ui:switch','test:ui:refresh','test:ui:entry','test:diagnostic:prepare','test:theme-copy','test:i18n-panel-smoke',
+  'test:bilingual-ui','test:agent-loop-quality','test:agent-timeout-diagnostic','test:real-moderator-loop','test:task-tier-progress','test:autosetup-dispatch-guard','test:message-ledger-persistence','test:interrupted-assignment-recovery','test:bilingual-export-summary','test:runtime-autosetup-i18n','test:agent-runtime-prompt-i18n','test:tool-workflow-api-i18n','test:theme-workflow-content-i18n','test:tech-legends-theme','test:english-source-bilingual-runtime','preflight']}, null, 2))
+
+
+
+
+
+
+
+
+
+
+

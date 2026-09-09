@@ -1,0 +1,143 @@
+import type {PersonaThemeKey, ThemeVoiceProfile} from '../types.js'
+import type {GroupChatLocale} from '../client/i18n.js'
+
+const DEFAULT_VOICE: ThemeVoiceProfile = {
+  theme: 'default',
+  emptyTitle: '把任务扔进群里',
+  emptySubtitle: '说清你想做什么，AI 小队会先出角色和工作流草案，确认后再开整。',
+  clarifyPrefix: '这活儿还缺一句背景，不然小队容易原地整活。',
+  draftIntro: '先别急着开工，我先把小队名单和作战流程摆出来。',
+  draftActionHint: '点「确认创建」就写入当前工作区；点「取消创建」就当没发生；也可以继续补充修改。',
+  appliedTitle: '已写入当前工作区，小队挂牌营业。',
+  appliedHint: '接下来你直接说任务；不清楚时主 Agent 会先追问，清楚时再派专员开干。',
+  cancelledText: '草案已取消，当前工作区配置没动。',
+  idleStatusText: '小队待命中，还没人被点名干活。',
+  runningText: '执行中',
+  completeText: '已收工',
+  errorText: '翻车了',
+}
+
+
+const EN_VOICE: ThemeVoiceProfile = {
+  theme: 'default',
+  emptyTitle: 'Drop a task into the squad chat',
+  emptySubtitle: 'Describe the goal once. The AI squad drafts roles and workflow first, then writes after your confirmation.',
+  clarifyPrefix: 'The squad needs one more piece of context before it can plan cleanly.',
+  draftIntro: 'Draft squad and workflow are ready. Review first; we only write after you confirm.',
+  draftActionHint: 'Choose “Confirm setup” to write into this workspace, “Cancel setup” to discard, or send more details to adjust.',
+  appliedTitle: 'Saved to this workspace. The squad is ready.',
+  appliedHint: 'Send the next task directly. The master Agent coordinates; specialists execute and report back.',
+  cancelledText: 'Draft cancelled. Workspace configuration stayed unchanged.',
+  idleStatusText: 'Squad is standing by. No active Agent yet.',
+  runningText: 'Running',
+  completeText: 'Done',
+  errorText: 'Needs attention',
+}
+
+const EN_THEME_VOICE_CATALOG: Partial<Record<PersonaThemeKey, ThemeVoiceProfile>> = {
+  meme_comedy: {
+    ...EN_VOICE,
+    theme: 'meme_comedy',
+    emptyTitle: 'Toss in the work; the AI squad gets weirdly useful',
+    emptySubtitle: 'One sentence is enough: I recruit roles, sketch the workflow, and wait for your confirmation before touching this workspace.',
+    clarifyPrefix: 'The squad needs a little more plot before it speed-runs into a wall.',
+    draftIntro: 'Chaotic but useful squad draft incoming: check the cast and workflow before confetti.',
+    draftActionHint: 'Happy with it? Confirm setup. Want edits? Send more details. Want out? Cancel setup.',
+    appliedTitle: 'Saved to this workspace. The squad has clocked in.',
+    appliedHint: 'Now just send tasks. The master Agent keeps the plot together while specialists do the work.',
+    cancelledText: 'Draft tossed into the meme bin. Current config stayed untouched.',
+    idleStatusText: 'Squad is lurking politely. Nobody has been voluntold yet.',
+    runningText: 'Cooking',
+    completeText: 'Delivered',
+    errorText: 'Bonked',
+  },
+  three_kingdoms: {
+    ...EN_VOICE,
+    theme: 'three_kingdoms',
+    emptyTitle: 'The war room awaits your command',
+    emptySubtitle: 'State the campaign goal. I draft the generals and route, then write after your confirmation.',
+    clarifyPrefix: 'The campaign lacks key intelligence; marching now risks a bad call.',
+    draftIntro: 'The strategist has prepared the roster and marching route. Please review.',
+    draftActionHint: 'Confirm to march, send edits to revise, or cancel to stand down.',
+    appliedTitle: 'Orders saved to this workspace. The generals await.',
+    appliedHint: 'Issue tasks directly. The master Agent commands while SubAgents advance by route.',
+    cancelledText: 'Draft withdrawn. The camp remains unchanged.',
+    idleStatusText: 'Generals are waiting. No drums yet.',
+    runningText: 'Marching',
+    completeText: 'Returned victorious',
+    errorText: 'Ambushed',
+  },
+  genshin: {
+    ...EN_VOICE,
+    theme: 'genshin',
+    emptyTitle: 'The adventure commission board is open',
+    emptySubtitle: 'Describe the commission. I draft the party and route, then save after your confirmation.',
+    clarifyPrefix: 'Paimon needs one more clue about the commission goal.',
+    draftIntro: 'Party and route draft are ready. Traveler, please confirm.',
+    draftActionHint: 'Confirm to accept, send edits to adjust the party, or cancel for now.',
+    appliedTitle: 'Commission accepted. Configuration saved to this workspace.',
+    appliedHint: 'Send tasks directly. The party follows the route and the master Agent wraps up.',
+    cancelledText: 'Commission draft cancelled. Current config stayed as-is.',
+    idleStatusText: 'Adventure party is waiting for a commission.',
+    runningText: 'Exploring',
+    completeText: 'Commission complete',
+    errorText: 'Needs revival food',
+  },
+}
+
+export const THEME_VOICE_CATALOG: Partial<Record<PersonaThemeKey, ThemeVoiceProfile>> = {
+  meme_comedy: {
+    ...DEFAULT_VOICE,
+    theme: 'meme_comedy',
+    emptyTitle: '把活儿丢进群，AI 小队开整',
+    emptySubtitle: '一句话描述任务，我先拉人、排流程、摆草案；你确认后再动当前工作区。',
+    clarifyPrefix: '这活儿信息还差点火候，小队现在开冲容易把锅炖糊。',
+    draftIntro: '离谱但靠谱的小队草案来了：先看名单和流程，别急着开香槟。',
+    draftActionHint: '满意就点「确认创建」开张；不满意点「补充修改」继续调味；想撤就点「取消创建」。',
+    appliedTitle: '已写入当前工作区，小队挂牌营业。',
+    appliedHint: '之后你直接发任务，主 Agent 负责控场，专员负责干活，锅不会满天飞。',
+    cancelledText: '草案已撕票，当前配置没动，锅还在原地。',
+    idleStatusText: '小队蹲点待命中，暂时没人被抓去干活。',
+    runningText: '开整中',
+    completeText: '交差了',
+    errorText: '翻车待捞',
+  },
+  three_kingdoms: {
+    ...DEFAULT_VOICE,
+    theme: 'three_kingdoms',
+    emptyTitle: '军帐已开，等你下令',
+    emptySubtitle: '说出此役目标，我先排兵布阵，待你确认后再写入本工作区。',
+    clarifyPrefix: '军情尚缺一角，贸然出兵恐误战机。',
+    draftIntro: '军师已拟好将领名册与行军路线，请主公过目。',
+    draftActionHint: '确认则点「确认创建」发兵；需改则补充军令；撤回则点「取消创建」。',
+    appliedTitle: '军令已入当前工作区，诸将听令。',
+    appliedHint: '后续直接下达任务，主 Agent 统筹调度，各路 SubAgent 分兵推进。',
+    cancelledText: '草案已撤，营帐未动。',
+    idleStatusText: '诸将待命，尚未擂鼓出阵。',
+    runningText: '出阵中',
+    completeText: '已凯旋',
+    errorText: '遇伏待援',
+  },
+  genshin: {
+    ...DEFAULT_VOICE,
+    theme: 'genshin',
+    emptyTitle: '冒险委托板已打开',
+    emptySubtitle: '描述你的委托，我会先组队和规划路线，确认后写入当前工作区。',
+    clarifyPrefix: '派蒙还没听懂委托目标，再补一句关键信息吧。',
+    draftIntro: '冒险小队和路线草案准备好了，旅行者请确认。',
+    draftActionHint: '点「确认创建」接取委托；点「补充修改」调整阵容；点「取消创建」先不接。',
+    appliedTitle: '委托已接取，配置写入当前工作区。',
+    appliedHint: '接下来直接发任务，小队会按路线推进，主 Agent 负责收口。',
+    cancelledText: '委托草案已取消，当前配置保持原样。',
+    idleStatusText: '冒险小队待命中，等一个委托。',
+    runningText: '探索中',
+    completeText: '委托完成',
+    errorText: '需要复活料理',
+  },
+}
+
+export function getThemeVoice(theme?: PersonaThemeKey, locale: GroupChatLocale = 'zh-CN'): ThemeVoiceProfile {
+  const catalog = locale === 'en-US' ? EN_THEME_VOICE_CATALOG : THEME_VOICE_CATALOG
+  if (theme && catalog[theme]) return catalog[theme]!
+  return catalog.meme_comedy || (locale === 'en-US' ? EN_VOICE : DEFAULT_VOICE)
+}

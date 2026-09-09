@@ -1,0 +1,16 @@
+[dshhub-market] /dsh-market/* routes not mounted (another market plugin already owns them, e.g. official dshmarket): webserver: duplicate exact route "/dsh-market/backup" — run: dsh plugin --profile web remove dshmarket
+[dsh-task-board] DSH runtime session endpoint unavailable (requires DSH >= 0.1.2-alpha.2); task board roster auto-discovery is disabled TypertGatewayError: typert gateway: session/list: no active Remote method exports this endpoint
+    at Proxy.resolveSrcDescriptor (file:///C:/Users/Administrator/AppData/Roaming/npm/node_modules/@deepseek-ai/dsh-base/node_modules/@deepseek-ai/dsh-api-gateway/lib/index.js:157:38)
+    at Object.apply (file:///C:/Users/Administrator/AppData/Roaming/npm/node_modules/@deepseek-ai/dsh-app-boot/node_modules/@deepseek-ai/cordis/lib/index.js:120:36)
+    at Proxy.resolveDescriptor (file:///C:/Users/Administrator/AppData/Roaming/npm/node_modules/@deepseek-ai/dsh-base/node_modules/@deepseek-ai/dsh-api-gateway/lib/index.js:140:15)
+    at Object.apply (file:///C:/Users/Administrator/AppData/Roaming/npm/node_modules/@deepseek-ai/dsh-app-boot/node_modules/@deepseek-ai/cordis/lib/index.js:120:36)
+    at Proxy.invoke (file:///C:/Users/Administrator/AppData/Roaming/npm/node_modules/@deepseek-ai/dsh-base/node_modules/@deepseek-ai/dsh-api-gateway/lib/index.js:94:27)
+    at Object.apply (file:///C:/Users/Administrator/AppData/Roaming/npm/node_modules/@deepseek-ai/dsh-app-boot/node_modules/@deepseek-ai/cordis/lib/index.js:120:36)
+    at HostExecutionRunner.invoke (file:///C:/Users/Administrator/.dsh/profiles/web/node_modules/@linxin666/dsh-client-ui-task-board/lib/index.js:2109:23)
+    at HostExecutionRunner.listRunning (file:///C:/Users/Administrator/.dsh/profiles/web/node_modules/@linxin666/dsh-client-ui-task-board/lib/index.js:2168:32)
+    at TaskBoardHostService.pollSessions (file:///C:/Users/Administrator/.dsh/profiles/web/node_modules/@linxin666/dsh-client-ui-task-board/lib/index.js:2706:37)
+    at TaskBoardHostService.schedulePoll (file:///C:/Users/Administrator/.dsh/profiles/web/node_modules/@linxin666/dsh-client-ui-task-board/lib/index.js:2762:8) {
+  code: 'invocation-unavailable',
+  endpoint: 'session/list',
+  field: undefined
+}

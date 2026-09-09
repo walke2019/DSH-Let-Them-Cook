@@ -1,0 +1,72 @@
+diff --git "a/Docs\\orchestrator-policy-skill-sync\\original\\src\\engine\\room-manager.ts" "b/src\\engine\\room-manager.ts"
+index 636c94e..c02e3a4 100644
+--- "a/Docs\\orchestrator-policy-skill-sync\\original\\src\\engine\\room-manager.ts"
++++ "b/src\\engine\\room-manager.ts"
+@@ -19,7 +19,7 @@ import { DispatchArbiter } from './arbiter.js'
+ import { ContextProjection } from './projection.js'
+ import { WorkflowOrchestrator } from './workflow-orchestrator.js'
+ import { THEME_CATALOG } from './themes.js'
+-import { createMasterSubagentStrategy } from './auto-setup.js'
++import { DEFAULT_ROLE_MODEL_HINTS, DEFAULT_TOOL_ROUTING_POLICY, attachRoleModelHints, createMasterSubagentStrategy } from './auto-setup.js'
+ 
+ export class RoomManager {
+   private rooms = new Map<string, GroupChatRoom>()
+@@ -38,7 +38,7 @@ export class RoomManager {
+   public createDefaultFleet(theme: PersonaThemeKey = 'modern'): AgentProfile[] {
+     const mappings = THEME_CATALOG[theme]
+ 
+-    return [
++    return attachRoleModelHints([
+       {
+         id: 'commander',
+         name: mappings.commander.name,
+@@ -213,7 +213,7 @@ export class RoomManager {
+           canDelegateToOthers: true,
+         },
+       },
+-    ]
++    ])
+   }
+ 
+   /**
+@@ -251,6 +251,16 @@ export class RoomManager {
+     this.initLedger(defaultRoom.roomId)
+   }
+ 
++
++  private ensureOrchestrationPolicy(room: GroupChatRoom): void {
++    if (!room.orchestration) room.orchestration = createMasterSubagentStrategy(room.members)
++    room.orchestration.toolRoutingPolicy = {...DEFAULT_TOOL_ROUTING_POLICY, ...(room.orchestration.toolRoutingPolicy || {})}
++    room.orchestration.modelHints = {...DEFAULT_ROLE_MODEL_HINTS, ...(room.orchestration.modelHints || {})}
++    room.orchestration.masterAgentId ||= room.moderatorAgentId || 'commander'
++    room.orchestration.subAgentIds = room.orchestration.subAgentIds?.length ? room.orchestration.subAgentIds : room.members.filter(m => m.id !== room.orchestration!.masterAgentId).map(m => m.id)
++    room.members = attachRoleModelHints(room.members)
++  }
++
+   private initLedger(roomId: string): void {
+     this.roomLedgers.set(roomId, {
+       roomId,
+@@ -276,11 +286,13 @@ export class RoomManager {
+   }
+ 
+   public getRoom(roomId: string): GroupChatRoom | undefined {
+-    return this.rooms.get(roomId)
++    const room = this.rooms.get(roomId)
++    if (room) this.ensureOrchestrationPolicy(room)
++    return room
+   }
+ 
+   public getAllRooms(): GroupChatRoom[] {
+-    return Array.from(this.rooms.values())
++    return Array.from(this.rooms.values()).map(room => { this.ensureOrchestrationPolicy(room); return room })
+   }
+ 
+   public getMessages(roomId: string): GroupMessageEnvelope[] {
+@@ -424,6 +436,7 @@ export class RoomManager {
+    * 创建或保存房间
+    */
+   public saveRoom(room: GroupChatRoom): void {
++    this.ensureOrchestrationPolicy(room)
+     room.updatedAt = Date.now()
+     this.rooms.set(room.roomId, room)
+     if (!this.roomMessageLists.has(room.roomId)) {

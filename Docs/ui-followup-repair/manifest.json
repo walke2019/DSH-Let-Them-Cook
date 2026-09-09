@@ -1,0 +1,14 @@
+[
+  "lib/client.js",
+  "lib/client.js.map",
+  "lib/index.js",
+  "lib/index.js.map",
+  "lib/types/types.d.ts",
+  "src/client/GroupChatComposer.tsx",
+  "src/client/GroupChatModelSettings.tsx",
+  "src/client/GroupChatPanel.tsx",
+  "src/client/GroupChatSideDock.tsx",
+  "src/client/group-chat-view-types.ts",
+  "src/index.ts",
+  "src/types.ts"
+]

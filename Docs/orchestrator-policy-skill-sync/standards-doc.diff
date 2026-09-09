@@ -1,0 +1,14 @@
+diff --git a/Docs/orchestrator-policy-skill-sync/original/Docs/standards-and-extensibility.md b/Docs/standards-and-extensibility.md
+index b83795a..0e5b787 100644
+--- a/Docs/orchestrator-policy-skill-sync/original/Docs/standards-and-extensibility.md
++++ b/Docs/standards-and-extensibility.md
+@@ -106,3 +106,9 @@ export type GroupChatMiddleware = (
+ - 群聊引擎（GroupChatCoordinator）只负责纯粹的角色管理、上下文投影与发言仲裁；
+ - 将前端视作一个普通的“输入输出适配器（Adapter）”；
+ - 后续可无缝外挂 `TelegramAdapter`、`QQOneBotAdapter`、`FeishuAdapter`，将同一个多 Agent 团队带入真实社群中协同办公。
++## 扩展 + Runtime Skill 标准接入
++
++本项目采用“扩展 + Runtime Skill”方式：扩展承担状态机、UI、工作流、账本和模型拦截；Skill `dsh-group-chat-orchestrator` 承担协同协议、工具路由和模型能力标签说明。
++
++不得修改 DSH 核心源码；不得为了新增协同模式直接覆盖官方“标准/极简/创造”等 preset。插件内可先提供“默认协同 / Auto Fleet”语义，待 DSH 提供稳定 preset 扩展点后再桥接为官方模式。
++

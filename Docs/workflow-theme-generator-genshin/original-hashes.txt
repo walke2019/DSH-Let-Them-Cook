@@ -1,0 +1,13 @@
+33811108df8e5de606efc3849fa316628607fb1467e66cea900d208e0c8038e0  C:\项目\dsh-group-chat\src\types.ts
+87150495bffa740ec7a48887ddde7265aa0aa2f38ab3709e2c8e2f6f6c2cbc59  C:\项目\dsh-group-chat\src\engine\themes.ts
+6250b1c798454f160e1f8cc1e84f69eead08d987aae79dba7f5d635a2f09a60a  C:\项目\dsh-group-chat\src\engine\theme-factory.ts
+2a4cd88f992de68b4d8bf990749320cbbebe53767c111ba9e38a0b27904012bd  C:\项目\dsh-group-chat\src\engine\room-manager.ts
+78ba84ae1537053da84704deaee41aca1e35964c9485a2da37cc971e94db75bb  C:\项目\dsh-group-chat\src\index.ts
+bef5b73d76e579e8f6df5161e5d756f60ac885335e358d1589e62dcc5625b547  C:\项目\dsh-group-chat\src\client\GroupChatSideDock.tsx
+f009a928ee8e855bfbadb0fbebe465a9216f9eae4a8974188a32d04b12482389  C:\项目\dsh-group-chat\lib\index.js
+a5d63140ee959d96f1a16e77567df449fe5bb41330ed8e53affe482b32dd76f3  C:\项目\dsh-group-chat\lib\client.js
+df3d8bcccc1adeba23590b3eee954a5c662fdbd17c60461c3e9264b185aafb89  C:\项目\dsh-group-chat\lib\engine\themes.js
+3a0c6d940c98e338827d35671a53b77bfcf901a04be34b69a9c81f258fe58a6e  C:\项目\dsh-group-chat\lib\engine\theme-factory.js
+2f484b0bf20431b5209bc9e0af63ef583b1d5173c72abad22c19f0a05c8c1b1a  C:\项目\dsh-group-chat\lib\engine\room-manager.js
+79c62aacb8274a61664f184f1b35110c00947dd1b624d442c4e36274a1374c54  C:\项目\dsh-group-chat\lib\types\types.d.ts
+1bd5542518332066017f6232144a6a2570f9ee41de0eb4b60027e0466f7c89a9  C:\项目\dsh-group-chat\.pm-workflow\dsh-group-chat\rooms.json

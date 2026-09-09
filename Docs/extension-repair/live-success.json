@@ -1,0 +1,41 @@
+{
+  "input": {
+    "messageId": "56042d34-982b-4584-8e3b-f50938cd5164",
+    "roomId": "dev-team-alpha",
+    "sender": {
+      "kind": "user",
+      "id": "user",
+      "name": "人类负责人",
+      "avatar": "👤"
+    },
+    "content": "@backend 这是扩展连接回归测试，请仅回复 GROUP_CHAT_RUNTIME_OK，不调用工具。",
+    "mentions": [
+      "backend"
+    ],
+    "metadata": {},
+    "timestamp": 1788861726156
+  },
+  "output": {
+    "messageId": "a45175d5-9582-40aa-9dd4-9a1eb4ac7400",
+    "roomId": "dev-team-alpha",
+    "sender": {
+      "kind": "agent",
+      "id": "backend",
+      "name": "核心后端架构师",
+      "avatar": "💻",
+      "color": "#3b82f6"
+    },
+    "content": "GROUP_CHAT_RUNTIME_OK",
+    "reasoningContent": "",
+    "mentions": [],
+    "metadata": {
+      "modelUsed": "gemini-3.8-flash-high",
+      "providerUsed": "cpa",
+      "isFallback": false,
+      "fallbackChain": [
+        "cpa/gemini-3.8-flash-high"
+      ]
+    },
+    "timestamp": 1788861746770
+  }
+}

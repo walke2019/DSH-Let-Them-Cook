@@ -1,0 +1,122 @@
+[
+  {
+    "Algorithm": "SHA256",
+    "Hash": "6D72004FFB6FB360761133BAB70D6B7E25A06FFCBCD991ADBB8B77B9EEB5BA11",
+    "Path": "C:\\项目\\dsh-group-chat\\src\\index.ts"
+  },
+  {
+    "Algorithm": "SHA256",
+    "Hash": "8B7B8834C2013CDD41E16BFE67EA07DB499D972C072240D65F5DBE3BF5167F07",
+    "Path": "C:\\项目\\dsh-group-chat\\src\\types.ts"
+  },
+  {
+    "Algorithm": "SHA256",
+    "Hash": "E7D260365E18926A4BADC9696AABF6A57B21DC3D21DE742C63EB40A4EE0BC975",
+    "Path": "C:\\项目\\dsh-group-chat\\src\\client\\group-chat-events.ts"
+  },
+  {
+    "Algorithm": "SHA256",
+    "Hash": "8E163DBE9D23FFC53185934A752375AC0DDEDA2DA6D2663E214E1F6B0FB6DD58",
+    "Path": "C:\\项目\\dsh-group-chat\\src\\client\\group-chat-view-types.ts"
+  },
+  {
+    "Algorithm": "SHA256",
+    "Hash": "D3D3557994C83A1AE4E08ACFBFE781E522DB1E6AB8EC20FCA78569391184E2A8",
+    "Path": "C:\\项目\\dsh-group-chat\\src\\client\\GroupChatComposer.tsx"
+  },
+  {
+    "Algorithm": "SHA256",
+    "Hash": "56B2039576B3A337E7931524B7E86D3E1F98B61D00767E4CADC1E1B137BD6A9F",
+    "Path": "C:\\项目\\dsh-group-chat\\src\\client\\GroupChatHeaderButton.tsx"
+  },
+  {
+    "Algorithm": "SHA256",
+    "Hash": "894FF19BEE6ACD631A9B70118AA71E3ABC5CFDC5B932A19921950AAAFB9EBDD2",
+    "Path": "C:\\项目\\dsh-group-chat\\src\\client\\GroupChatModelSettings.tsx"
+  },
+  {
+    "Algorithm": "SHA256",
+    "Hash": "21C1AD29AF1F798E09CC654B3EDA8B217C8BCEA5C00F3B0991AAE37924B831D0",
+    "Path": "C:\\项目\\dsh-group-chat\\src\\client\\GroupChatPanel.tsx"
+  },
+  {
+    "Algorithm": "SHA256",
+    "Hash": "A684C0DA4C0690AEE26AD81582954B9A71EB64F5F2CC08E47866F5320FB472F6",
+    "Path": "C:\\项目\\dsh-group-chat\\src\\client\\GroupChatRoleEditor.tsx"
+  },
+  {
+    "Algorithm": "SHA256",
+    "Hash": "0F37A9550DECAB97BADA68213C4C13259D83B24E7EE4E5153006B7D480FF0B43",
+    "Path": "C:\\项目\\dsh-group-chat\\src\\client\\GroupChatSideDock.tsx"
+  },
+  {
+    "Algorithm": "SHA256",
+    "Hash": "996288EBFCE6B7C6C1756BD244A7151DB0D5BB33AFAAEE6058A3765170EB84AD",
+    "Path": "C:\\项目\\dsh-group-chat\\src\\client\\index.ts"
+  },
+  {
+    "Algorithm": "SHA256",
+    "Hash": "B9BEE414B6565862F0733624FA228C9863187E9F48DFBAB95D07559A45F710AF",
+    "Path": "C:\\项目\\dsh-group-chat\\src\\client\\layout-push.ts"
+  },
+  {
+    "Algorithm": "SHA256",
+    "Hash": "F9C3CB199B8A1E81F8DEA3493ED09840056185113844C313715A815323157CC5",
+    "Path": "C:\\项目\\dsh-group-chat\\src\\client\\native-primitives.d.ts"
+  },
+  {
+    "Algorithm": "SHA256",
+    "Hash": "61DC65A439D36CDFF1D8D415916D4B11527955815C864EBB79905ED720E729E7",
+    "Path": "C:\\项目\\dsh-group-chat\\src\\engine\\agent-runtime.ts"
+  },
+  {
+    "Algorithm": "SHA256",
+    "Hash": "54D91DD4A54C06E5560B2F6063FA685C8CC9C2EE4FC90F7EC14F37465E748D29",
+    "Path": "C:\\项目\\dsh-group-chat\\src\\engine\\arbiter.ts"
+  },
+  {
+    "Algorithm": "SHA256",
+    "Hash": "672832687349AA4515A076BBE2DC8C452EB2B6A0CAE87760990F7E86293EA3AF",
+    "Path": "C:\\项目\\dsh-group-chat\\src\\engine\\model-settings.ts"
+  },
+  {
+    "Algorithm": "SHA256",
+    "Hash": "635040CB9BF9A472CD2A1BA6E78690CF592C31EFFD42100997875B8AE2127070",
+    "Path": "C:\\项目\\dsh-group-chat\\src\\engine\\projection.ts"
+  },
+  {
+    "Algorithm": "SHA256",
+    "Hash": "EA4DEE0BEF10E2FBE12DF56F3D101DB79703C4F4161404C619D47D0CA643306B",
+    "Path": "C:\\项目\\dsh-group-chat\\src\\engine\\research-bridge.ts"
+  },
+  {
+    "Algorithm": "SHA256",
+    "Hash": "2EFA479AC0966627159220C1E70D0BF64C682730FC00E31885C5350BA1A4D19D",
+    "Path": "C:\\项目\\dsh-group-chat\\src\\engine\\resilience.ts"
+  },
+  {
+    "Algorithm": "SHA256",
+    "Hash": "7CAA6A1676B9C280BCAB9C42C0F9695EF2CE982B9E53D780500445A6FAD76873",
+    "Path": "C:\\项目\\dsh-group-chat\\src\\engine\\room-manager.ts"
+  },
+  {
+    "Algorithm": "SHA256",
+    "Hash": "2ECE90AE420B2D0B01B47F4BA961A0FE3E00097FFC139F10B291F9AC1436F42C",
+    "Path": "C:\\项目\\dsh-group-chat\\src\\engine\\themes.ts"
+  },
+  {
+    "Algorithm": "SHA256",
+    "Hash": "759AB542F1F56A2DD32B62F0237F0D06C01C7B42EF43D82EAAE42FC066F7B415",
+    "Path": "C:\\项目\\dsh-group-chat\\src\\engine\\tool-bus.ts"
+  },
+  {
+    "Algorithm": "SHA256",
+    "Hash": "625D722D1C6D0CDD5BB6616BEDA698DAFAD4AFD8AB93715E2A3332943E415CA9",
+    "Path": "C:\\项目\\dsh-group-chat\\src\\engine\\workflow-orchestrator.ts"
+  },
+  {
+    "Algorithm": "SHA256",
+    "Hash": "361022417AD089F0EDA9260D6C6C985308947A9B151977C971CAA0383AB0FCA8",
+    "Path": "C:\\项目\\dsh-group-chat\\src\\tools\\index.ts"
+  }
+]

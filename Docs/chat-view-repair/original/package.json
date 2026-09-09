@@ -1,0 +1,56 @@
+{
+  "name": "@dsh-external/dsh-group-chat",
+  "version": "0.1.0",
+  "description": "DSH 多 Agent 角色协同与群聊插件 (Multi-Agent Group Chat for DeepSeek Harness)",
+  "private": true,
+  "type": "module",
+  "main": "./lib/index.js",
+  "types": "./lib/types/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./lib/types/index.d.ts",
+      "default": "./lib/index.js"
+    },
+    "./client": {
+      "types": "./lib/types/client/index.d.ts",
+      "default": "./lib/client.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "lib"
+  ],
+  "license": "MIT",
+  "dsh": {
+    "client": {
+      "platform": "web",
+      "inject": [
+        "@deepseek-ai/dsh-client-runtime",
+        "@deepseek-ai/dsh-client-ui-slots"
+      ]
+    }
+  },
+  "peerDependencies": {
+    "@deepseek-ai/cordis": ">=4.0.0-rc <5",
+    "@deepseek-ai/dsh-tools": ">=0.0.1-rc <2",
+    "@deepseek-ai/schemastery": "^3.18.0",
+    "cordis": ">=4.0.0-rc <5",
+    "schemastery": "^3.18.0"
+  },
+  "devDependencies": {
+    "@deepseek-ai/cordis": "^4.0.2",
+    "@deepseek-ai/schemastery": "^3.18.2",
+    "@types/node": "^24.13.3",
+    "@types/react": "^19.2.18",
+    "@types/react-dom": "^19.2.7",
+    "tsdown": "^0.23.0",
+    "typescript": "^5.9.3"
+  },
+  "scripts": {
+    "build": "npm run build:host",
+    "build:host": "tsc -p tsconfig.json",
+    "build:client": "tsdown",
+    "build:all": "npm run build:host && npm run build:client",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  }
+}

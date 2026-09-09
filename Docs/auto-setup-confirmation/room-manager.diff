@@ -1,0 +1,71 @@
+diff --git a/Docs/auto-setup-confirmation/original/src/engine/room-manager.ts b/src/engine/room-manager.ts
+index 5f76811..636c94e 100644
+--- a/Docs/auto-setup-confirmation/original/src/engine/room-manager.ts
++++ b/src/engine/room-manager.ts
+@@ -11,11 +11,15 @@ import type {
+   GroupChatEvent,
+   DispatchMode,
+   PersonaThemeKey,
++  AgentOrchestrationStrategy,
++  PendingAutoSetupDraft,
++  WorkflowDefinition,
+ } from '../types.js'
+ import { DispatchArbiter } from './arbiter.js'
+ import { ContextProjection } from './projection.js'
+ import { WorkflowOrchestrator } from './workflow-orchestrator.js'
+ import { THEME_CATALOG } from './themes.js'
++import { createMasterSubagentStrategy } from './auto-setup.js'
+ 
+ export class RoomManager {
+   private rooms = new Map<string, GroupChatRoom>()
+@@ -228,6 +232,7 @@ export class RoomManager {
+       activeTheme: 'meme_comedy',
+       members: fleet,
+       workflow,
++      orchestration: createMasterSubagentStrategy(fleet),
+       scratchpad: '## 阶段共识与项目全局黑板\n- 机制：总指挥审核把关 + 调研先行 + 权限隔离 + 工作流流水线\n- 当前阶段：阶段一·需求深潜与搜索调研',
+       pinnedGoal: '用有趣但靠谱的多 Agent 小队把任务推进到可交付',
+       safetyPolicy: {
+@@ -318,7 +323,7 @@ export class RoomManager {
+     return room
+   }
+ 
+-  public applyGeneratedTheme(roomId: string, members: AgentProfile[], themeKey: PersonaThemeKey = `custom_${Date.now()}` as PersonaThemeKey, workflow?: import('../types.js').WorkflowDefinition): GroupChatRoom | undefined {
++  public applyGeneratedTheme(roomId: string, members: AgentProfile[], themeKey: PersonaThemeKey = `custom_${Date.now()}` as PersonaThemeKey, workflow?: WorkflowDefinition, orchestration?: AgentOrchestrationStrategy): GroupChatRoom | undefined {
+     const room = this.rooms.get(roomId)
+     if (!room) return undefined
+     const byId = new Map(members.map(member => [member.id, member]))
+@@ -328,11 +333,32 @@ export class RoomManager {
+     })
+     room.activeTheme = themeKey
+     if (workflow) room.workflow = structuredClone(workflow)
+-    room.scratchpad = `${room.scratchpad}\n- 主题角色已切换为 AI 生成草案：${new Date().toLocaleString()}，可在「角色与账本」逐个编辑微调。`
++    room.orchestration = orchestration ? structuredClone(orchestration) : createMasterSubagentStrategy(room.members)
++    room.dispatchMode = 'workflow_driven'
++    room.moderatorAgentId = room.orchestration.masterAgentId
++    room.pendingAutoSetup = undefined
++    room.scratchpad = `${room.scratchpad}
++- 主题角色/工作流已写入工作区：${new Date().toLocaleString()}，策略：主 Agent ${room.orchestration.masterAgentId} + SubAgent ${room.orchestration.subAgentIds.join(' / ')}。`
+     this.saveRoom(room)
+     return room
+   }
+ 
++  public setPendingAutoSetup(roomId: string, draft?: PendingAutoSetupDraft): GroupChatRoom | undefined {
++    const room = this.rooms.get(roomId)
++    if (!room) return undefined
++    room.pendingAutoSetup = draft ? structuredClone(draft) : undefined
++    this.saveRoom(room)
++    return room
++  }
++
++  public applyPendingAutoSetup(roomId: string): GroupChatRoom | undefined {
++    const room = this.rooms.get(roomId)
++    const draft = room?.pendingAutoSetup
++    if (!room || !draft) return undefined
++    return this.applyGeneratedTheme(roomId, draft.members, `custom_${Date.now()}` as PersonaThemeKey, draft.workflow, draft.orchestration)
++  }
++
++
+   /**
+    * 自定义更新指定角色档案 (修改姓名、头像/本地上传图片、职责、提示词、模型、权限)
+    */

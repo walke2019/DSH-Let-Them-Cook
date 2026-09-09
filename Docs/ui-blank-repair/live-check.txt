@@ -1,0 +1,4 @@
+Script ran on page and returned:
+```json
+{"active":"true","panelHeight":675.6666870117188,"inputs":[{"width":1074,"height":38.66666793823242,"disabled":false}]}
+```

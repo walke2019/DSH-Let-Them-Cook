@@ -1,0 +1,542 @@
+diff --git a/Docs/orchestrator-policy-skill-sync/original/AGENTS.md b/AGENTS.md
+index cb5742a..57641c6 100644
+--- a/Docs/orchestrator-policy-skill-sync/original/AGENTS.md
++++ b/AGENTS.md
+@@ -45,3 +45,13 @@
+ - **绝不破坏底座**：本插件作为 Cordis 扩展模块运行，所有逻辑通过 `ctx.effect()`、`ctx.on()`、`ctx.webServer`、`ctx.slots` 挂载，严禁修改 `@deepseek-ai/dsh` 核心源码。
+ - **异构模型调用**：必须通过拦截 `'agent/request'` 瀑布流来重写 Provider 与 Model，严禁直接硬编码模型客户端发起未受 DSH 凭据托管的外部 HTTP 请求。
+ - **状态响应式与清理**：所有挂载的定时器、WebSocket 监听器、事件订阅，必须挂载在 `ctx.effect()` 作用域内，确保插件热重载或卸载时能做到“即插即用、卸载即净”。
++
++### 5. 自由协同、主控编排与工具路由（Orchestrator Contract）
++- **扩展定位**：`dsh-group-chat` 是高自由度多 Agent 项目协同引擎，不是单 Agent 包装器、静态角色皮肤或纯保守问答面板。默认目标是让用户用中间对话描述项目任务后，由多 Agent 自主分工、推进、质检和收口。
++- **主 Agent + SubAgent**：每套角色/工作流必须定义 `commander` 为主 Agent，其他成员为 SubAgent。主 Agent 负责理解意图、必要追问、任务分派、阶段审核、冲突收敛与最终结论；SubAgent 只执行自身职责并向主 Agent 汇报。
++- **确认后写入**：中间对话自动创建角色/工作流时，必须先展示待确认草案；只有用户明确回复“确认创建/确认写入/确认套用”等语义后，才允许写入当前工作区配置。
++- **保留 DSH workflow 并发**：不得削弱 DSH 原生 workflow 在同一阶段唤醒多个 Agent 并发执行的能力。阶段并发是本扩展的核心价值之一。
++- **工具专员归口**：搜索、爬取、资料抽取只归口 `researcher`；后端/状态/API 代码归口 `backend`；前端/UI/浏览器调试归口 `frontend`；测试与红队验收归口 `qa`；文档与摘要归口 `writer`；最终归纳和是否推进由 `commander` 收口。禁止多个 Agent 对同一个工具任务重复并发调用。
++- **模型能力标签**：角色模型推荐必须优先按能力标签匹配（reasoning、coding、tool_use、web_research、data_extraction、ui_design、writing、qa_audit、long_context、fast_reply、low_cost），不得把某个固定模型 ID 写死为唯一选择。用户手动模型配置优先于推荐。
++- **扩展 + Runtime Skill**：内置 Runtime Skill `dsh-group-chat-orchestrator` 是本扩展在 DSH 运行时注入给群聊 Agent 的协作说明书；扩展负责 UI、状态、工作流、账本和确认写入，Skill 负责默认协同策略、工具路由和模型能力匹配规则。
++
+diff --git a/Docs/orchestrator-policy-skill-sync/original/src/engine/auto-setup.ts b/src/engine/auto-setup.ts
+index 349ddae..03d1582 100644
+--- a/Docs/orchestrator-policy-skill-sync/original/src/engine/auto-setup.ts
++++ b/src/engine/auto-setup.ts
+@@ -1,4 +1,4 @@
+-import type {AgentProfile, AgentOrchestrationStrategy, PendingAutoSetupDraft, WorkflowDefinition} from '../types.js'
++import type {AgentProfile, AgentOrchestrationStrategy, PendingAutoSetupDraft, RoleModelHint, ToolRoutingPolicy, WorkflowDefinition} from '../types.js'
+ import {createThemeDraft, createWorkflowDraft} from './theme-factory.js'
+ 
+ export type AutoSetupIntent =
+@@ -16,9 +16,42 @@ const SETUP_HINTS = [
+ const CONFIRM_WORDS = ['确认创建','确认套用','确认应用','确认写入','就这样','可以写入','应用草案','套用草案']
+ const CANCEL_WORDS = ['取消创建','取消套用','取消应用','别写入','不要了','作废草案','取消草案']
+ 
++export const DEFAULT_TOOL_ROUTING_POLICY: ToolRoutingPolicy = {
++  webSearchOwner: 'researcher',
++  crawlOwner: 'researcher',
++  dataExtractionOwner: 'researcher',
++  backendCodeOwner: 'backend',
++  frontendCodeOwner: 'frontend',
++  uiDebugOwner: 'frontend',
++  qaOwner: 'qa',
++  docsOwner: 'writer',
++  reducerOwner: 'commander',
++  allowStageParallelism: true,
++  forbidDuplicateToolRace: true,
++}
++
++export const DEFAULT_ROLE_MODEL_HINTS: Record<string, RoleModelHint> = {
++  commander: {requiredCapabilities:['reasoning','long_context'], preferredCapabilities:['qa_audit','tool_use'], costPreference:'quality_first', latencyPreference:'patient', fallbackStrategy:'same_capability_cheaper'},
++  researcher: {requiredCapabilities:['web_research','tool_use','data_extraction'], preferredCapabilities:['long_context','reasoning'], costPreference:'balanced', latencyPreference:'normal', fallbackStrategy:'same_capability_cheaper'},
++  backend: {requiredCapabilities:['coding','reasoning','tool_use'], preferredCapabilities:['long_context'], costPreference:'quality_first', latencyPreference:'normal', fallbackStrategy:'same_capability_cheaper'},
++  frontend: {requiredCapabilities:['coding','ui_design'], preferredCapabilities:['tool_use','fast_reply'], costPreference:'balanced', latencyPreference:'normal', fallbackStrategy:'same_capability_cheaper'},
++  qa: {requiredCapabilities:['qa_audit','reasoning'], preferredCapabilities:['coding','long_context'], costPreference:'balanced', latencyPreference:'patient', fallbackStrategy:'same_capability_cheaper'},
++  writer: {requiredCapabilities:['writing','fast_reply'], preferredCapabilities:['long_context','low_cost'], costPreference:'low', latencyPreference:'fast', fallbackStrategy:'same_capability_cheaper'},
++}
++
++export function attachRoleModelHints(members: AgentProfile[]): AgentProfile[] {
++  return members.map(member => ({...member, modelHint: DEFAULT_ROLE_MODEL_HINTS[member.id] || DEFAULT_ROLE_MODEL_HINTS.writer}))
++}
++
+ export function createMasterSubagentStrategy(members: AgentProfile[]): AgentOrchestrationStrategy {
+   const master = members.find(m => m.id === 'commander')?.id || members[0]?.id || 'commander'
+-  return {masterAgentId: master, subAgentIds: members.filter(m => m.id !== master).map(m => m.id), strategy: 'master_subagents'}
++  return {
++    masterAgentId: master,
++    subAgentIds: members.filter(m => m.id !== master).map(m => m.id),
++    strategy: 'master_subagents',
++    toolRoutingPolicy: DEFAULT_TOOL_ROUTING_POLICY,
++    modelHints: DEFAULT_ROLE_MODEL_HINTS,
++  }
+ }
+ 
+ export function classifyAutoSetupIntent(content: string, hasPendingDraft: boolean): AutoSetupIntent {
+@@ -40,7 +73,7 @@ export function classifyAutoSetupIntent(content: string, hasPendingDraft: boolea
+ }
+ 
+ export function buildAutoSetupDraft(brief: string, baseMembers: AgentProfile[]): PendingAutoSetupDraft {
+-  const members = createThemeDraft(brief || '沙雕但靠谱的工作区项目小队', baseMembers)
++  const members = attachRoleModelHints(createThemeDraft(brief || '沙雕但靠谱的工作区项目小队', baseMembers))
+   const workflow = createWorkflowDraft(brief || '当前工作区任务')
+   const orchestration = createMasterSubagentStrategy(members)
+   return {id:`autosetup_${Date.now()}`, brief, members, workflow, orchestration, createdAt:Date.now(), status:'awaiting_confirmation'}
+@@ -51,9 +84,14 @@ export function formatAutoSetupDraft(draft: PendingAutoSetupDraft): string {
+   const subagents = draft.orchestration.subAgentIds.map(id => draft.members.find(m => m.id === id)?.name || id)
+   const roleLines = draft.members.map(m => `- ${m.avatar} **${m.name}**（@${m.id}）：${m.title || m.roleDescription}`).join('\n')
+   const workflowLines = draft.workflow.stages.map((s, i) => `- ${i + 1}. **${s.name}**：${s.description}  \n  责任：${s.assignedRoleIds.join(' / ')}${s.requiresApproval ? ' · 需主 Agent 确认' : ''}`).join('\n')
+-  return `我理解你是想少配设置，直接按任务生成一套工作区专属协同配置。\n\n**待确认草案：角色 + 工作流**\n\n**主 Agent 策略**\n- 主 Agent：${master?.avatar || '🎯'} **${master?.name || draft.orchestration.masterAgentId}**（${draft.orchestration.masterAgentId}）\n- SubAgent：${subagents.join(' / ')}\n- 执行方式：中间对话由主 Agent 先理解意图；需要专业产出时按工作流唤醒 SubAgent；不理解时先追问，不直接乱跑。\n\n**角色草案**\n${roleLines}\n\n**工作流草案：${draft.workflow.title}**\n${workflowLines}\n\n回复 **确认创建** 后写入当前工作区；回复 **取消创建** 放弃；也可以直接补充修改要求，我会重生成草案。`
++  const route = draft.orchestration.toolRoutingPolicy
++  return `我理解你是想少配设置，直接按任务生成一套工作区专属协同配置。\n\n**待确认草案：角色 + 工作流**\n\n**主 Agent 策略**\n- 主 Agent：${master?.avatar || '🎯'} **${master?.name || draft.orchestration.masterAgentId}**（${draft.orchestration.masterAgentId}）\n- SubAgent：${subagents.join(' / ')}\n- 执行方式：中间对话由主 Agent 先理解意图；需要专业产出时按工作流唤醒 SubAgent；不理解时先追问，不直接乱跑。
++- 阶段并发：保留 DSH workflow 同阶段多 Agent 并发。
++- 工具归口：搜索/爬取 → ${route.webSearchOwner}；后端代码 → ${route.backendCodeOwner}；前端/UI → ${route.frontendCodeOwner}；QA → ${route.qaOwner}；文档 → ${route.docsOwner}；最终收口 → ${route.reducerOwner}。\n\n**角色草案**\n${roleLines}\n\n**工作流草案：${draft.workflow.title}**\n${workflowLines}\n\n回复 **确认创建** 后写入当前工作区；回复 **取消创建** 放弃；也可以直接补充修改要求，我会重生成草案。`
+ }
+ 
+ export function formatAutoSetupApplied(workflow: WorkflowDefinition, strategy: AgentOrchestrationStrategy): string {
+-  return `已写入当前工作区配置。\n\n- 调度模式：工作流驱动\n- 主 Agent：${strategy.masterAgentId}\n- SubAgent：${strategy.subAgentIds.join(' / ')}\n- 工作流：${workflow.title}\n\n之后你直接在中间对话区说任务即可；如果意图不清，主 Agent 会先追问再推进。`
++  return `已写入当前工作区配置。\n\n- 调度模式：工作流驱动\n- 主 Agent：${strategy.masterAgentId}\n- SubAgent：${strategy.subAgentIds.join(' / ')}\n- 工作流：${workflow.title}
++- 阶段内并发：保留
++- 工具路由：搜索/爬取给 researcher，代码给 backend/frontend，测试给 qa，文档给 writer，commander 收口\n\n之后你直接在中间对话区说任务即可；如果意图不清，主 Agent 会先追问再推进。`
+ }
+diff --git a/Docs/orchestrator-policy-skill-sync/original/Docs/dispatch-engine.md b/Docs/dispatch-engine.md
+index 868d220..b2168ea 100644
+--- a/Docs/orchestrator-policy-skill-sync/original/Docs/dispatch-engine.md
++++ b/Docs/dispatch-engine.md
+@@ -133,3 +133,9 @@
+ - 房间内维护唯一的实时 Markdown 备忘录；
+ - 沉淀阶段性结论（如：“*已确认的技术选型：PostgreSQL 16 + Redis 7*”）；
+ - 每次 Agent 发言均可阅读黑板，避免在群聊中反复确认已达成的共识。
++## 主控编排与阶段并发保留
++
++调度引擎默认采用 `commander` 主 Agent + 专业 SubAgent 策略。用户消息先进入中间对话入口，明确时进入工作流；不明确时由主 Agent 或自动配置助手追问。
++
++必须保留 DSH workflow 的阶段内并发：当当前阶段配置多个 `assignedRoleIds` 时，可同时唤醒这些角色，但每个角色只处理自身职责范围。工具类任务不得全员重复调用，必须通过工具路由策略归口到唯一责任 Agent。
++
+diff --git "a/src\\engine\\orchestrator-skill.ts" "b/src\\engine\\orchestrator-skill.ts"
+new file mode 100644
+index 0000000..c1b084b
+--- /dev/null
++++ "b/src\\engine\\orchestrator-skill.ts"
+@@ -0,0 +1,11 @@
++export const ORCHESTRATOR_RUNTIME_SKILL_NAME = 'dsh-group-chat-orchestrator'
++
++export const ORCHESTRATOR_RUNTIME_SKILL_SUMMARY = `【Runtime Skill: dsh-group-chat-orchestrator】
++本 Skill 由 dsh-group-chat 扩展在 DSH 运行时注入给群聊 Agent 使用，不是 Codex 开发助手技能。
++定位：高自由度多 Agent 项目协同；用户用中间对话描述任务，主 Agent 组织 SubAgent 自主推进。
++核心：commander 是主 Agent，负责理解、追问、拆解、派发、审核、收口；其他 Agent 是 SubAgent，按职责执行并回报。
++并发：保留 DSH workflow 阶段内多 Agent 并发；同阶段多个 assignedRoleIds 可并发处理不同职责。
++工具：搜索/爬取/资料抽取归 researcher；后端/API/状态机归 backend；前端/UI/浏览器调试归 frontend；测试/红队归 qa；文档/摘要归 writer；最终归纳归 commander。
++限制：禁止多个 Agent 对同一搜索、爬取、修改、测试任务重复并发调用。
++配置：自动角色/工作流创建只先展示待确认草案；用户确认后才写入工作区。
++模型：按能力标签推荐，不硬编码唯一模型 ID；用户手动模型设置优先。`
+diff --git "a/Docs\\orchestrator-skill-and-policy.md" "b/Docs\\orchestrator-skill-and-policy.md"
+new file mode 100644
+index 0000000..8623089
+--- /dev/null
++++ "b/Docs\\orchestrator-skill-and-policy.md"
+@@ -0,0 +1,71 @@
++# DSH Group Chat Orchestrator Policy
++
++## 1. 产品定位
++
++`dsh-group-chat` 的核心定位是高自由度多 Agent 项目协同引擎。用户应能在中间对话区用自然语言描述项目任务，由扩展自动组织角色、工作流、模型建议和执行策略，而不是要求用户先理解大量配置项。
++
++默认边界：自由协同优先，主 Agent 控方向，SubAgent 主动执行；不清楚才追问，高风险写入先确认，工作流与账本负责防跑偏和防失控。
++
++## 2. 默认创建机制
++
++1. 用户在中间对话区描述需求。
++2. 插件识别是否为“角色/工作流/项目小队/自动配置”意图。
++3. 如果描述不清，自动配置助手追问一个关键问题。
++4. 如果描述明确，生成待确认草案，包含：角色、工作流、主 Agent + SubAgent 策略、工具路由、模型能力标签。
++5. 用户明确确认后，草案写入当前工作区配置。
++6. 用户取消或继续补充时，不写入或重新生成。
++
++## 3. 主 Agent + SubAgent 策略
++
++- 主 Agent：`commander`。
++- SubAgent：`researcher`、`backend`、`frontend`、`qa`、`writer` 等专业角色。
++- 主 Agent 负责理解、追问、拆解、派发、审批、冲突收敛和最终结论。
++- SubAgent 负责专业执行和汇报，不越权代替其他角色。
++
++## 4. DSH workflow 并发保留
++
++必须保留 DSH workflow 触发多 Agent 并发执行的能力。规则是：
++
++- 同一阶段内多个 `assignedRoleIds` 可以并发执行。
++- 并发的每个 Agent 只处理自己的职责片段。
++- 阶段结果回传主 Agent，由主 Agent 决定是否推进、驳回或要求补充。
++
++## 5. 工具路由策略
++
++工具任务按唯一责任人归口，避免全员重复调用：
++
++| 任务类型 | 责任 Agent |
++|---|---|
++| Web 搜索、资料爬取、出处抽取、竞品调研 | researcher |
++| 后端逻辑、状态机、接口、数据结构、服务端代码 | backend |
++| 前端组件、React/TS/CSS、视觉美化、浏览器 UI 调试 | frontend |
++| 回归测试、边界用例、红队审计、质量门控 | qa |
++| 文档、用户说明、结题摘要、发布说明 | writer |
++| 分派、归纳、审批、冲突裁决 | commander |
++
++禁止多个 Agent 对同一个搜索/爬取/修改/测试任务重复并发调用。
++
++## 6. 模型能力标签
++
++模型推荐不应硬编码唯一模型 ID，应使用能力标签：
++
++| Agent | requiredCapabilities | 倾向 |
++|---|---|---|
++| commander | reasoning, long_context | 质量优先，能做审核和收敛 |
++| researcher | web_research, tool_use, data_extraction | 工具调用稳定，长文本整理好 |
++| backend | coding, reasoning, tool_use | 代码和架构强 |
++| frontend | coding, ui_design | React/TS/CSS 与视觉一致性强 |
++| qa | qa_audit, reasoning | 边界推演和审计强 |
++| writer | writing, fast_reply | 表达清楚、成本低、速度快 |
++
++用户手动模型配置优先；其次最近模型；再次 Provider 模型目录匹配；最后宿主默认模型兜底。
++
++## 7. 扩展 + Runtime Skill 分工
++
++- 扩展负责：UI、工作区状态、角色配置、工作流、账本、确认写入、事件流、模型拦截。
++- 运行时 Skill `dsh-group-chat-orchestrator` 负责：默认协同协议、角色职责边界、工具路由、模型能力标签、Token 节俭规则。
++- 不修改 DSH 核心，不直接改官方 preset；插件内先定义“默认协同 / Auto Fleet”，后续等 DSH 提供稳定 preset API 再注册官方模式。
++
++## 8. Runtime Skill 放置位置
++
++`src/skills/dsh-group-chat-orchestrator/SKILL.md` 是随插件源码维护的 DSH 运行时协同协议。构建后由 `src/engine/orchestrator-skill.ts` 的摘要注入到群聊 Agent system prompt。它不是给 Codex 开发助手自动调用的 Skill，也不依赖 `C:\Users\Administrator\.codex\skills`。
+diff --git a/Docs/orchestrator-policy-skill-sync/original/src/engine/projection.ts b/src/engine/projection.ts
+index 644b3fe..27b5f01 100644
+--- a/Docs/orchestrator-policy-skill-sync/original/src/engine/projection.ts
++++ b/src/engine/projection.ts
+@@ -7,6 +7,7 @@ import type {
+   GroupChatRoom,
+   GroupMessageEnvelope,
+ } from '../types.js'
++import { ORCHESTRATOR_RUNTIME_SKILL_SUMMARY } from './orchestrator-skill.js'
+ 
+ export class ContextProjection {
+   /**
+@@ -72,6 +73,24 @@ NO_REPLY
+     return lines.join('\n')
+   }
+ 
++
++  public static formatOrchestrationPolicy(room: GroupChatRoom): string {
++    const strategy = room.orchestration
++    if (!strategy) return ''
++    const route = strategy.toolRoutingPolicy
++    const modelHints = strategy.modelHints || {}
++    const hintLines = Object.entries(modelHints).map(([roleId, hint]) => `- ${roleId}: ${hint.requiredCapabilities.join(', ')}；成本=${hint.costPreference}；延迟=${hint.latencyPreference}`)
++    return `【GroupChat Orchestrator Policy / 扩展默认协同协议】
++- 主 Agent：${strategy.masterAgentId}，负责理解意图、必要追问、任务分派、阶段审批与最终收口。
++- SubAgent：${strategy.subAgentIds.join(', ')}，按角色职责执行，不越俎代庖。
++- DSH workflow 阶段并发：${route.allowStageParallelism ? '保留，同一阶段的多个 assignedRoleIds 可以并发执行各自职责。' : '关闭。'}
++- 工具路由：搜索/爬取/资料抽取由 ${route.webSearchOwner}/${route.crawlOwner}/${route.dataExtractionOwner} 归口；后端代码由 ${route.backendCodeOwner}；前端与 UI 调试由 ${route.frontendCodeOwner}/${route.uiDebugOwner}；测试审计由 ${route.qaOwner}；文档沉淀由 ${route.docsOwner}；结论归纳由 ${route.reducerOwner}。
++- 重复工具竞争：${route.forbidDuplicateToolRace ? '禁止多个 Agent 对同一个工具任务重复并发调用；先由主 Agent 分派给唯一责任人。' : '允许。'}
++- 模型建议只按能力标签匹配，不硬编码模型 ID；用户手动设置优先。
++${hintLines.length ? `- 角色模型能力标签：
++${hintLines.join('\n')}` : ''}`
++  }
++
+   /**
+    * 为目标 Agent 装配完整的 Prompt Caching 友好型 System Prompt
+    */
+@@ -91,6 +110,10 @@ NO_REPLY
+       `【你的专职角色定义: ${targetAgent.name} (${targetAgent.id})】\n${targetAgent.systemPrompt}`,
+     ]
+ 
++    parts.push('', ORCHESTRATOR_RUNTIME_SKILL_SUMMARY)
++    const policyText = this.formatOrchestrationPolicy(room)
++    if (policyText) parts.push('', policyText)
++
+     // 4. 共享黑板（若存在）
+     if (room.scratchpad && room.scratchpad.trim()) {
+       parts.push(
+diff --git a/Docs/orchestrator-policy-skill-sync/original/README.md b/README.md
+index e162547..98636e0 100644
+--- a/Docs/orchestrator-policy-skill-sync/original/README.md
++++ b/README.md
+@@ -13,31 +13,36 @@
+ 
+ ## 🌟 核心特性
+ 
+-1. **总指挥官全盘统筹与审核门控 (Commander Gatekeeper)**：
++1. **默认自由协同与主 Agent + SubAgent 策略 (Auto Fleet Orchestration)**：
++   - 默认主题为“沙雕整活”，默认调度为“工作流驱动”，用户可直接在中间对话描述项目任务；
++   - 插件先由主 Agent 理解意图，明确则生成角色/工作流草案，不明确则主动追问；
++   - 草案必须经用户确认后才写入当前工作区；确认后保留 DSH workflow 阶段内多 Agent 并发，并由主 Agent 审核收口；
++   - 搜索/爬取、代码、UI、测试、文档等工具任务按专员归口，避免全员重复调用。
++2. **总指挥官全盘统筹与审核门控 (Commander Gatekeeper)**：
+    - 确立 `commander`（总指挥官）为团队最高裁决枢纽，负责目标拆解、任务分工规划与各阶段交付物的严格审核门控（Approval Gate）；
+    - 具备审核批准（Approve）与驳回重整（Reject）特权，把控交付质量，严防劣质成果外溢。
+-2. **六大专职责权划分与外呼能力隔离 (Role Capability Matrix)**：
++3. **六大专职责权划分与外呼能力隔离 (Role Capability Matrix)**：
+    - **`commander` (总指挥官)**：全盘任务把控、分工派发、门控审核与最终签字结题；
+    - **`researcher` (搜索调研专家)**：独占 Web 外部搜索、网页抓取解析与结构化情报简报能力（已内置外呼检索桥接）；
+    - **`backend` (核心后端架构师)**：数据实体建模、业务逻辑实现、接口契约与高并发安全；
+    - **`frontend` (交互体验设计师)**：UI 交互动线、视觉卡片美化与用户体验优化；
+    - **`qa` (红队质量审计官)**：`audit_only` 纯审计权限，极限用例推演、并发安全审计与死锁风险检验；
+    - **`writer` (首席文案记录官)**：提炼各环节阶段性共识覆写共享黑板（Shared Scratchpad），并编写交付物。
+-3. **流程化工作流流水线 (Workflow Pipeline) 与细粒度权限控制 (ACL)**：
++4. **流程化工作流流水线 (Workflow Pipeline) 与细粒度权限控制 (ACL)**：
+    - 内置五阶段闭环流水线：`调研预研` ➔ `指挥官审核与分工` ➔ `前后端协同原型` ➔ `红队质量审计` ➔ `文档沉淀结题`；
+    - 支持跨行业通用业务流定制（投研分析、影视创作、法务咨询、医疗会诊、研发攻坚等）；
+    - 严格权限隔离：黑板覆写与流程审批实施特权校验，防止权限越界与状态篡改。
+-4. **多套系名号主题库一键切换 (Persona Theme Mapping)**：
++5. **多套系名号主题库一键切换 (Persona Theme Mapping)**：
+    - 支持运行时一键热切换智能体名号映射风格，智能体发言自动适配对应人设、口头禅与主题色：
+      - 🎨 **现代经典 (Default Modern)**：阿尔法总指挥官 / 深潜情报调研员 / 核心后端架构师 / 交互体验设计师 / 红队质量审计官 / 首席文案记录官；
+      - 🪶 **三国风云 (Three Kingdoms)**：诸葛亮 (孔明) / 司马徽 (水镜先生) / 关羽 (云长) / 周瑜 (公瑾) / 魏延 (文长) / 陈琳 (孔璋)；
+      - 🍏 **现代传奇 (Innovation Legends)**：史蒂夫·乔布斯 / 居里夫人 / 林纳斯·托瓦兹 / 达芬奇 / 纳西姆·塔勒布 / 海明威。
+-5. **仿 QQ / Telegram 群聊交互面板**：
++6. **仿 QQ / Telegram 群聊交互面板**：
+    - 多角色头像与色标气泡流，清晰区分人类、不同 Agent 及系统通知；
+    - 顶部贯穿工作流流水线进度卡片与总指挥官快捷审批栏；
+    - 各 Agent 拥有独立的模型徽标（Badge）与思考链（Thinking Block）折叠区；
+    - 智能 `@` 联想补全与快捷指令（如 `@全员争鸣`、`@总指挥审核`）。
+-6. **防死循环四重保险与 Token 节俭架构**：
++7. **防死循环四重保险与 Token 节俭架构**：
+    - **严格 @Mention 模式**：无呼唤不触发，日常消息静默进入环形缓冲区；
+    - **工作流驱动模式 (Workflow-Driven)**：按阶段精确唤醒责任角色，自动流转至指挥官审批；
+    - **静默标记 (Silence Token `NO_REPLY`)**：自评无需发言时输出 `NO_REPLY`，调度中枢零渲染拦截；
+@@ -61,7 +66,8 @@ dsh-group-chat/
+ │   ├── dispatch-engine.md         # 调度引擎运作原理与防死循环协议
+ │   ├── fault-tolerance-and-token-thrift.md # 容灾降级、工具总线与 Token 节俭规约
+ │   ├── standards-and-extensibility.md      # DSH 规范接入标准与高可扩展性规约
+-│   └── workflow-and-role-personas.md       # 角色体系、流程化工作流引擎与主题昵称映射规约
++│   ├── workflow-and-role-personas.md       # 角色体系、流程化工作流引擎与主题昵称映射规约
++│   ├── orchestrator-skill-and-policy.md    # 扩展 + Runtime Skill、主控编排、工具路由与模型能力标签
+ ├── package.json              # 插件元数据与依赖定义
+ ├── tsconfig.json             # TypeScript 编译配置
+ ├── tsdown.config.ts          # Web Client 打包配置 (Rolldown)
+@@ -79,6 +85,8 @@ dsh-group-chat/
+ │   │   ├── tool-bus.ts       # 共享工具总线与并发防踩踏
+ │   │   ├── resilience.ts     # 模型弹性容灾与级联降级
+ │   │   └── room-manager.ts   # 房间状态机、成员名册与记账审计
++│   ├── skills/               # DSH 运行时内置 Skill（供扩展注入给群聊 Agent）
++│   │   └── dsh-group-chat-orchestrator/SKILL.md
+ │   ├── tools/                # 暴露给智能体与用户的交互工具集
+ │   │   └── index.ts          # 消息发送/名号切换/流程审批/状态查询/纪要导出
+ │   └── client/               # Web Client 前端源码 (React)
+diff --git "a/Docs\\orchestrator-policy-skill-sync\\original\\src\\engine\\room-manager.ts" "b/src\\engine\\room-manager.ts"
+index 636c94e..c02e3a4 100644
+--- "a/Docs\\orchestrator-policy-skill-sync\\original\\src\\engine\\room-manager.ts"
++++ "b/src\\engine\\room-manager.ts"
+@@ -19,7 +19,7 @@ import { DispatchArbiter } from './arbiter.js'
+ import { ContextProjection } from './projection.js'
+ import { WorkflowOrchestrator } from './workflow-orchestrator.js'
+ import { THEME_CATALOG } from './themes.js'
+-import { createMasterSubagentStrategy } from './auto-setup.js'
++import { DEFAULT_ROLE_MODEL_HINTS, DEFAULT_TOOL_ROUTING_POLICY, attachRoleModelHints, createMasterSubagentStrategy } from './auto-setup.js'
+ 
+ export class RoomManager {
+   private rooms = new Map<string, GroupChatRoom>()
+@@ -38,7 +38,7 @@ export class RoomManager {
+   public createDefaultFleet(theme: PersonaThemeKey = 'modern'): AgentProfile[] {
+     const mappings = THEME_CATALOG[theme]
+ 
+-    return [
++    return attachRoleModelHints([
+       {
+         id: 'commander',
+         name: mappings.commander.name,
+@@ -213,7 +213,7 @@ export class RoomManager {
+           canDelegateToOthers: true,
+         },
+       },
+-    ]
++    ])
+   }
+ 
+   /**
+@@ -251,6 +251,16 @@ export class RoomManager {
+     this.initLedger(defaultRoom.roomId)
+   }
+ 
++
++  private ensureOrchestrationPolicy(room: GroupChatRoom): void {
++    if (!room.orchestration) room.orchestration = createMasterSubagentStrategy(room.members)
++    room.orchestration.toolRoutingPolicy = {...DEFAULT_TOOL_ROUTING_POLICY, ...(room.orchestration.toolRoutingPolicy || {})}
++    room.orchestration.modelHints = {...DEFAULT_ROLE_MODEL_HINTS, ...(room.orchestration.modelHints || {})}
++    room.orchestration.masterAgentId ||= room.moderatorAgentId || 'commander'
++    room.orchestration.subAgentIds = room.orchestration.subAgentIds?.length ? room.orchestration.subAgentIds : room.members.filter(m => m.id !== room.orchestration!.masterAgentId).map(m => m.id)
++    room.members = attachRoleModelHints(room.members)
++  }
++
+   private initLedger(roomId: string): void {
+     this.roomLedgers.set(roomId, {
+       roomId,
+@@ -276,11 +286,13 @@ export class RoomManager {
+   }
+ 
+   public getRoom(roomId: string): GroupChatRoom | undefined {
+-    return this.rooms.get(roomId)
++    const room = this.rooms.get(roomId)
++    if (room) this.ensureOrchestrationPolicy(room)
++    return room
+   }
+ 
+   public getAllRooms(): GroupChatRoom[] {
+-    return Array.from(this.rooms.values())
++    return Array.from(this.rooms.values()).map(room => { this.ensureOrchestrationPolicy(room); return room })
+   }
+ 
+   public getMessages(roomId: string): GroupMessageEnvelope[] {
+@@ -424,6 +436,7 @@ export class RoomManager {
+    * 创建或保存房间
+    */
+   public saveRoom(room: GroupChatRoom): void {
++    this.ensureOrchestrationPolicy(room)
+     room.updatedAt = Date.now()
+     this.rooms.set(room.roomId, room)
+     if (!this.roomMessageLists.has(room.roomId)) {
+diff --git "a/src\\skills\\dsh-group-chat-orchestrator\\SKILL.md" "b/src\\skills\\dsh-group-chat-orchestrator\\SKILL.md"
+new file mode 100644
+index 0000000..1dbb2f9
+--- /dev/null
++++ "b/src\\skills\\dsh-group-chat-orchestrator\\SKILL.md"
+@@ -0,0 +1,61 @@
++---
++name: dsh-group-chat-orchestrator
++description: Use when working through the dsh-group-chat extension or coordinating multi-agent project tasks with a commander/subagent workflow, role creation, workflow drafting, tool routing, model capability hints, or workspace-scoped group chat automation.
++metadata:
++  short-description: Orchestrate dsh-group-chat multi-agent project work
++---
++
++# DSH Group Chat Orchestrator
++
++Use this skill when a task is being handled through the `dsh-group-chat` extension or when the user asks for multi-agent project collaboration, role/workflow creation, model-role matching, tool routing, or extension-specific orchestration.
++
++This is a DSH extension runtime skill/protocol injected to group-chat Agents; 不是 Codex 开发助手技能，也不依赖 `C:/Users/Administrator/.codex/skills`。
++
++## Core stance
++
++The extension is a high-freedom multi-Agent project collaboration engine, not a static role-play panel and not a conservative single-agent wrapper.
++
++Default behavior:
++- Let the user describe the project in the middle conversation area.
++- If intent is clear, generate a workspace-scoped role + workflow draft.
++- Show the draft in the conversation and wait for user confirmation before writing it into workspace state.
++- If intent is materially unclear, ask one concise follow-up question before drafting.
++- After confirmation, allow multi-Agent work to proceed through the workflow.
++
++## Commander + SubAgent contract
++
++- `commander` is the master Agent: understand intent, ask clarifying questions, split work, route tools, review specialist output, approve stage transitions, and produce the final reducer decision.
++- All other roles are SubAgents: perform their specialty, report concise findings back to commander, and avoid doing another role's job.
++- Preserve DSH workflow stage parallelism: if a workflow stage assigns several different roles, those roles may run concurrently on their own responsibilities.
++- Do not allow duplicate tool races: multiple Agents should not call the same search/crawl/edit/test task redundantly.
++
++## Tool routing
++
++Route concrete tool-heavy tasks to one responsible role:
++
++- Web search, crawling, source extraction, competitive research: `researcher`.
++- Backend architecture, data model, API/state-machine logic, server code: `backend`.
++- Frontend UI, React/TS/CSS, visual polish, browser UI debugging: `frontend`.
++- Regression tests, edge cases, red-team review, safety/quality gates: `qa`.
++- Documentation, release notes, user-facing explanations, summaries: `writer`.
++- Cross-role reduction, conflicts, final decision, stage approval: `commander`.
++
++## Model matching
++
++Prefer capability tags over hard-coded model IDs. User-selected role models always win; otherwise use recent compatible models, then provider catalog matches, then host default.
++
++Recommended capability tags:
++- commander: reasoning, long_context, qa_audit, tool_use.
++- researcher: web_research, tool_use, data_extraction, long_context.
++- backend: coding, reasoning, tool_use, long_context.
++- frontend: coding, ui_design, tool_use, fast_reply.
++- qa: qa_audit, reasoning, coding.
++- writer: writing, fast_reply, low_cost, long_context.
++
++## Token and stability rules
++
++- Prefer current-stage assigned roles over all-agent broadcast.
++- Ask only when a missing answer changes the workflow or deliverable.
++- Summarize specialist outputs before passing them forward.
++- Keep role persona fun and human, but do not let flavor replace delivery.
++- Keep workspace state changes explicit and reversible.
+diff --git a/Docs/orchestrator-policy-skill-sync/original/Docs/standards-and-extensibility.md b/Docs/standards-and-extensibility.md
+index b83795a..0e5b787 100644
+--- a/Docs/orchestrator-policy-skill-sync/original/Docs/standards-and-extensibility.md
++++ b/Docs/standards-and-extensibility.md
+@@ -106,3 +106,9 @@ export type GroupChatMiddleware = (
+ - 群聊引擎（GroupChatCoordinator）只负责纯粹的角色管理、上下文投影与发言仲裁；
+ - 将前端视作一个普通的“输入输出适配器（Adapter）”；
+ - 后续可无缝外挂 `TelegramAdapter`、`QQOneBotAdapter`、`FeishuAdapter`，将同一个多 Agent 团队带入真实社群中协同办公。
++## 扩展 + Runtime Skill 标准接入
++
++本项目采用“扩展 + Runtime Skill”方式：扩展承担状态机、UI、工作流、账本和模型拦截；Skill `dsh-group-chat-orchestrator` 承担协同协议、工具路由和模型能力标签说明。
++
++不得修改 DSH 核心源码；不得为了新增协同模式直接覆盖官方“标准/极简/创造”等 preset。插件内可先提供“默认协同 / Auto Fleet”语义，待 DSH 提供稳定 preset 扩展点后再桥接为官方模式。
++
+diff --git a/Docs/orchestrator-policy-skill-sync/original/src/types.ts b/src/types.ts
+index bf8eed1..a5e80ca 100644
+--- a/Docs/orchestrator-policy-skill-sync/original/src/types.ts
++++ b/src/types.ts
+@@ -47,6 +47,30 @@ export interface RoleThemeMapping {
+ }
+ 
+ 
++export type ModelCapability = 'reasoning' | 'coding' | 'tool_use' | 'web_research' | 'data_extraction' | 'ui_design' | 'writing' | 'qa_audit' | 'long_context' | 'fast_reply' | 'low_cost'
++
++export interface RoleModelHint {
++  requiredCapabilities: ModelCapability[]
++  preferredCapabilities?: ModelCapability[]
++  costPreference: 'low' | 'balanced' | 'quality_first'
++  latencyPreference: 'fast' | 'normal' | 'patient'
++  fallbackStrategy: 'same_capability_cheaper' | 'host_default' | 'manual_only'
++}
++
++export interface ToolRoutingPolicy {
++  webSearchOwner: string
++  crawlOwner: string
++  dataExtractionOwner: string
++  backendCodeOwner: string
++  frontendCodeOwner: string
++  uiDebugOwner: string
++  qaOwner: string
++  docsOwner: string
++  reducerOwner: string
++  allowStageParallelism: boolean
++  forbidDuplicateToolRace: boolean
++}
++
+ export interface AgentOrchestrationStrategy {
+   /** 主 Agent：负责理解用户、追问澄清、确认草案、派发与收口 */
+   masterAgentId: string
+@@ -54,6 +78,10 @@ export interface AgentOrchestrationStrategy {
+   subAgentIds: string[]
+   /** 策略说明：映射到 DSH 单主会话 + 多 agent/request 派发的插件编排层 */
+   strategy: 'master_subagents'
++  /** 阶段内保留 DSH workflow 多 Agent 并发；具体工具任务按角色唯一归口 */
++  toolRoutingPolicy: ToolRoutingPolicy
++  /** 每个角色的模型能力标签建议，不硬编码供应商与模型 ID */
++  modelHints: Record<string, RoleModelHint>
+ }
+ 
+ export interface PendingAutoSetupDraft {
+@@ -92,6 +120,8 @@ export interface AgentProfile {
+   systemPrompt: string
+   /** 绑定的 LLM 模型与 Provider */
+   llmConfig: ModelRef
++  /** 角色模型能力标签建议：用于自动推荐，不覆盖用户手动设置 */
++  modelHint?: RoleModelHint
+   /** 权限控制清单 */
+   permissions: RolePermissions
+   /** 容灾降级策略 */
+diff --git a/Docs/orchestrator-policy-skill-sync/original/Docs/workflow-and-role-personas.md b/Docs/workflow-and-role-personas.md
+index a0e6958..7bbf047 100644
+--- a/Docs/orchestrator-policy-skill-sync/original/Docs/workflow-and-role-personas.md
++++ b/Docs/workflow-and-role-personas.md
+@@ -76,3 +76,9 @@
+ - **经典现代团队 (Default Modern)**：阿尔法总指挥官 🎖️ / 深潜情报调研员 🔍 / 核心后端架构师 💻 / 交互体验设计师 🎨 / 红队质量审计官 🛡️ / 首席文案记录官 📝；
+ - **三国风云主题 (Three Kingdoms)**：诸葛亮 (孔明) 🪶 / 司马徽 (水镜先生) 📜 / 关羽 (云长) 🗡️ / 周瑜 (公瑾) 🎭 / 魏延 (文长) 🏹 / 陈琳 (孔璋) 🖋️；
+ - **现代传奇与大师主题 (Legends of Innovation)**：史蒂夫·乔布斯 🍏 / 居里夫人 🔬 / 林纳斯·托瓦兹 🐧 / 莱昂纳多·达芬奇 🎨 / 纳西姆·塔勒布 📉 / 海明威 📖。
++## 自动角色/工作流草案确认机制
++
++中间对话可以触发自动创建角色和工作流。插件只先生成 `pendingAutoSetup` 草案并在对话区展示；只有用户回复“确认创建/确认写入/确认套用”等确认语义后，才调用写入逻辑更新当前工作区的角色、工作流与 `orchestration` 策略。
++
++默认创建风格仍为“沙雕整活”，但角色提示词要求说人话、有趣味、不水字数。
++

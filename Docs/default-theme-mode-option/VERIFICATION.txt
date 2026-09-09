@@ -1,0 +1,75 @@
+DEFAULT THEME MODE OPTION VERIFICATION
+对象：dsh-group-chat 插件，工作区 C:\项目\dsh-group-chat
+变更分支/字段：右侧角色主题 select、调度模式 select；/theme 与 /mode 接口 default 映射。
+原始 GroupChatSideDock.tsx SHA256：8C9490E2E18B1171E6C8B131B0E1DAD4DAED46F7F9BEC99A1AC8346BCB29168A
+修改 GroupChatSideDock.tsx SHA256：AFF17386A37F098ED92F6EC5302F8CFDEBF618AAC4511714204B735C496B5DBB
+原始 src/index.ts SHA256：EE7FC5135A854F3ABEBA27183C3FFE58F02DFC875DD5D4CA40272EA79867BDE9
+修改 src/index.ts SHA256：C1A1F2477F0D82FDD840847D7B6FBB0E84AAB581C7FAFBEEE6631C2CE3425C52
+
+四个工件路径：
+MODIFIED_FILE: C:\项目\dsh-group-chat\Docs\default-theme-mode-option\MODIFIED_FILE.zip
+DIFF_FILE: C:\项目\dsh-group-chat\Docs\default-theme-mode-option\DIFF_FILE.patch
+VERIFICATION.txt: C:\项目\dsh-group-chat\Docs\default-theme-mode-option\VERIFICATION.txt
+ROLLBACK.sh: C:\项目\dsh-group-chat\Docs\default-theme-mode-option\ROLLBACK.sh
+
+BASELINE 命令：node Docs/default-theme-mode-option/check-default-options.cjs Docs/default-theme-mode-option/original
+BASELINE 输入：原始 src/client/GroupChatSideDock.tsx 与 src/index.ts
+BASELINE literal 输出：
+FAIL theme select has default label
+FAIL mode select has default label
+FAIL theme default resolves to meme_comedy
+FAIL mode default resolves to workflow_driven
+FAIL selected current defaults display as default
+BASELINE exit status: 1
+
+MODIFIED 类型检查/构建命令：npm run typecheck; npm run build:all
+MODIFIED 输入：当前工作区源码
+MODIFIED literal 输出摘录：
+TYPECHECK_EXIT:0
+Build complete in 108ms
+BUILD_EXIT:0
+MODIFIED exit status: 0
+
+MODIFIED API 测试命令：node Docs/default-theme-mode-option/test-default-options.cjs
+MODIFIED API 测试输入：POST /theme default；POST /mode default
+MODIFIED API 测试 literal 输出：
+PASS theme default maps to meme_comedy
+PASS mode default maps to workflow_driven
+PASS current room restored to default visible values
+DEFAULT_API_TEST_EXIT:0
+MODIFIED API 测试 exit status: 0
+
+MODIFIED UI 复核命令：node Docs/full-small-task-test/eval.cjs Docs/default-theme-mode-option/ui-default-check.js
+MODIFIED UI 复核输入：http://127.0.0.1:3080/ 当前页面 selects
+MODIFIED UI 复核 literal 输出：
+Script ran on page and returned:
+{"themeValue":"default","themeFirst":{"value":"default","text":"默认（沙雕整活）"},"modeValue":"default","modeFirst":{"value":"default","text":"默认（工作流）"},"ok":true}
+MODIFIED UI 复核 exit status: 0
+
+MODIFIED 断言命令：node Docs/default-theme-mode-option/check-default-options.cjs .
+MODIFIED 断言输入：当前工作区源码
+MODIFIED 断言 literal 输出：
+PASS theme select has default label
+PASS mode select has default label
+PASS theme default resolves to meme_comedy
+PASS mode default resolves to workflow_driven
+PASS selected current defaults display as default
+MODIFIED 断言 exit status: 0
+
+ROLLBACK 命令：cmd /c "type Docs\default-theme-mode-option\ROLLBACK.sh | cmd"（在回滚沙盒 C:\项目\dsh-group-chat\Docs\default-theme-mode-option\rollback-sandbox-220459 执行）
+ROLLBACK 输入：沙盒当前修改文件 + original 基线文件
+ROLLBACK literal 输出：
+ROLLBACK_OK restored default theme/mode option files
+ROLLBACK exit status: 0
+
+ROLLBACK 恢复行为检查命令：node Docs/default-theme-mode-option/check-default-options.cjs .
+ROLLBACK 恢复行为检查输入：回滚后的沙盒源码
+ROLLBACK 恢复行为检查 literal 输出：
+FAIL theme select has default label
+FAIL mode select has default label
+FAIL theme default resolves to meme_comedy
+FAIL mode default resolves to workflow_driven
+FAIL selected current defaults display as default
+ROLLBACK 恢复行为检查 exit status: 1（预期，说明已恢复旧行为）
+
+恢复行为/status：回滚沙盒恢复为没有默认选项；真实工作区保持修改后：主题默认=沙雕整活，调度默认=工作流驱动，创建草案仍默认按沙雕主题理解。

@@ -1,0 +1,50 @@
+diff --git a/Docs/auto-setup-confirmation/original/src/types.ts b/src/types.ts
+index 86ab6ec..bf8eed1 100644
+--- a/Docs/auto-setup-confirmation/original/src/types.ts
++++ b/src/types.ts
+@@ -46,6 +46,26 @@ export interface RoleThemeMapping {
+   catchphrase: string
+ }
+ 
++
++export interface AgentOrchestrationStrategy {
++  /** 主 Agent：负责理解用户、追问澄清、确认草案、派发与收口 */
++  masterAgentId: string
++  /** SubAgent：由主 Agent/工作流阶段唤醒的专业成员 */
++  subAgentIds: string[]
++  /** 策略说明：映射到 DSH 单主会话 + 多 agent/request 派发的插件编排层 */
++  strategy: 'master_subagents'
++}
++
++export interface PendingAutoSetupDraft {
++  id: string
++  brief: string
++  members: AgentProfile[]
++  workflow: WorkflowDefinition
++  orchestration: AgentOrchestrationStrategy
++  createdAt: number
++  status: 'awaiting_confirmation'
++}
++
+ export interface GroupChatRules {
+   /** 唤醒与匹配关键词列表 (如 ["@architect", "@架构师"]) */
+   mentionKeywords: string[]
+@@ -139,6 +159,10 @@ export interface GroupChatRoom {
+   members: AgentProfile[]
+   /** 流程化工作流 */
+   workflow?: WorkflowDefinition
++  /** 主 Agent + SubAgent 编排策略 */
++  orchestration?: AgentOrchestrationStrategy
++  /** 中间对话触发的待确认角色/工作流草案，确认后才写入成员与工作流 */
++  pendingAutoSetup?: PendingAutoSetupDraft
+   /** 共享黑板内容（Shared Scratchpad Markdown） */
+   scratchpad: string
+   /** 当前置顶阶段目标 */
+@@ -182,6 +206,7 @@ export interface GroupMessageEnvelope {
+     isFallback?: boolean
+     fallbackChain?: string[]
+     systemNotice?: string
++    autoSetup?: 'draft' | 'applied' | 'clarify' | 'cancelled'
+   }
+   timestamp: number
+ }

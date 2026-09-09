@@ -1,0 +1,61 @@
+---
+name: dsh-group-chat-orchestrator
+description: Use when working through the dsh-group-chat extension or coordinating multi-agent project tasks with a commander/subagent workflow, role creation, workflow drafting, tool routing, model capability hints, or workspace-scoped group chat automation.
+metadata:
+  short-description: Orchestrate dsh-group-chat multi-agent project work
+---
+
+# DSH Group Chat Orchestrator
+
+Use this skill when a task is being handled through the `dsh-group-chat` extension or when the user asks for multi-agent project collaboration, role/workflow creation, model-role matching, tool routing, or extension-specific orchestration.
+
+This is a DSH extension runtime skill/protocol injected to group-chat Agents; 不是 Codex 开发助手技能，也不依赖 `C:/Users/Administrator/.codex/skills`。
+
+## Core stance
+
+The extension is a high-freedom multi-Agent project collaboration engine, not a static role-play panel and not a conservative single-agent wrapper.
+
+Default behavior:
+- Let the user describe the project in the middle conversation area.
+- If intent is clear, generate a workspace-scoped role + workflow draft.
+- Show the draft in the conversation and wait for user confirmation before writing it into workspace state.
+- If intent is materially unclear, ask one concise follow-up question before drafting.
+- After confirmation, allow multi-Agent work to proceed through the workflow.
+
+## Commander + SubAgent contract
+
+- `commander` is the master Agent: understand intent, ask clarifying questions, split work, route tools, review specialist output, approve stage transitions, and produce the final reducer decision.
+- All other roles are SubAgents: perform their specialty, report concise findings back to commander, and avoid doing another role's job.
+- Preserve DSH workflow stage parallelism: if a workflow stage assigns several different roles, those roles may run concurrently on their own responsibilities.
+- Do not allow duplicate tool races: multiple Agents should not call the same search/crawl/edit/test task redundantly.
+
+## Tool routing
+
+Route concrete tool-heavy tasks to one responsible role:
+
+- Web search, crawling, source extraction, competitive research: `researcher`.
+- Backend architecture, data model, API/state-machine logic, server code: `backend`.
+- Frontend UI, React/TS/CSS, visual polish, browser UI debugging: `frontend`.
+- Regression tests, edge cases, red-team review, safety/quality gates: `qa`.
+- Documentation, release notes, user-facing explanations, summaries: `writer`.
+- Cross-role reduction, conflicts, final decision, stage approval: `commander`.
+
+## Model matching
+
+Prefer capability tags over hard-coded model IDs. User-selected role models always win; otherwise use recent compatible models, then provider catalog matches, then host default.
+
+Recommended capability tags:
+- commander: reasoning, long_context, qa_audit, tool_use.
+- researcher: web_research, tool_use, data_extraction, long_context.
+- backend: coding, reasoning, tool_use, long_context.
+- frontend: coding, ui_design, tool_use, fast_reply.
+- qa: qa_audit, reasoning, coding.
+- writer: writing, fast_reply, low_cost, long_context.
+
+## Token and stability rules
+
+- Prefer current-stage assigned roles over all-agent broadcast.
+- Ask only when a missing answer changes the workflow or deliverable.
+- Summarize specialist outputs before passing them forward.
+- Keep role persona fun and human, but do not let flavor replace delivery.
+- Keep workspace state changes explicit and reversible.

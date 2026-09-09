@@ -1,0 +1,33 @@
+diff --git a/Docs/default-theme-mode-option/original/src/client/GroupChatSideDock.tsx b/src/client/GroupChatSideDock.tsx
+index cc48400..4e91ef5 100644
+--- a/Docs/default-theme-mode-option/original/src/client/GroupChatSideDock.tsx
++++ b/src/client/GroupChatSideDock.tsx
+@@ -116,6 +116,8 @@ export function GroupChatSideDock() {
+   const [themeBusy,setThemeBusy] = useState(false)
+   const [themeDraft,setThemeDraft] = useState<AgentProfile[]>([])
+   const [workflowDraft,setWorkflowDraft] = useState<any>(null)
++  const selectedTheme = room?.activeTheme === 'meme_comedy' ? 'default' : (room?.activeTheme || 'default')
++  const selectedMode = room?.dispatchMode === 'workflow_driven' ? 'default' : (room?.dispatchMode || 'default')
+ 
+   const fetchRoomData = async () => {
+     try {
+@@ -359,15 +361,15 @@ export function GroupChatSideDock() {
+         <div style={{padding:'10px 14px',display:'grid',gridTemplateColumns:'auto minmax(74px,1fr) auto minmax(78px,1fr) 28px',columnGap:8,rowGap:6,fontSize:11,alignItems:'center',whiteSpace:'nowrap'}}>
+           <span style={{color:'var(--dsw-alias-label-secondary, #cbd5e1)',height:30,display:'inline-flex',alignItems:'center'}}>角色主题</span>
+           <span style={{position:'relative',display:'block',minWidth:0}}>
+-            <select aria-label="角色主题" value={room?.activeTheme||'modern'} onChange={e=>void updateRoom('theme',{theme:e.target.value})} style={{width:'100%',height:30,boxSizing:'border-box',appearance:'none',WebkitAppearance:'none',border:'1px solid var(--dsw-alias-border-l2, rgba(255,255,255,0.14))',borderRadius:10,background:'var(--dsw-alias-bg-layer-2, #202025)',color:'var(--dsw-alias-label-primary, #f8fafc)',font:'inherit',fontSize:12,padding:'0 28px 0 10px',outline:'none'}}>
+-              <option value="meme_comedy">沙雕整活</option><option value="genshin">原神提瓦特</option><option value="modern">现代精英</option><option value="three_kingdoms">三国风云</option><option value="legends">现代传奇</option>
++            <select aria-label="角色主题" value={selectedTheme} onChange={e=>void updateRoom('theme',{theme:e.target.value})} style={{width:'100%',height:30,boxSizing:'border-box',appearance:'none',WebkitAppearance:'none',border:'1px solid var(--dsw-alias-border-l2, rgba(255,255,255,0.14))',borderRadius:10,background:'var(--dsw-alias-bg-layer-2, #202025)',color:'var(--dsw-alias-label-primary, #f8fafc)',font:'inherit',fontSize:12,padding:'0 28px 0 10px',outline:'none'}}>
++              <option value="default">默认（沙雕整活）</option><option value="meme_comedy">沙雕整活</option><option value="genshin">原神提瓦特</option><option value="modern">现代精英</option><option value="three_kingdoms">三国风云</option><option value="legends">现代传奇</option>
+             </select>
+             <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" style={{position:'absolute',right:9,top:'50%',width:14,height:14,transform:'translateY(-50%)',pointerEvents:'none',color:'var(--dsw-alias-label-tertiary,#9ca3af)'}}><path d="M4 6l4 4 4-4"/></svg>
+           </span>
+           <span style={{color:'var(--dsw-alias-label-secondary, #cbd5e1)',height:30,display:'inline-flex',alignItems:'center'}}>调度模式</span>
+           <span style={{position:'relative',display:'block',minWidth:0}}>
+-            <select aria-label="调度模式" value={room?.dispatchMode||'mention_only'} onChange={e=>void updateRoom('mode',{mode:e.target.value})} style={{width:'100%',height:30,boxSizing:'border-box',appearance:'none',WebkitAppearance:'none',border:'1px solid var(--dsw-alias-border-l2, rgba(255,255,255,0.14))',borderRadius:10,background:'var(--dsw-alias-bg-layer-2, #202025)',color:'var(--dsw-alias-label-primary, #f8fafc)',font:'inherit',fontSize:12,padding:'0 28px 0 10px',outline:'none'}}>
+-              <option value="mention_only">仅 @ 角色</option><option value="workflow_driven">工作流</option><option value="moderator_led">主持人调度</option><option value="free_discussion">自由讨论</option>
++            <select aria-label="调度模式" value={selectedMode} onChange={e=>void updateRoom('mode',{mode:e.target.value})} style={{width:'100%',height:30,boxSizing:'border-box',appearance:'none',WebkitAppearance:'none',border:'1px solid var(--dsw-alias-border-l2, rgba(255,255,255,0.14))',borderRadius:10,background:'var(--dsw-alias-bg-layer-2, #202025)',color:'var(--dsw-alias-label-primary, #f8fafc)',font:'inherit',fontSize:12,padding:'0 28px 0 10px',outline:'none'}}>
++              <option value="default">默认（工作流）</option><option value="mention_only">仅 @ 角色</option><option value="workflow_driven">工作流</option><option value="moderator_led">主持人调度</option><option value="free_discussion">自由讨论</option>
+             </select>
+             <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" style={{position:'absolute',right:9,top:'50%',width:14,height:14,transform:'translateY(-50%)',pointerEvents:'none',color:'var(--dsw-alias-label-tertiary,#9ca3af)'}}><path d="M4 6l4 4 4-4"/></svg>
+           </span>

@@ -1,0 +1,193 @@
+src/index.ts:2:import {ModelSettingsStore, validateModels} from './engine/model-settings.js'
+src/index.ts:13:import { ModelResilienceManager } from './engine/resilience.js'
+src/index.ts:20:import type { DispatchMode, PersonaThemeKey } from './types.js'
+src/index.ts:23:export const inject = ['tools', 'webServer', 'agents', 'systemPrompt', 'agentDefaultModel', 'llm']
+src/index.ts:26:  defaultMode: string
+src/index.ts:32:  defaultMode: z.string().default('workflow_driven'),
+src/index.ts:38:  llm: {listProviders(): {id:string;name:string}[]; listModels(provider:string): Promise<{id:string;name:string}[]>}
+src/index.ts:50:  const modelSettings = new ModelSettingsStore(join(process.cwd(), '.pm-workflow', 'dsh-group-chat', 'model-settings.json'))
+src/index.ts:52:    const saved=modelSettings.get(room.roomId,member.id)
+src/index.ts:56:  const resilience = new ModelResilienceManager()
+src/index.ts:121:    const messages = roomManager.getMessages(roomId)
+src/index.ts:122:    const systemPrompt = ContextProjection.assembleSystemPrompt(member, room, messages)
+src/index.ts:126:    let modelUsed = member.llmConfig.model
+src/index.ts:133:      const profile = member.llmConfig.provider && member.llmConfig.model ? member : {
+src/index.ts:134:        ...member, llmConfig: { ...ctx.agentDefaultModel.currentSelection(), temperature: member.llmConfig.temperature },
+src/index.ts:136:      const execution = await resilience.executeWithFallback(profile, (modelRef, signal) =>
+src/index.ts:137:        runMemberTurn(ctx, modelRef, systemPrompt, signal), lifetime.signal)
+src/index.ts:139:      modelUsed = execution.result.modelUsed
+src/index.ts:144:      try{modelSettings.remember({provider:providerUsed,model:modelUsed})}catch(error){logger.warn?.('最近模型记录保存失败',error)}
+src/index.ts:147:      const message = err instanceof Error ? err.message : String(err)
+src/index.ts:148:      logger.warn?.(`[GroupChat] ${member.name}: ${message}`)
+src/index.ts:150:        payload: { agentId: member.id, message }, timestamp: Date.now() })
+src/index.ts:151:      roomManager.broadcast({type:'agent:status',roomId,payload:{agentId:member.id,name:member.name,avatar:member.avatar,title:member.title,status:'error',message},timestamp:Date.now()})
+src/index.ts:152:      roomManager.addMessage(roomId, {
+src/index.ts:154:        content: `${member.name} 模型调用失败：${message}`, mentions: [], metadata: { systemNotice: 'model-error' },
+src/index.ts:159:    roomManager.broadcast({type:'agent:status',roomId,payload:{agentId:member.id,name:member.name,avatar:member.avatar,title:member.title,status:'complete',modelUsed,providerUsed,finishedAt:Date.now()},timestamp:Date.now()})
+src/index.ts:171:    const envelope = roomManager.addMessage(roomId, {
+src/index.ts:184:        modelUsed,
+src/index.ts:227:        if(method==='GET' && pathname==='/models'){
+src/index.ts:229:            try{return {...provider,models:await ctx.llm.listModels(provider.id)}}
+src/index.ts:230:            catch{return {...provider,models:[],error:'模型目录加载失败，可手动输入 ID'}}
+src/index.ts:233:          res.end(JSON.stringify({groups,recent:modelSettings.recent(),current:ctx.agentDefaultModel.currentSelection(),scope:{type:'workspace',path:process.cwd(),settings:modelSettings.location(),rooms:workspaceStore.location()}}));return
+src/index.ts:236:        if(method==='POST' && pathname==='/models/recent/delete'){
+src/index.ts:239:          const model=String(body.model||'').trim()
+src/index.ts:240:          if(!provider||!model){res.writeHead(400,{'Content-Type':'application/json; charset=utf-8'});res.end(JSON.stringify({success:false,error:'provider and model are required'}));return}
+src/index.ts:241:          modelSettings.forget({provider,model})
+src/index.ts:243:          res.end(JSON.stringify({success:true,recent:modelSettings.recent()}));return
+src/index.ts:263:          const messages = roomManager.getMessages(roomId)
+src/index.ts:266:          res.end(JSON.stringify({ room, messages, ledger }))
+src/index.ts:271:        if (method === 'POST' && pathname === '/message') {
+src/index.ts:292:          const envelope = roomManager.addMessage(roomId, {
+src/index.ts:317:          res.end(JSON.stringify({ success: true, message: envelope, decision }))
+src/index.ts:336:        if (method === 'POST' && pathname === '/theme/draft') {
+src/index.ts:367:          const theme = (body.theme || 'modern') as PersonaThemeKey
+src/index.ts:377:        if (method === 'POST' && pathname === '/workflow/action') {
+src/index.ts:414:        if (method === 'POST' && pathname === '/mode') {
+src/index.ts:417:          const mode = body.mode as DispatchMode
+src/index.ts:418:          const updated = roomManager.setDispatchMode(roomId, mode)
+src/index.ts:426:        if (method === 'POST' && pathname === '/agent/update') {
+src/index.ts:439:              const models={llmConfig:{...existing.llmConfig,...body.llmConfig},resiliencePolicy:body.resiliencePolicy===undefined?existing.resiliencePolicy:body.resiliencePolicy}
+src/index.ts:440:              validateModels(models.llmConfig,models.resiliencePolicy)
+src/index.ts:441:              modelSettings.save(roomId,agentId,models)
+src/index.ts:444:              res.end(JSON.stringify({error:error instanceof Error?error.message:String(error)}));return
+src/client\index.ts:40:          component: () => createElement(GroupChatPanel, { mode: "full" }),
+src/client\GroupChatSideDock.tsx:15:  activeTheme: 'modern' | 'three_kingdoms' | 'legends' | 'meme_comedy' | 'genshin' | string
+src/client\GroupChatSideDock.tsx:16:  dispatchMode: 'mention_only' | 'moderator_led' | 'workflow_driven' | 'free_discussion'
+src/client\GroupChatSideDock.tsx:47:interface ModelLedgerData {
+src/client\GroupChatSideDock.tsx:49:  model: string
+src/client\GroupChatSideDock.tsx:64:    modelStats?: Record<string, ModelLedgerData>
+src/client\GroupChatSideDock.tsx:114:  const [modeHelpOpen, setModeHelpOpen] = useState(false)
+src/client\GroupChatSideDock.tsx:145:          } else if (data.type === 'message:new') {
+src/client\GroupChatSideDock.tsx:192:      await fetch('/dsh-group-chat/api/workflow/advance', {
+src/client\GroupChatSideDock.tsx:212:      if(!response.ok||result.success===false)throw Error(result.error||result.message||'更新失败')
+src/client\GroupChatSideDock.tsx:214:    } catch(e){setManagementError(e instanceof Error?e.message:String(e))}
+src/client\GroupChatSideDock.tsx:224:      if(!response.ok||result.success===false)throw Error(result.error||result.message||'主题生成失败')
+src/client\GroupChatSideDock.tsx:227:    } catch(e){setManagementError(e instanceof Error?e.message:String(e))}
+src/client\GroupChatSideDock.tsx:235:      {modeHelpOpen && (
+src/client\GroupChatSideDock.tsx:236:        <div role="dialog" aria-modal="true" aria-label="调度模式 QA 说明" onClick={()=>setModeHelpOpen(false)} style={{position:'fixed',inset:0,zIndex:1000,display:'grid',placeItems:'center',background:'rgba(0,0,0,0.52)',pointerEvents:'auto'}}>
+src/client\GroupChatSideDock.tsx:243:              <button type="button" onClick={()=>setModeHelpOpen(false)} aria-label="关闭调度模式说明" style={{width:28,height:28,borderRadius:8,border:'1px solid var(--dsw-alias-border-l2, rgba(255,255,255,0.14))',background:'var(--dsw-alias-bg-layer-2,#202025)',color:'inherit',cursor:'pointer'}}>×</button>
+src/client\GroupChatSideDock.tsx:361:            <select aria-label="角色主题" value={room?.activeTheme||'modern'} onChange={e=>void updateRoom('theme',{theme:e.target.value})} style={{width:'100%',height:30,boxSizing:'border-box',appearance:'none',WebkitAppearance:'none',border:'1px solid var(--dsw-alias-border-l2, rgba(255,255,255,0.14))',borderRadius:10,background:'var(--dsw-alias-bg-layer-2, #202025)',color:'var(--dsw-alias-label-primary, #f8fafc)',font:'inherit',fontSize:12,padding:'0 28px 0 10px',outline:'none'}}>
+src/client\GroupChatSideDock.tsx:362:              <option value="meme_comedy">沙雕整活</option><option value="genshin">原神提瓦特</option><option value="modern">现代精英</option><option value="three_kingdoms">三国风云</option><option value="legends">现代传奇</option>
+src/client\GroupChatSideDock.tsx:368:            <select aria-label="调度模式" value={room?.dispatchMode||'mention_only'} onChange={e=>void updateRoom('mode',{mode:e.target.value})} style={{width:'100%',height:30,boxSizing:'border-box',appearance:'none',WebkitAppearance:'none',border:'1px solid var(--dsw-alias-border-l2, rgba(255,255,255,0.14))',borderRadius:10,background:'var(--dsw-alias-bg-layer-2, #202025)',color:'var(--dsw-alias-label-primary, #f8fafc)',font:'inherit',fontSize:12,padding:'0 28px 0 10px',outline:'none'}}>
+src/client\GroupChatSideDock.tsx:369:              <option value="mention_only">仅 @ 角色</option><option value="workflow_driven">工作流</option><option value="moderator_led">主持人调度</option><option value="free_discussion">自由讨论</option>
+src/client\GroupChatSideDock.tsx:373:          <button type="button" aria-label="查看调度模式 QA 说明" title="调度模式 QA" onClick={()=>setModeHelpOpen(true)} style={{width:28,height:28,borderRadius:9,border:'1px solid var(--dsw-alias-border-l2, rgba(255,255,255,0.14))',background:'var(--dsw-alias-bg-layer-2,#202025)',color:'var(--dsw-alias-label-secondary,#cbd5e1)',fontSize:13,fontWeight:700,cursor:'pointer'}}>?</button>
+src/client\GroupChatSideDock.tsx:658:                        {Object.values(stat.modelStats || {}).map(ms=>(
+src/client\GroupChatSideDock.tsx:659:                          <div key={`${ms.provider}/${ms.model}`} style={{marginTop:6,paddingTop:6,borderTop:'1px dashed var(--dsw-alias-border-l1, rgba(255,255,255,0.08))',fontSize:10,color:'var(--dsw-alias-label-secondary,#cbd5e1)'}}>
+src/client\GroupChatSideDock.tsx:660:                            <div style={{fontWeight:600,color:'var(--dsw-alias-label-primary,#f8fafc)',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{ms.provider} / {ms.model}</div>
+src/client\GroupChatRoleEditor.tsx:2:import {GroupChatModelSettings} from './GroupChatModelSettings.js'
+src/client\GroupChatRoleEditor.tsx:6:  const [agentForm, setAgentForm] = useState({name:editingAgent.name,avatar:editingAgent.avatar,title:editingAgent.title||'',roleDescription:editingAgent.roleDescription,systemPrompt:editingAgent.systemPrompt||'',provider:editingAgent.llmConfig?.provider||'',model:editingAgent.llmConfig?.model||'',canWriteScratchpad:editingAgent.permissions?.canWriteScratchpad??false,canApproveWorkflow:editingAgent.permissions?.canApproveWorkflow??false})
+src/client\GroupChatRoleEditor.tsx:7:  const [policy,setPolicy]=useState(editingAgent.resiliencePolicy||{fallbackModels:[],maxRetriesPerModel:2,retryBackoffMs:1000,timeoutMs:30000})
+src/client\GroupChatRoleEditor.tsx:37:      const res = await fetch('/dsh-group-chat/api/agent/update', {
+src/client\GroupChatRoleEditor.tsx:50:            model: agentForm.model.trim(),
+src/client\GroupChatRoleEditor.tsx:52:          resiliencePolicy: {...policy,fallbackModels:policy.fallbackModels.map(m=>({...m,provider:m.provider.trim(),model:m.model.trim()}))},
+src/client\GroupChatRoleEditor.tsx:66:      setSaveError(err instanceof Error?err.message:String(err))
+src/client\GroupChatRoleEditor.tsx:243:            <GroupChatModelSettings role={editingAgent} primary={{provider:agentForm.provider,model:agentForm.model}} policy={policy} onPrimary={m=>setAgentForm(prev=>({...prev,...m}))} onPolicy={setPolicy}/>
+src/client\GroupChatPanel.tsx:6:import type {AgentProfile, AgentStatus, GroupMessage} from './group-chat-view-types.js'
+src/client\GroupChatPanel.tsx:8:export interface GroupChatPanelProps { mode?: 'dock' | 'full'; onClose?: () => void }
+src/client\GroupChatPanel.tsx:9:export function GroupChatPanel({mode='full'}:GroupChatPanelProps) {
+src/client\GroupChatPanel.tsx:11:  const [messages,setMessages]=useState<GroupMessage[]>([])
+src/client\GroupChatPanel.tsx:28:    if(mode!=='full')return
+src/client\GroupChatPanel.tsx:31:  },[mode])
+src/client\GroupChatPanel.tsx:34:    const upsert=(list:GroupMessage[])=>setMessages(prev=>{
+src/client\GroupChatPanel.tsx:35:      const byId=new Map(prev.map(m=>[m.messageId,m]))
+src/client\GroupChatPanel.tsx:36:      for(const message of list)byId.set(message.messageId,message)
+src/client\GroupChatPanel.tsx:45:      setMembers(data.room.members);upsert(data.messages||[])
+src/client\GroupChatPanel.tsx:46:    }).catch(e=>{if(!controller.signal.aborted)setError(e.message)}).finally(()=>{if(!controller.signal.aborted)setLoading(false)})
+src/client\GroupChatPanel.tsx:52:        if(event.type==='message:new')upsert([event.payload])
+src/client\GroupChatPanel.tsx:57:      }catch{/* Ignore malformed transport messages, not valid errors. */}
+src/client\GroupChatPanel.tsx:63:  },[messages])
+src/client\GroupChatPanel.tsx:100:      const response=await fetch('/dsh-group-chat/api/message',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({roomId,content:draft.trim()})})
+src/client\GroupChatPanel.tsx:104:      setMessages(prev=>prev.some(m=>m.messageId===data.message.messageId)?prev:[...prev,data.message])
+src/client\GroupChatPanel.tsx:105:    }catch(e){setError(e instanceof Error?e.message:String(e))}finally{setSending(false)}
+src/client\GroupChatPanel.tsx:107:  const copy=async(message:GroupMessage)=>{
+src/client\GroupChatPanel.tsx:108:    try{await navigator.clipboard.writeText(message.content);setCopied(message.messageId)}catch{setError('复制失败，请选择消息文字复制')}
+src/client\GroupChatPanel.tsx:115:      .gc-chat-messages{flex:1;padding:28px 24px calc(var(--gc-bottom-height,150px) + 24px);}
+src/client\GroupChatPanel.tsx:135:      .gc-message{margin:0 0 30px;overflow-wrap:anywhere;}
+src/client\GroupChatPanel.tsx:136:      .gc-message-user{display:flex;flex-direction:column;align-items:flex-end;}
+src/client\GroupChatPanel.tsx:137:      .gc-message-body{font-size:13px;line-height:1.7;min-width:0;}
+src/client\GroupChatPanel.tsx:138:      .gc-message-user .gc-message-body{max-width:85%;padding:10px 16px;background:var(--dsw-alias-bg-layer-2,#29292e);border-radius:18px;white-space:pre-wrap;}
+src/client\GroupChatPanel.tsx:139:      .gc-message-meta{display:flex;align-items:center;gap:8px;margin-bottom:10px;font-size:12px;color:var(--dsw-alias-label-secondary,#aaa);}
+src/client\GroupChatPanel.tsx:140:      .gc-message-avatar{width:22px;height:22px;display:inline-grid;place-items:center;object-fit:cover;border-radius:6px;}
+src/client\GroupChatPanel.tsx:141:      .gc-message-role{font-weight:500;color:var(--dsw-alias-label-primary,#eee);}
+src/client\GroupChatPanel.tsx:142:      .gc-message-actions{display:flex;align-items:center;gap:12px;margin-top:8px;color:var(--dsw-alias-label-tertiary,#999);font-size:11px;}
+src/client\GroupChatPanel.tsx:146:      .gc-message-system{padding:8px 12px;color:var(--dsw-alias-label-secondary,#aaa);font-size:12px;border-left:2px solid var(--dsw-alias-border-l2,#555);}
+src/client\GroupChatPanel.tsx:147:      .gc-message details{margin:8px 0;color:var(--dsw-alias-label-secondary,#aaa);font-size:13px;}
+src/client\GroupChatPanel.tsx:148:      .gc-message summary{cursor:pointer;}
+src/client\GroupChatPanel.tsx:149:      .gc-message pre{max-width:100%;overflow:auto;}
+src/client\GroupChatPanel.tsx:150:      .gc-message-body>div{min-width:0;font-size:inherit!important;line-height:inherit!important;}
+src/client\GroupChatPanel.tsx:151:      .gc-message-body :is(p,li,td,th){font-size:13px;line-height:1.7;}
+src/client\GroupChatPanel.tsx:152:      .gc-message-body pre,.gc-message-body code{font-size:12px;}
+src/client\GroupChatPanel.tsx:153:      .gc-message-tools pre{white-space:pre-wrap;max-height:240px;}
+src/client\GroupChatPanel.tsx:156:      @media(max-width:600px){.gc-chat-messages{padding:16px 12px calc(var(--gc-bottom-height,150px) + 20px);}.gc-message-user .gc-message-body{max-width:94%;}}
+src/client\GroupChatPanel.tsx:160:      {statusOpen&&(Object.values(agentStatuses).length?<div className="gc-agent-list">{Object.values(agentStatuses).sort((a,b)=>(b.startedAt||b.finishedAt||0)-(a.startedAt||a.finishedAt||0)).slice(0,5).map(item=><div className="gc-agent-item" data-status={item.status} key={item.agentId}><AvatarBadge avatar={item.avatar} /><span className="gc-agent-name">{item.name}</span><span className="gc-agent-dot" title={item.status}/><span className="gc-agent-sub">{item.status==='running'?'执行中':item.status==='complete'?'已完成':'出错'}{item.modelUsed?` · ${item.providerUsed||''}/${item.modelUsed}`:''}{item.message?` · ${item.message}`:''}</span></div>)}</div>:<div className="gc-agent-idle">当前没有正在执行的角色。</div>)}
+src/client\GroupChatPanel.tsx:163:      <div className="gc-scroll-content"><div className="gc-chat-messages">
+src/client\GroupChatPanel.tsx:164:      {!messages.length ? <div className="gc-chat-empty"><strong>{loading?'正在加载…':'开始群聊'}</strong><span>{loading?'':'发送消息，或通过下方 @ 选择角色'}</span></div> :
+src/client\GroupChatPanel.tsx:166:        {messages.filter(m=>!m.metadata?.isSilent).map(message=>{
+src/client\GroupChatPanel.tsx:167:          const user=message.sender.kind==='user'
+src/client\GroupChatPanel.tsx:168:          if(message.sender.kind==='system')return <div key={message.messageId} className="gc-message gc-message-system">{message.content}</div>
+src/client\GroupChatPanel.tsx:169:          return <article key={message.messageId} className={`gc-message ${user?'gc-message-user':'gc-message-agent'}`} aria-label={`${message.sender.name}的消息`}>
+src/client\GroupChatPanel.tsx:170:            {!user&&<div className="gc-message-meta">
+src/client\GroupChatPanel.tsx:171:              <AvatarBadge avatar={message.sender.avatar} className="gc-message-avatar" />
+src/client\GroupChatPanel.tsx:172:              <span className="gc-message-role">{message.sender.name}</span>
+src/client\GroupChatPanel.tsx:174:            {message.reasoningContent&&<details><summary>思考过程</summary><MarkdownText text={message.reasoningContent}/></details>}
+src/client\GroupChatPanel.tsx:175:            {message.metadata?.toolCalls?.map(tool=><details className="gc-message-tools" key={tool.id}><summary>{tool.name} · {tool.status}</summary><pre>{tool.arguments}</pre>{tool.result&&<pre>{tool.result}</pre>}</details>)}
+src/client\GroupChatPanel.tsx:176:            <div className="gc-message-body">{user?message.content:<MarkdownText text={message.content}/>}</div>
+src/client\GroupChatPanel.tsx:177:            <div className="gc-message-actions">
+src/client\GroupChatPanel.tsx:178:              <button type="button" className="gc-copy" onClick={()=>copy(message)} aria-label={`复制${message.sender.name}的消息`}>
+src/client\GroupChatPanel.tsx:179:                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" aria-hidden="true"><rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V4H4v12h4"/></svg>{copied===message.messageId?'已复制':'复制'}
+src/client\GroupChatPanel.tsx:181:              <time dateTime={new Date(message.timestamp).toISOString()}>{new Date(message.timestamp).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})}</time>
+src/client\GroupChatPanel.tsx:182:              {!user&&message.metadata?.modelUsed&&<span title={message.metadata.providerUsed}>{message.metadata.modelUsed}</span>}
+src/client\GroupChatModelSettings.tsx:3:type Model={provider:string;model:string}
+src/client\GroupChatModelSettings.tsx:4:type CatalogModel={provider:string;model:string;name:string;groupName:string}
+src/client\GroupChatModelSettings.tsx:6:type Catalog={groups:{id:string;name:string;models:{id:string;name:string}[];error?:string}[];recent:Model[];current?:Model}
+src/client\GroupChatModelSettings.tsx:7:function labelFor(model:Model){return model.provider&&model.model?`${model.provider} / ${model.model}`:'跟随宿主默认'}
+src/client\GroupChatModelSettings.tsx:8:function SearchableModelPicker({label,value,catalog,allowDefault=false,onChange,onDeleteRecent}:{label:string;value:Model;catalog:Catalog;allowDefault?:boolean;onChange:(m:Model)=>void;onDeleteRecent?:(m:Model)=>void}){
+src/client\GroupChatModelSettings.tsx:12:  const all:CatalogModel[]=useMemo(()=>catalog.groups.flatMap(g=>g.models.map(m=>({provider:g.id,model:m.id,name:m.name,groupName:g.name}))),[catalog])
+src/client\GroupChatModelSettings.tsx:13:  const filtered=all.filter(item=>`${item.provider} ${item.model} ${item.name} ${item.groupName}`.toLowerCase().includes(query.trim().toLowerCase())).slice(0,80)
+src/client\GroupChatModelSettings.tsx:15:  const choose=(m:Model)=>{onChange(m);setOpen(false);setQuery('')}
+src/client\GroupChatModelSettings.tsx:16:  return <div className="gc-model-picker" ref={root}>
+src/client\GroupChatModelSettings.tsx:17:    <span className="gc-model-label">{label}</span>
+src/client\GroupChatModelSettings.tsx:18:    <button type="button" className="gc-model-trigger" aria-haspopup="listbox" aria-expanded={open} aria-controls={open?id:undefined} onClick={()=>setOpen(v=>!v)}>
+src/client\GroupChatModelSettings.tsx:19:      <span className="gc-model-trigger-text">{labelFor(value)}</span><svg className="gc-model-chevron" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M4 6l4 4 4-4"/></svg>
+src/client\GroupChatModelSettings.tsx:21:    {open&&<div className="gc-model-popover" role="dialog" aria-label={`${label}模型选择`} onKeyDown={e=>{if(e.key==='Escape'){e.preventDefault();setOpen(false)} if(e.key==='ArrowDown'||e.key==='ArrowUp'){e.preventDefault();const items=Array.from(e.currentTarget.querySelectorAll<HTMLButtonElement>('.gc-model-option'));const current=items.indexOf(document.activeElement as HTMLButtonElement);const next=current<0?(e.key==='ArrowDown'?0:items.length-1):(current+(e.key==='ArrowDown'?1:-1)+items.length)%items.length;items[next]?.focus()} if(e.key==='Enter'&&e.target===search.current&&filtered[0]){e.preventDefault();choose(filtered[0])}}}>
+src/client\GroupChatModelSettings.tsx:22:      <input ref={search} className="gc-model-search" aria-label={`搜索${label}模型`} placeholder="搜索 Provider / 模型 ID / 名称…" value={query} onChange={e=>setQuery(e.target.value)}/>
+src/client\GroupChatModelSettings.tsx:23:      <div className="gc-model-list" id={id} role="listbox">
+src/client\GroupChatModelSettings.tsx:24:        {allowDefault&&<button type="button" className="gc-model-option" role="option" onClick={()=>choose({provider:'',model:''})}><span>跟随宿主默认</span><small>{catalog.current?.model?labelFor(catalog.current):'使用当前宿主会话模型'}</small></button>}
+src/client\GroupChatModelSettings.tsx:25:        {catalog.recent.filter(m=>m.provider&&m.model).slice(0,6).map((m,i)=><div className="gc-model-recent-row" key={`recent-${i}`}><button type="button" className="gc-model-option gc-model-recent" role="option" onClick={()=>choose(m)}><span>{labelFor(m)}</span><small>最近使用</small></button><button type="button" className="gc-model-delete" aria-label={`删除最近模型 ${labelFor(m)}`} title="删除这个最近模型" onClick={e=>{e.preventDefault();e.stopPropagation();onDeleteRecent?.(m)}}><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" aria-hidden="true"><path d="M4 4l8 8M12 4l-8 8"/></svg></button></div>)}
+src/client\GroupChatModelSettings.tsx:26:        {filtered.map(item=><button type="button" className="gc-model-option" role="option" key={`${item.provider}/${item.model}`} onClick={()=>choose({provider:item.provider,model:item.model})}><span>{item.provider} / {item.model}</span><small>{item.groupName} · {item.name}</small></button>)}
+src/client\GroupChatModelSettings.tsx:27:        {!filtered.length&&!catalog.recent.length&&<div className="gc-model-empty">没有匹配结果，可在下方手动输入完整 ID。</div>}
+src/client\GroupChatModelSettings.tsx:32:export function GroupChatModelSettings({role,primary,policy,onPrimary,onPolicy}:{role:AgentProfile;primary:Model;policy:Policy;onPrimary:(m:Model)=>void;onPolicy:(p:Policy)=>void}){
+src/client\GroupChatModelSettings.tsx:36:  useEffect(()=>{const abort=new AbortController();fetch('/dsh-group-chat/api/models',{signal:abort.signal}).then(async r=>{if(!r.ok)throw Error('目录加载失败');return r.json()}).then(data=>{setCatalog(data);setStatus(data.groups.some((g:Catalog['groups'][number])=>g.error)?'部分目录加载失败；仍可手动填写模型 ID。':'')}).catch(e=>{if(!abort.signal.aborted)setStatus(e.message+'，可手动输入或重试。')});return()=>abort.abort()},[reload])
+src/client\GroupChatModelSettings.tsx:37:  const deleteRecent=async(model:Model)=>{
+src/client\GroupChatModelSettings.tsx:38:    setCatalog(prev=>({...prev,recent:prev.recent.filter(m=>m.provider!==model.provider||m.model!==model.model)}))
+src/client\GroupChatModelSettings.tsx:40:      const response=await fetch('/dsh-group-chat/api/models/recent/delete',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(model)})
+src/client\GroupChatModelSettings.tsx:44:    }catch(e){setStatus(e instanceof Error?e.message:String(e));setReload(v=>v+1)}
+src/client\GroupChatModelSettings.tsx:46:  const models=catalog.groups.flatMap(g=>g.models.map(m=>({provider:g.id,model:m.id,name:m.name,groupName:g.name})))
+src/client\GroupChatModelSettings.tsx:48:  const suggestions=models.filter(m=>pattern.test(m.model+' '+m.name)).slice(0,4)
+src/client\GroupChatModelSettings.tsx:49:  const manualRow=(label:string,value:Model,change:(m:Model)=>void)=><div className="gc-model-row"><label>{label} Provider<input aria-label={`${label} Provider 手动输入`} placeholder="Provider" value={value.provider} onChange={e=>change({...value,provider:e.target.value})}/></label><label>模型 ID<input aria-label={`${label}模型 ID 手动输入`} placeholder="模型 ID" value={value.model} onChange={e=>change({...value,model:e.target.value})}/></label></div>
+src/client\GroupChatModelSettings.tsx:50:  return <section className="gc-model-settings" aria-label="角色模型与回退设置">
+src/client\GroupChatModelSettings.tsx:51:    <style>{`.gc-model-settings{border-top:1px solid var(--dsw-alias-border-l2,#ffffff1f);padding-top:12px;font-size:12px}.gc-model-settings h3{font-size:13px;margin:0 0 8px}.gc-model-settings p{color:var(--dsw-alias-label-secondary,#aaa);font-size:11px;line-height:1.6}.gc-model-row{display:grid;grid-template-columns:minmax(100px,1fr) minmax(140px,2fr);gap:8px}.gc-model-settings label{display:block;min-width:0}.gc-model-settings input,.gc-model-settings select{display:block;box-sizing:border-box;width:100%;margin:4px 0 8px;padding:7px 9px;border:1px solid var(--dsw-alias-border-l2,#ffffff2b);border-radius:8px;background:var(--dsw-alias-bg-base,#151519);color:inherit;font:inherit}.gc-model-settings input:focus-visible,.gc-model-trigger:focus-visible,.gc-model-search:focus-visible,.gc-model-settings button:focus-visible{outline:2px solid var(--dsw-alias-state-business-primary,#4d6bfe);outline-offset:2px}.gc-model-settings button{padding:5px 9px;margin:2px;border:1px solid var(--dsw-alias-border-l2,#ffffff26);border-radius:8px;background:var(--dsw-alias-bg-layer-1,#202025);color:inherit;font:inherit;cursor:pointer}.gc-model-settings button:hover{background:var(--dsw-alias-bg-layer-2,#2b2b31)}.gc-model-settings button:disabled{opacity:.4;cursor:default}.gc-fallback-item{padding:9px;margin-top:8px;border:1px solid var(--dsw-alias-border-l1,#ffffff17);border-radius:10px;background:color-mix(in oklab,var(--dsw-alias-bg-layer-2,#1b1b1f) 72%,transparent)}.gc-model-numbers{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}.gc-model-picker{position:relative;margin:7px 0}.gc-model-label{display:block;color:var(--dsw-alias-label-secondary,#cbd5e1);font-size:11px;margin-bottom:5px}.gc-model-trigger{display:flex!important;align-items:center;justify-content:space-between;gap:8px;width:100%;min-height:34px;text-align:left}.gc-model-trigger-text{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.gc-model-chevron{width:16px;height:16px;display:block;opacity:.75;transition:transform .15s ease}.gc-model-trigger[aria-expanded=true] .gc-model-chevron{transform:rotate(180deg)}.gc-model-popover{position:absolute;z-index:10002;left:0;right:0;top:calc(100% + 6px);padding:8px;border:1px solid var(--dsw-alias-border-l2,#ffffff2b);border-radius:14px;background:var(--dsw-alias-bg-layer-1,#202025);box-shadow:0 18px 48px #0008}.gc-model-search{margin:0 0 7px!important}.gc-model-list{max-height:260px;overflow:auto;display:flex;flex-direction:column;gap:2px}.gc-model-recent-row{display:grid;grid-template-columns:1fr 28px;align-items:stretch;border-radius:10px}.gc-model-recent-row:hover{background:var(--dsw-alias-bg-layer-2,#2b2b31)}.gc-model-option{display:flex!important;flex-direction:column;align-items:flex-start;width:100%;text-align:left;margin:0!important;background:transparent!important;border:0!important}.gc-model-option span{font-size:12px}.gc-model-option small{font-size:10px;color:var(--dsw-alias-label-tertiary,#9696a3);max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.gc-model-delete{display:grid!important;place-items:center;width:26px;height:26px;align-self:center;margin:0!important;border:0!important;background:transparent!important;color:var(--dsw-alias-label-tertiary,#999)!important;border-radius:8px}.gc-model-delete svg{width:13px;height:13px}.gc-model-delete:hover{color:#fca5a5!important;background:rgba(248,113,113,.12)!important}.gc-model-recent span:before{content:'最近 · ';color:var(--dsw-alias-state-business-primary,#4d6bfe)}.gc-recent-panel,.gc-suggestion-panel{display:flex;flex-wrap:wrap;gap:6px;margin:6px 0 10px}.gc-recent-chip-row{display:grid;grid-template-columns:minmax(0,1fr) 28px;align-items:center;max-width:100%;border:1px solid var(--dsw-alias-border-l2,#ffffff26);border-radius:10px;overflow:hidden;background:var(--dsw-alias-bg-layer-1,#202025)}.gc-recent-chip-row:hover{background:var(--dsw-alias-bg-layer-2,#2b2b31)}.gc-recent-chip{min-width:0;max-width:100%;padding:5px 8px!important;margin:0!important;border:0!important;border-radius:0!important;background:transparent!important;overflow:hidden;text-align:left}.gc-recent-chip>span,.gc-suggestion-chip>span{display:block;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.gc-recent-delete{width:24px!important;height:24px!important;margin:0 4px 0 0!important}.gc-suggestion-chip{max-width:100%;display:inline-flex!important}.gc-suggestion-chip span{display:block}.gc-model-empty{padding:12px;color:var(--dsw-alias-label-tertiary,#999);font-size:11px}`}</style>
+src/client\GroupChatModelSettings.tsx:53:    <SearchableModelPicker label="主模型" value={primary} catalog={catalog} allowDefault onChange={onPrimary} onDeleteRecent={deleteRecent}/>
+src/client\GroupChatModelSettings.tsx:55:    <p>下拉数据来自插件服务端调用 DSH 官方模型目录 ctx.llm.listProviders/listModels；两项留空时跟随宿主{catalog.current?.model?`：${catalog.current.provider} / ${catalog.current.model}`:'默认模型'}。</p>
+src/client\GroupChatModelSettings.tsx:58:    {catalog.recent.filter(m=>m.provider&&m.model).length?<div className="gc-recent-panel">{catalog.recent.filter(m=>m.provider&&m.model).slice(0,6).map(m=><div className="gc-recent-chip-row" key={m.provider+'/'+m.model}><button type="button" className="gc-recent-chip" onClick={()=>onPrimary(m)} title={labelFor(m)}><span>{labelFor(m)}</span></button><button type="button" className="gc-model-delete gc-recent-delete" aria-label={`删除最近模型 ${labelFor(m)}`} title="删除这个最近模型" onClick={e=>{e.preventDefault();e.stopPropagation();deleteRecent(m)}}><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" aria-hidden="true"><path d="M4 4l8 8M12 4l-8 8"/></svg></button></div>)}</div>:<p>暂无最近模型记录。</p>}
+src/client\GroupChatModelSettings.tsx:60:    {suggestions.length?<div className="gc-suggestion-panel">{suggestions.map(m=><button type="button" className="gc-suggestion-chip" key={m.provider+'/'+m.model} onClick={()=>onPrimary({provider:m.provider,model:m.model})} title={`${m.provider} / ${m.model}`}><span>{m.provider} / {m.model}</span></button>)}</div>:<p>当前目录没有明确匹配项。</p>}
+src/client\GroupChatModelSettings.tsx:63:    {policy.fallbackModels.map((m,i)=><div className="gc-fallback-item" key={i}>
+src/client\GroupChatModelSettings.tsx:64:      <SearchableModelPicker label={`回退 ${i+1}`} value={m} catalog={catalog} onChange={value=>onPolicy({...policy,fallbackModels:policy.fallbackModels.map((old,j)=>j===i?value:old)})} onDeleteRecent={deleteRecent}/>
+src/client\GroupChatModelSettings.tsx:65:      {manualRow(`回退 ${i+1}`,m,value=>onPolicy({...policy,fallbackModels:policy.fallbackModels.map((old,j)=>j===i?value:old)}))}
+src/client\GroupChatModelSettings.tsx:66:      <button type="button" disabled={i===0} onClick={()=>{const next=[...policy.fallbackModels];[next[i-1],next[i]]=[next[i],next[i-1]];onPolicy({...policy,fallbackModels:next})}}>上移</button>
+src/client\GroupChatModelSettings.tsx:67:      <button type="button" onClick={()=>onPolicy({...policy,fallbackModels:policy.fallbackModels.filter((_,j)=>j!==i)})}>移除回退 {i+1}</button>
+src/client\GroupChatModelSettings.tsx:69:    <button type="button" disabled={policy.fallbackModels.length>=5} onClick={()=>onPolicy({...policy,fallbackModels:[...policy.fallbackModels,{provider:'',model:''}]})}>＋ 添加回退模型</button>
+src/client\GroupChatModelSettings.tsx:70:    <div className="gc-model-numbers"><label>每模型重试次数<input aria-label="每模型重试次数" type="number" min={0} max={5} value={policy.maxRetriesPerModel} onChange={e=>onPolicy({...policy,maxRetriesPerModel:Number(e.target.value)})}/></label><label>退避毫秒<input aria-label="退避毫秒" type="number" min={0} max={60000} value={policy.retryBackoffMs} onChange={e=>onPolicy({...policy,retryBackoffMs:Number(e.target.value)})}/></label><label>超时毫秒<input aria-label="超时毫秒" type="number" min={1000} max={600000} value={policy.timeoutMs} onChange={e=>onPolicy({...policy,timeoutMs:Number(e.target.value)})}/></label></div>
+src/client\GroupChatHeaderButton.tsx:121:          <GroupChatPanel mode="dock" onClose={() => setIsOpen(false)} />
+src/client\group-chat-view-types.ts:1:export interface MessageSender {
+src/client\group-chat-view-types.ts:19:export interface GroupMessage {
+src/client\group-chat-view-types.ts:20:  messageId: string
+src/client\group-chat-view-types.ts:22:  sender: MessageSender
+src/client\group-chat-view-types.ts:27:    modelUsed?: string
+src/client\group-chat-view-types.ts:41:export interface AgentStatus {agentId:string;name:string;avatar:string;title?:string;status:'running'|'complete'|'error';message?:string;modelUsed?:string;providerUsed?:string;startedAt?:number;finishedAt?:number}
+src/client\group-chat-view-types.ts:44:  resiliencePolicy?: {fallbackModels:{provider:string;model:string}[];maxRetriesPerModel:number;retryBackoffMs:number;timeoutMs:number}
+src/client\group-chat-view-types.ts:59:    model: string
+src/client\group-chat-events.ts:3:const listeners=new Set<(event:MessageEvent)=>void>()
+src/client\group-chat-events.ts:4:export function subscribeGroupChat(listener:(event:MessageEvent)=>void):()=>void {
+src/client\group-chat-events.ts:8:    source.onmessage=event=>{for(const callback of listeners)callback(event)}

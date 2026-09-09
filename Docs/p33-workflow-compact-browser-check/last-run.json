@@ -1,0 +1,15 @@
+{
+  "ok": true,
+  "failures": [],
+  "result": {
+    "hasWorkflow": true,
+    "hasAdvanced": true,
+    "advancedOpen": false,
+    "visibleHasDirector": true,
+    "visibleHasCurrentStage": true,
+    "visibleHasCurrentTask": true,
+    "visibleHasAdvancedSummary": true,
+    "visibleOverflowCount": 0,
+    "visibleOverflow": []
+  }
+}

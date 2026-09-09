@@ -1,0 +1,44 @@
+{
+  "ok": true,
+  "failures": [],
+  "officialBefore": {
+    "url": "http://127.0.0.1:3080/",
+    "hasHud": false,
+    "hasGcConversationTab": false,
+    "hasOfficialComposer": true,
+    "hasAgentTabLabel": false,
+    "hasHudTabs": false,
+    "hasOfficialDialogLabel": true,
+    "bodyFlags": {
+      "tabActive": null,
+      "hudOpen": null
+    }
+  },
+  "agentChat": {
+    "url": "http://127.0.0.1:3080/",
+    "hasHud": true,
+    "hasGcConversationTab": true,
+    "hasOfficialComposer": true,
+    "hasAgentTabLabel": true,
+    "hasHudTabs": true,
+    "hasOfficialDialogLabel": true,
+    "bodyFlags": {
+      "tabActive": "true",
+      "hudOpen": null
+    }
+  },
+  "officialAfter": {
+    "url": "http://127.0.0.1:3080/",
+    "hasHud": false,
+    "hasGcConversationTab": false,
+    "hasOfficialComposer": true,
+    "hasAgentTabLabel": true,
+    "hasHudTabs": true,
+    "hasOfficialDialogLabel": true,
+    "bodyFlags": {
+      "tabActive": null,
+      "hudOpen": null
+    }
+  },
+  "errors": []
+}

@@ -1,0 +1,37 @@
+Compact group-chat composer
+Change: GroupChatPanel replaces the full-width quick mention row and single-line input with GroupChatComposer. New component: multiline rounded card, compact @ role button, searchable dialog, cursor-position insertion, keyboard navigation/Escape, IME-safe Enter send, Shift+Enter newline, disabled empty/sending button, outside-click dismissal.
+Original GroupChatPanel.tsx SHA256: 4110EA9126B99B5F3D5441072BD6D204D3C94FE2C291BCDB14C19D978FFAB3F8
+MODIFIED_FILE: C:/项目/dsh-group-chat/Docs/composer-repair/MODIFIED_FILE.tsx
+DIFF_FILE: C:/项目/dsh-group-chat/Docs/composer-repair/DIFF_FILE.patch
+VERIFICATION: C:/项目/dsh-group-chat/Docs/composer-repair/VERIFICATION.txt
+ROLLBACK: C:/项目/dsh-group-chat/Docs/composer-repair/ROLLBACK.sh
+Deployed component: C:/项目/dsh-group-chat/src/client/GroupChatComposer.tsx
+
+Working directory: C:/项目/dsh-group-chat
+BASELINE command: node Docs/composer-repair/check.mjs Docs/composer-repair/original/GroupChatPanel.tsx Docs/composer-repair/original/GroupChatComposer.tsx
+Input: original source; source-contract assertions (not browser assertions).
+Literal output: FAIL: {"compact":false,"multiline":false,"picker":false,"ime":false,"cursor":false}
+Exit: 1.
+MODIFIED command: node Docs/composer-repair/check.mjs src/client/GroupChatPanel.tsx src/client/GroupChatComposer.tsx
+Input: modified source; same assertions.
+Literal output: PASS: {"compact":true,"multiline":true,"picker":true,"ime":true,"cursor":true}
+Exit: 0.
+ROLLBACK command: & 'C:/Program Files/Git/bin/bash.exe' Docs/composer-repair/ROLLBACK.sh Docs/composer-repair/rollback-test
+Input: separate modified source/bundle copy.
+Literal output: PASS: original composer restored
+Exit: 0; original source and bundles cmp equal, added component removed from test copy only.
+Restored command: node Docs/composer-repair/check.mjs Docs/composer-repair/rollback-test/src/client/GroupChatPanel.tsx Docs/composer-repair/rollback-test/src/client/GroupChatComposer.tsx
+Literal output: FAIL: {"compact":false,"multiline":false,"picker":false,"ime":false,"cursor":false}
+Exit: 1 (expected original behavior). Actual deployed files and MODIFIED_FILE remain modified.
+Build: npm run build:client => tsdown Build complete; exit 0.
+Typecheck: node node_modules/typescript/bin/tsc --noEmit --jsx react-jsx --target ES2023 --module NodeNext --moduleResolution NodeNext --esModuleInterop --skipLibCheck src/client/GroupChatComposer.tsx src/client/GroupChatPanel.tsx
+Output: empty; exit 0.
+
+Live Chrome verification:
+- Refreshed 特遣协同; 群聊消息 is multiline, collapsed @ selector shown; old long quick mention row absent.
+- Clicked selector, searched backend, only matching role 关羽 (云长) shown in the current three-kingdoms theme.
+- Selected role; textarea value became @关羽 (云长) followed by space, focus returned to textarea.
+- Shift+Enter inserted newline; no request dispatched.
+- Escape closed picker and returned focus to trigger.
+- Cleared test draft with Ctrl+A/Backspace; reopened picker for screenshot. No live model message sent.
+Screenshot inspected: C:/项目/dsh-group-chat/Docs/composer-repair/mcp-image-1788864367574-1.png

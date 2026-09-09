@@ -1,0 +1,44 @@
+{
+  "ok": true,
+  "failures": [],
+  "beforeReload": {
+    "hasHud": true,
+    "hudVisible": true,
+    "hasGcConversationTab": true,
+    "gcTabVisible": true,
+    "hasComposer": true,
+    "hasAgentLabel": true,
+    "hasOfficialDialogLabel": true,
+    "bodyFlags": {
+      "tabActive": "true",
+      "hudOpen": null
+    }
+  },
+  "afterReloadNewChat": {
+    "hasHud": false,
+    "hudVisible": false,
+    "hasGcConversationTab": false,
+    "gcTabVisible": false,
+    "hasComposer": true,
+    "hasAgentLabel": false,
+    "hasOfficialDialogLabel": true,
+    "bodyFlags": {
+      "tabActive": null,
+      "hudOpen": null
+    }
+  },
+  "afterReturnAgent": {
+    "hasHud": true,
+    "hudVisible": true,
+    "hasGcConversationTab": true,
+    "gcTabVisible": true,
+    "hasComposer": true,
+    "hasAgentLabel": true,
+    "hasOfficialDialogLabel": true,
+    "bodyFlags": {
+      "tabActive": "true",
+      "hudOpen": null
+    }
+  },
+  "errors": []
+}

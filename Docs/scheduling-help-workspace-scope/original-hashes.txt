@@ -1,0 +1,6 @@
+8b1a672447203553ee24bdc47450d56e89bdd550ff329f2fcbc7b0ecec09c102  C:\项目\dsh-group-chat\src\index.ts
+a213b1244c24fbe44cbd9a57654d5c4f478577e1baa220bfb648fce37f6e1e99  C:\项目\dsh-group-chat\src\client\GroupChatSideDock.tsx
+266cce150c5a3a1a8c2f9288cdef77eac2dccac56ffa262e66e2f8922a465f16  C:\项目\dsh-group-chat\src\engine\model-settings.ts
+7caa6a1676b9c280bcab9c42c0f9695ef2ce982b9e53d780500445a6fad76873  C:\项目\dsh-group-chat\src\engine\room-manager.ts
+ae7a3ae4759216cb7f3a131d6b1524db312510d8ff7eff2ba8bf831e0fd5c06a  C:\项目\dsh-group-chat\lib\index.js
+3ae70fedc4533651b04e40c8b70e4800dcec914d11b612c90a11af0054f8ea81  C:\项目\dsh-group-chat\lib\client.js
