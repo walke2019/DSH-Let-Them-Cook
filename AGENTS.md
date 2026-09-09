@@ -177,3 +177,15 @@
 - User-facing runtime copy must remain locale-aware: keep zh-CN/en-US branches, `tx(locale, zh, en)`, Chinese mention aliases, and built-in localized persona names when they are product behavior.
 - Do not “English-only” runtime UX by deleting Chinese strings; separate source readability from bilingual product output.
 - New theme/workflow copy must update locale-aware tests before release.
+
+### 3. Runtime Agent Watchdog（P62）
+- 群聊成员 Agent 必须带工作区级 session meta：`cwd: process.cwd()`、`origin: 'subagent'`、`delegationDepth: 1`，避免无作用域子 Agent 在 DSH 上下文组合或恢复时失去工作区归属。
+- 群聊成员执行时严禁直接 `await agent.whenIdle()` 后才检查 abort；必须使用 abort-aware wait helper，让模型超时、回退链、HUD 状态和 assignment ledger 能收敛到 completed/failed。
+- 真实 DSH 长任务压测若出现 assignment 超过 expectedMs 仍 running，应优先检查 `runMemberTurn()` 的 abort 传播、fallback 是否进入下一模型、以及 `.pm-workflow/dsh-group-chat/rooms.json` 中 `resultMessageId` 是否落盘。
+- Assignment 创建后必须有用户可见的超时收敛路径：超过 `expectedMs + grace` 仍为 queued/running 时，写入 `assignment-watchdog-timeout` 系统消息、标记 assignment failed、同步 workflow task failed，并广播 HUD error。
+
+### 4. Chat UI composer/progression guard（P64）
+- The middle `Agent 群聊` tab remains the single chat entry point. HUD panels must not mount or duplicate `GroupChatPanel`.
+- User input must be tested through the real browser textarea for bilingual content; API probes with Chinese must send UTF-8 bytes to avoid false mojibake diagnostics.
+- When the docked HUD is open, center avoidance must be capped by the middle tab width (`100%`), not `100vw`; narrow viewports must keep the message log and composer usable through a slim HUD reveal strip.
+- A valid UI smoke check confirms: draft typed -> send button enabled -> send clicked -> user bubble appended -> composer cleared -> no permanent source dialog pollution.

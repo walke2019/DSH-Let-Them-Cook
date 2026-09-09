@@ -54,6 +54,16 @@ function summarizeRuntimeMetrics(events: readonly any[]): AgentRuntimeMetrics {
   return metrics
 }
 
+
+async function waitForMemberIdle(agent: AgentHandle['agent'], signal: AbortSignal): Promise<void> {
+  if (signal.aborted) throw signal.reason instanceof Error ? signal.reason : new Error(String(signal.reason || 'group-chat turn aborted'))
+  await new Promise<void>((resolve, reject) => {
+    const onAbort = () => reject(signal.reason instanceof Error ? signal.reason : new Error(String(signal.reason || 'group-chat turn aborted')))
+    signal.addEventListener('abort', onAbort, { once: true })
+    agent.whenIdle().then(resolve, reject).finally(() => signal.removeEventListener('abort', onAbort))
+  })
+}
+
 export interface MemberTurnRuntimeOptions {
   roleId?: string
   allowedTools?: readonly string[]
@@ -83,6 +93,7 @@ export async function runMemberTurn(ctx: RuntimeContext, model: ModelRef, prompt
   try {
     handle = await ctx.agents.create({
       sessionId: `group-chat-${randomUUID()}` as SessionId,
+      meta: { cwd: process.cwd(), origin: 'subagent', delegationDepth: 1 },
       signal,
       agentOptions: { provider: selected.provider, model: selected.model, maxTokens: 2048 },
       setup(agentCtx) {
@@ -107,7 +118,7 @@ export async function runMemberTurn(ctx: RuntimeContext, model: ModelRef, prompt
       id: randomUUID(), role: 'user', source: { kind: 'plugin', plugin: '@dsh-external/dsh-group-chat' },
       content: [{ type: 'text', text: options.locale === 'en-US' ? 'Respond to the group-chat topic only as your assigned role; do not claim tools or research you did not actually perform.' : '请基于群聊议题，仅代表你的角色发言；不要声称执行了未执行的工具或调研。' }],
     } as UserMessage)
-    await handle.agent.whenIdle()
+    await waitForMemberIdle(handle.agent, signal)
     signal.throwIfAborted()
     const events = handle.agent.session.events
     const end = events.findLast(e => e.type === 'turn/end')

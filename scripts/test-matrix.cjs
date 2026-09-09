@@ -62,6 +62,9 @@ const steps = [
   ['node', ['Docs/p59-theme-workflow-content-i18n/test-p59-theme-workflow-content-i18n.cjs']],
   ['node', ['Docs/p60-tech-legends-theme/test-p60-tech-legends-theme.cjs']],
   ['node', ['Docs/p61-english-source-bilingual-runtime/test-p61-english-source-bilingual-runtime.cjs']],
+  ['node', ['Docs/p62-runtime-agent-watchdog/test-p62-runtime-agent-watchdog.cjs']],
+  ['node', ['Docs/p63-assignment-watchdog-timeout/test-p63-assignment-watchdog-timeout.cjs']],
+  ['node', ['Docs/p64-chat-ui-composer-progression/test-p64-chat-ui-composer-progression.cjs']],
   ['node', ['scripts/e2e-no-llm.cjs']],
   ['npm', ['run', 'preflight']],
 ]

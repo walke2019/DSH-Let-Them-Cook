@@ -388,6 +388,7 @@ export function GroupChatSideDock() {
           .dsh-gc-sidebar-host details{width:auto!important;max-width:100%!important;overflow:hidden!important;}
           .dsh-gc-sidebar-host summary{max-width:100%!important;overflow:hidden!important;}
           .dsh-gc-sidebar-host select{min-width:0;max-width:100%;}
+          @media(max-width:760px){.dsh-gc-sidebar-host[data-floating="false"][data-collapsed="false"]{width:min(320px,calc(100vw - 72px))!important;transform:translateX(calc(100% - 44px));box-shadow:var(--dsw-shadow-lv2,-2px 0 12px rgba(0,0,0,.25));}.dsh-gc-sidebar-host[data-floating="false"][data-collapsed="false"]:hover,.dsh-gc-sidebar-host[data-floating="false"][data-collapsed="false"]:focus-within,.dsh-gc-sidebar-host[data-floating="false"][data-collapsed="false"][data-resizing="true"]{transform:translateX(0);}}
         `}</style>
         <div
           className="dsh-gc-resize-handle pI_x6G_handle"
@@ -582,8 +583,3 @@ export function GroupChatSideDock() {
     </>
   )
 }
-
-
-
-
-

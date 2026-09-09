@@ -78,6 +78,9 @@
     "test:tool-workflow-api-i18n": "node Docs/p58-tool-workflow-api-i18n/test-p58-tool-workflow-api-i18n.cjs",
     "test:theme-workflow-content-i18n": "node Docs/p59-theme-workflow-content-i18n/test-p59-theme-workflow-content-i18n.cjs",
     "test:tech-legends-theme": "node Docs/p60-tech-legends-theme/test-p60-tech-legends-theme.cjs",
-    "test:english-source-bilingual-runtime": "node Docs/p61-english-source-bilingual-runtime/test-p61-english-source-bilingual-runtime.cjs"
+    "test:english-source-bilingual-runtime": "node Docs/p61-english-source-bilingual-runtime/test-p61-english-source-bilingual-runtime.cjs",
+    "test:runtime-agent-watchdog": "node Docs/p62-runtime-agent-watchdog/test-p62-runtime-agent-watchdog.cjs",
+    "test:assignment-watchdog-timeout": "node Docs/p63-assignment-watchdog-timeout/test-p63-assignment-watchdog-timeout.cjs",
+    "test:chat-ui-composer-progression": "node Docs/p64-chat-ui-composer-progression/test-p64-chat-ui-composer-progression.cjs"
   }
 }

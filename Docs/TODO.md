@@ -373,3 +373,21 @@
 
 
 - [x] 对标项目与 dsh-mnemon 共存说明已同步到 README、生态评估和扩展标准：DSH seam / Hermes / OpenClaw / dsh-mnemon。
+
+## P62 Runtime Agent Watchdog
+- [x] Real DSH group-chat long task exposed stalled follow-up assignments after model cancellation.
+- [x] Add workspace/subagent metadata when creating programmatic member agents.
+- [x] Replace direct member `whenIdle()` await with abort-aware idle wait.
+- [x] Add regression guard: `npm run test:runtime-agent-watchdog`.
+
+## P63 Assignment Watchdog Timeout
+- [x] Add a tier-aware assignment watchdog so stale running tasks converge to failed.
+- [x] Persist watchdog timeout as a system message with `assignment-watchdog-timeout` metadata.
+- [x] Update workflow task verification with timeout exit code `124`.
+- [x] Add regression guard: `npm run test:assignment-watchdog-timeout`.
+
+## P64 — 中间聊天输入与消息推进 UI 验收
+- [x] 用真实浏览器输入区发送中英文混合消息，确认发送按钮启用、用户气泡追加、输入框清空。
+- [x] 修正 HUD 展开时对中间视图的避让算法：基于中间 tab 宽度上限计算，不再用 `100vw` 把聊天区挤成窄条。
+- [x] 窄视口下 docked HUD 自动变为 44px 露出条，保障消息流和 composer 可见可用。
+- [x] 增加回归守卫：`npm run test:chat-ui-composer-progression`。

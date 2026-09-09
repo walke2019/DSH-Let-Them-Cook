@@ -1,6 +1,6 @@
 import {subscribeGroupChat} from './group-chat-events.js'
 import {AvatarBadge} from './AvatarBadge.js'
-import React, {useEffect, useRef, useState} from 'react'
+import React, {useEffect, useLayoutEffect, useRef, useState} from 'react'
 import {MarkdownText} from '@deepseek-ai/dsh-client-ui-primitives'
 import {GroupChatComposer} from './GroupChatComposer.js'
 import {getThemeVoice} from '../engine/theme-voice.js'
@@ -154,9 +154,15 @@ export function GroupChatPanel({mode='full'}:GroupChatPanelProps) {
     })
     return ()=>{controller.abort();unsubscribe()}
   },[retry])
-  useEffect(()=>{
+  useLayoutEffect(()=>{
     if(follow.current&&scroll.current)scroll.current.scrollTop=scroll.current.scrollHeight
-  },[messages])
+    if(!follow.current||!scroll.current)return
+    const el=scroll.current
+    const sync=()=>{el.scrollTop=el.scrollHeight}
+    sync()
+    const frame=requestAnimationFrame(()=>{sync();requestAnimationFrame(sync)})
+    return ()=>cancelAnimationFrame(frame)
+  },[messages.length, loading])
   useEffect(()=>{
     const el=scroll.current
     if(!el)return
@@ -210,10 +216,10 @@ export function GroupChatPanel({mode='full'}:GroupChatPanelProps) {
   return <div data-dsh-group-chat-panel className="gc-conversation">
     <style>{`
       .gc-conversation{position:relative;display:flex;flex-direction:column;flex:1;min-height:0;height:100%;width:100%;overflow:hidden;color:var(--dsw-alias-label-primary,#eee);font-family:inherit;background:transparent;box-sizing:border-box;transition:padding-right .18s ease;}
-      body[data-dsh-group-chat-tab-active="true"][data-dsh-group-chat-hud-docked-open="true"] .gc-conversation{padding-right:min(var(--dsh-group-chat-hud-overlay-width,360px),calc(100vw - 72px));}
+      body[data-dsh-group-chat-tab-active="true"][data-dsh-group-chat-hud-docked-open="true"] .gc-conversation{padding-right:min(var(--dsh-group-chat-hud-overlay-width,360px),max(0px,calc(100% - 320px)));}
       body[data-dsh-group-chat-tab-active="true"][data-dsh-group-chat-hud-docked-open="true"] .gc-chat-messages{padding-left:8px;padding-right:8px;}
       body[data-dsh-group-chat-tab-active="true"][data-dsh-group-chat-hud-docked-open="true"] .gc-chat-bottom{padding-right:0;}
-      body[data-dsh-group-chat-tab-active="true"][data-dsh-group-chat-hud-docked-open="true"] .gc-agent-float{max-width:calc(100% - var(--dsh-group-chat-hud-overlay-width,360px) - 36px);}
+      body[data-dsh-group-chat-tab-active="true"][data-dsh-group-chat-hud-docked-open="true"] .gc-agent-float{max-width:min(calc(100% - 36px),calc(100% - min(var(--dsh-group-chat-hud-overlay-width,360px),max(44px,calc(100% - 320px))) - 36px));}
       .gc-chat-scroll{flex:1;min-height:0;overflow:auto;overscroll-behavior:contain;scrollbar-gutter:stable;scroll-behavior:auto;overflow-anchor:none;}
       .gc-scroll-content{min-height:100%;display:flex;flex-direction:column;}
       .gc-chat-messages{flex:1;padding:28px 24px calc(var(--gc-bottom-height,150px) + 24px);}
@@ -268,6 +274,7 @@ export function GroupChatPanel({mode='full'}:GroupChatPanelProps) {
       .gc-message-tools pre{white-space:pre-wrap;max-height:240px;}
       .gc-chat-error{margin:8px auto;max-width:960px;padding:8px 16px;font-size:12px;color:#fca5a5;}
       @media(max-width:900px){.gc-agent-float{display:none;}}
+      @media(max-width:760px){body[data-dsh-group-chat-tab-active="true"][data-dsh-group-chat-hud-docked-open="true"] .gc-conversation{padding-right:44px;}body[data-dsh-group-chat-tab-active="true"][data-dsh-group-chat-hud-docked-open="true"] .gc-chat-messages{padding-left:12px;padding-right:12px;}body[data-dsh-group-chat-tab-active="true"][data-dsh-group-chat-hud-docked-open="true"] .gc-composer{padding-left:12px;padding-right:12px;}}
       @media(max-width:600px){.gc-chat-messages{padding:16px 12px calc(var(--gc-bottom-height,150px) + 20px);}.gc-message-user .gc-message-body{max-width:94%;}}
     `}</style>
     <div className="gc-agent-float" data-open={statusOpen} aria-label={tx(locale,'当前执行 Agent 状态','Current Agent status')} style={{left:statusPos.x,top:statusPos.y}} onPointerDown={startDrag} onPointerMove={moveDrag} onPointerUp={stopDrag} onPointerCancel={stopDrag}>
@@ -307,5 +314,3 @@ export function GroupChatPanel({mode='full'}:GroupChatPanelProps) {
     </div></div></div>
   </div>
 }
-
-

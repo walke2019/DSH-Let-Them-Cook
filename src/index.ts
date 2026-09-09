@@ -97,10 +97,36 @@ export function apply(ctx: AppContext, config: Config): void {
     const assignmentBrief = task ? `${brief}
 
 工作流阶段任务：${task.title}：${task.description}` : brief
-    const assignment = roomManager.createAssignment(roomId, targetAgentId, assignmentBrief, { sourceMessageId, createdByRoleId, stageId: stage?.id || stageId, workflowTaskId: task?.taskId, taskTier, expectedMs: expectedMsForTier(taskTier, targetAgentId) })
+    const expectedMs = expectedMsForTier(taskTier, targetAgentId)
+    const assignment = roomManager.createAssignment(roomId, targetAgentId, assignmentBrief, { sourceMessageId, createdByRoleId, stageId: stage?.id || stageId, workflowTaskId: task?.taskId, taskTier, expectedMs })
     if (current && stage && task && assignment) {
       WorkflowOrchestrator.updateTaskStatus(current, stage.id, task.taskId, 'running', { assignmentId: assignment.assignmentId })
       roomManager.saveRoom(current)
+    }
+    if (assignment) {
+      schedule(() => {
+        const latest = roomManager.getRoom(roomId)
+        const live = latest?.assignments?.find(item => item.assignmentId === assignment.assignmentId)
+        if (!latest || !live || (live.status !== 'queued' && live.status !== 'running')) return
+        const locale = normalizeApiLocale(roomManager.getMessages(roomId).find(item => item.messageId === sourceMessageId)?.metadata?.locale)
+        const message = taskTier === 'quick'
+          ? (locale === 'en-US' ? 'Quick task exceeded its expected runtime and was stopped by the assignment watchdog.' : '快速任务超过预期执行时间，已由任务看门狗停止。')
+          : (locale === 'en-US' ? 'Long task exceeded its expected runtime and needs retry or user review.' : '长任务超过预期执行时间，需要重试或用户复核。')
+        const timeoutMessage = roomManager.addMessage(roomId, {
+          roomId,
+          sender: groupSystemSender(locale),
+          content: message,
+          mentions: [],
+          metadata: { systemNotice: 'assignment-watchdog-timeout', assignmentId: assignment.assignmentId, taskTier },
+        })
+        const failed = roomManager.completeAssignment(roomId, assignment.assignmentId, timeoutMessage.messageId, message)
+        if (failed?.stageId && failed.workflowTaskId) {
+          WorkflowOrchestrator.updateTaskStatus(latest, failed.stageId, failed.workflowTaskId, 'failed', { assignmentId: failed.assignmentId, verificationOutput: message, verificationExitCode: 124 })
+          roomManager.saveRoom(latest)
+        }
+        roomManager.broadcast({ type: 'agent:status', roomId, payload: { agentId: targetAgentId, name: targetAgentId, avatar: '⚠️', status: 'error', assignmentId: assignment.assignmentId, message }, timestamp: Date.now() })
+        persistRoomState(roomId)
+      }, expectedMs + (taskTier === 'quick' ? 30000 : 60000))
     }
     persistRoomState(roomId)
     return assignment
