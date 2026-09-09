@@ -197,3 +197,10 @@
 - 写入类、配置类和项目变更类任务优先创建 `ApprovalTransaction`，展示 willChange 与 rollbackPlan，用户/主 Agent 批准后再推进。
 - HUD 的默认层级必须像任务驾驶舱：当前谁在干活、路线图进度、待确认卡和闭环质量优先；完整流水只放在高级详情/账本。
 - 对标 `dsh-agent-teams` 时，保持本项目差异化：工作区作用域、DSH seam 零污染、主题化人话、官方 workflow 并发保留、主 Agent + SubAgent 可审计闭环。
+
+
+### 19. 模型可用性与对话中换模型守则（P70）
+- 最近模型只能代表“用过”，不得等同于“当前可用”；运行时必须记录工作区级模型 health（成功/失败次数、lastStatus、lastError）。
+- 角色在对话中切换主模型或回退模型后，后续 assignment 必须读取最新 room member 配置，不得复用旧执行快照。
+- 模型失败时优先走用户配置的 fallback chain；全部失败后必须把候选链和最后错误写入 assignment/ledger，并让用户能按 health 选择已验证模型。
+- 若 DSH 当前 tools service 只暴露全局上下文导致 `tools.restrict() requires a scoped context`，插件必须降级为 Prompt 工具权限约束并继续模型调用，不得把工具白名单兼容问题误报为模型不可用。

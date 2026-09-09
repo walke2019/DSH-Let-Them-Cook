@@ -102,6 +102,7 @@ export async function runMemberTurn(ctx: RuntimeContext, model: ModelRef, prompt
         agentCtx.effect(() => {
           const scope = restrictToolsCompat(scoped.tools, allowedTools)
           if (scope.missing.length) console.warn?.(`[GroupChat] 未找到工具别名，将跳过: ${scope.missing.join(', ')}`)
+          if (scope.warning) console.warn?.(`[GroupChat] 工具白名单降级为 Prompt 约束: ${scope.warning}`)
           return scope.effect || (() => {})
         })
         agentCtx.effect(() => scoped.systemPrompt.section({

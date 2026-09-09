@@ -9,7 +9,7 @@ import type { Context } from '@deepseek-ai/cordis'
 import z from '@deepseek-ai/schemastery'
 import { RoomManager } from './engine/room-manager.js'
 import { SharedToolBus } from './engine/tool-bus.js'
-import { ModelResilienceManager } from './engine/resilience.js'
+import { ModelFallbackError, ModelResilienceManager } from './engine/resilience.js'
 import { DispatchArbiter } from './engine/arbiter.js'
 import { ContextProjection } from './engine/projection.js'
 import { WorkflowOrchestrator } from './engine/workflow-orchestrator.js'
@@ -89,7 +89,12 @@ export function apply(ctx: AppContext, config: Config): void {
     const current = roomManager.getRoom(roomId)
     if (current) workspaceStore.saveSnapshot(current, roomManager.getMessages(roomId), roomManager.getLedger(roomId))
   }
-  const expectedMsForTier = (tier: GroupTaskTier | undefined, agentId: string): number => tier === 'quick' ? 60000 : agentId === 'commander' || agentId === 'qa' ? 180000 : 120000
+  const expectedMsForTier = (tier: GroupTaskTier | undefined, agentId: string, roomId?: string): number => {
+    const member = roomId ? roomManager.getRoom(roomId)?.members.find(item => item.id === agentId) : undefined
+    const policyTimeout = member?.resiliencePolicy?.timeoutMs || 0
+    if (tier === 'quick') return Math.max(60000, Math.min(180000, policyTimeout + 30000))
+    return Math.max(agentId === 'commander' || agentId === 'qa' ? 180000 : 120000, Math.min(300000, policyTimeout + 60000))
+  }
   const createTurnAssignment = (roomId: string, targetAgentId: string, brief: string, sourceMessageId?: string, createdByRoleId?: string, stageId?: string, taskTier?: GroupTaskTier) => {
     const current = roomManager.getRoom(roomId)
     const stage = stageId ? current?.workflow?.stages.find(item => item.id === stageId) : current?.workflow?.stages[current.workflow.currentStageIndex]
@@ -97,7 +102,7 @@ export function apply(ctx: AppContext, config: Config): void {
     const assignmentBrief = task ? `${brief}
 
 工作流阶段任务：${task.title}：${task.description}` : brief
-    const expectedMs = expectedMsForTier(taskTier, targetAgentId)
+    const expectedMs = expectedMsForTier(taskTier, targetAgentId, roomId)
     const assignment = roomManager.createAssignment(roomId, targetAgentId, assignmentBrief, { sourceMessageId, createdByRoleId, stageId: stage?.id || stageId, workflowTaskId: task?.taskId, taskTier, expectedMs })
     if (current && stage && task && assignment) {
       WorkflowOrchestrator.updateTaskStatus(current, stage.id, task.taskId, 'running', { assignmentId: assignment.assignmentId })
@@ -209,10 +214,16 @@ export function apply(ctx: AppContext, config: Config): void {
       fallbackChain = execution.fallbackChain
       runtimeMetrics = execution.result.metrics
       logger.info?.(`[GroupChat] ${member.name} completed with ${providerUsed}/${modelUsed}; elapsed=${execution.totalElapsedMs}ms; attempts=${execution.attempts.length}`)
-      try{modelSettings.remember({provider:providerUsed,model:modelUsed})}catch(error){logger.warn?.('最近模型记录保存失败',error)}
+      try{
+        for(const attempt of execution.attempts) modelSettings.markResult({provider:attempt.provider,model:attempt.model}, !attempt.error, attempt.error)
+        modelSettings.remember({provider:providerUsed,model:modelUsed})
+      }catch(error){logger.warn?.('最近模型/可用性记录保存失败',error)}
     } catch (err) {
       if (lifetime.signal.aborted) return
       const message = err instanceof Error ? err.message : String(err)
+      if(err instanceof ModelFallbackError){
+        try{for(const attempt of err.attempts) modelSettings.markResult({provider:attempt.provider,model:attempt.model}, false, attempt.error)}catch(error){logger.warn?.('模型可用性失败记录保存失败',error)}
+      }
       logger.warn?.(`[GroupChat] ${member.name}: ${message}`)
       roomManager.broadcast({ type: 'error:notice', roomId,
         payload: { agentId: member.id, message }, timestamp: Date.now() })
@@ -343,7 +354,7 @@ export function apply(ctx: AppContext, config: Config): void {
           const manualByRole = Object.fromEntries((room?.members || []).map(member => [member.id, member.llmConfig]))
           const recommendations = room?.orchestration?.modelHints ? recommendModelsForRoles(room.orchestration.modelHints, groups, {recent:modelSettings.recent(), current, manualByRole, limit:6}) : {}
           res.writeHead(200,{'Content-Type':'application/json; charset=utf-8'})
-          res.end(JSON.stringify({groups,recent:modelSettings.recent(),current,recommendations,compat:compatReport,catalogWarnings:catalog.warnings,scope:{type:'workspace',path:process.cwd(),settings:modelSettings.location(),rooms:workspaceStore.location()}}));return
+          res.end(JSON.stringify({groups,recent:modelSettings.recent(),health:modelSettings.health(),current,recommendations,compat:compatReport,catalogWarnings:catalog.warnings,scope:{type:'workspace',path:process.cwd(),settings:modelSettings.location(),rooms:workspaceStore.location()}}));return
         }
 
         if(method==='POST' && pathname==='/models/recent/delete'){

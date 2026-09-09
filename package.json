@@ -86,6 +86,7 @@
     "test:durable-subagent-resume": "node Docs/p66-durable-subagent-resume/test-p66-durable-subagent-resume.cjs",
     "test:approve-run-transaction-card": "node Docs/p67-approve-run-transaction-card/test-p67-approve-run-transaction-card.cjs",
     "test:team-coordination-tools": "node Docs/p68-team-coordination-tools/test-p68-team-coordination-tools.cjs",
-    "test:task-cockpit-productization": "node Docs/p69-task-cockpit-productization/test-p69-task-cockpit-productization.cjs"
+    "test:task-cockpit-productization": "node Docs/p69-task-cockpit-productization/test-p69-task-cockpit-productization.cjs",
+    "test:model-health-switching": "node Docs/p70-model-health-and-switching/test-p70-model-health-and-switching.cjs"
   }
 }

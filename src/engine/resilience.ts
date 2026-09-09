@@ -22,6 +22,13 @@ export interface ModelExecutionResult<T> {
   totalElapsedMs: number
 }
 
+export class ModelFallbackError extends Error {
+  constructor(message: string, public readonly attempts: ModelAttemptRecord[], public readonly fallbackChain: string[], public readonly totalElapsedMs: number) {
+    super(message)
+    this.name = 'ModelFallbackError'
+  }
+}
+
 export class ModelResilienceManager {
   /**
  * Resilient model invocation with fallback chains, 429 cooldowns, timeout handling, and retry backoff.
@@ -161,8 +168,12 @@ export class ModelResilienceManager {
       }
     }
 
-    throw new Error(
-      `[Resilience] 所有候选模型均调用失败: [${fallbackChain.join(' -> ')}]. 总耗时 ${Date.now() - startedAt}ms；尝试 ${attempts.length} 次；最后错误: ${lastError?.message}`
+    const totalElapsedMs = Date.now() - startedAt
+    throw new ModelFallbackError(
+      `[Resilience] 所有候选模型均调用失败: [${fallbackChain.join(' -> ')}]. 总耗时 ${totalElapsedMs}ms；尝试 ${attempts.length} 次；最后错误: ${lastError?.message}`,
+      attempts,
+      fallbackChain,
+      totalElapsedMs
     )
   }
 }

@@ -151,3 +151,5 @@
 - [P67 Approve & Run Transaction Card](./p67-approve-run-transaction-card/README.md): change-oriented work can expose will-change and rollback plans before approval.
 - [P68 Team Coordination Tools](./p68-team-coordination-tools/README.md): Agent-callable coordination tools keep master/subagent reporting auditable.
 - [P69 Task Cockpit Productization](./p69-task-cockpit-productization/README.md): HUD now emphasizes current work, loop quality, captain plan and approval cards instead of chat-only novelty.
+
+- [P70 Model health and mid-chat switching](./p70-model-health-and-switching/README.md): workspace-scoped success/failure memory for model IDs, graceful tool-scope fallback, and user-facing switch guidance.

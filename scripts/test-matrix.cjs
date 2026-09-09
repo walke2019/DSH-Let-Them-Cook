@@ -70,6 +70,7 @@ const steps = [
   ['node', ['Docs/p67-approve-run-transaction-card/test-p67-approve-run-transaction-card.cjs']],
   ['node', ['Docs/p68-team-coordination-tools/test-p68-team-coordination-tools.cjs']],
   ['node', ['Docs/p69-task-cockpit-productization/test-p69-task-cockpit-productization.cjs']],
+  ['node', ['Docs/p70-model-health-and-switching/test-p70-model-health-and-switching.cjs']],
   ['node', ['scripts/e2e-no-llm.cjs']],
   ['npm', ['run', 'preflight']],
 ]

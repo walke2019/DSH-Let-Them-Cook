@@ -20,6 +20,8 @@ export interface ToolScopeResult {
   missing: string[]
   knownTools: string[]
   effect?: any
+  enforcement?: 'applied' | 'prompt-only'
+  warning?: string
 }
 
 const LEGACY_TOOL_ALIASES: Record<string, string> = {
@@ -124,19 +126,36 @@ export function resolveToolScope(tools: any, requested: readonly string[]): Tool
 
 export function restrictToolsCompat(tools: any, requested: readonly string[]): ToolScopeResult {
   const scope = resolveToolScope(tools, requested)
-  if (typeof tools?.restrict !== 'function') return scope
+  if (typeof tools?.restrict !== 'function') return { ...scope, enforcement: 'prompt-only' }
+  const applyRestriction = (allow: readonly string[]) => tools.restrict({ allow })
   try {
-    const effect = tools.restrict({ allow: scope.resolved })
-    return { ...scope, effect }
+    const effect = applyRestriction(scope.resolved)
+    return { ...scope, effect, enforcement: 'applied' }
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error)
+    if (message.includes('requires a scoped context')) {
+      return {
+        ...scope,
+        enforcement: 'prompt-only',
+        warning: message,
+      }
+    }
     const match = message.match(/known global tools: (.+)$/)
     if (!match) throw error
     const known = new Set(match[1].split(',').map(item => item.trim()).filter(Boolean))
     const retried = scope.resolved.filter(name => known.has(name))
     const missing = Array.from(new Set([...scope.missing, ...scope.resolved.filter(name => !known.has(name))])).sort()
-    const effect = tools.restrict({ allow: retried })
-    return { ...scope, resolved: retried, missing, knownTools: Array.from(known), effect }
+    try {
+      // Compatibility path is equivalent to tools.restrict({ allow: retried }).
+      const effect = applyRestriction(retried)
+      return { ...scope, resolved: retried, missing, knownTools: Array.from(known), effect, enforcement: 'applied' }
+    } catch (retryError) {
+      const retryMessage = retryError instanceof Error ? retryError.message : String(retryError)
+      if (retryMessage.includes('requires a scoped context')) {
+        return { ...scope, resolved: retried, missing, knownTools: Array.from(known), enforcement: 'prompt-only', warning: retryMessage }
+      }
+      throw retryError
+    }
   }
 }
 
