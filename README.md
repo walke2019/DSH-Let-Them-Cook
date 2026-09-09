@@ -1,31 +1,39 @@
-# DSH Group Chat（工作区级多 Agent 群聊编排插件）
+# DSH Group Chat
 
-`dsh-group-chat` 是运行在 DeepSeek Harness (DSH) 上的 Cordis 扩展插件。它的目标不是替换官方对话，而是在当前会话中新增一个 **Agent 群聊** 工作区：用户用一句话描述项目任务，扩展生成角色与工作流草案，用户确认后写入当前工作区，再由主 Agent 统筹 SubAgent 并发推进、质检和收口。
+Workspace-scoped multi-Agent group-chat orchestration plugin for DeepSeek Harness (DSH).
 
-## 当前核心能力
+`dsh-group-chat` is a Cordis extension for DSH. It does **not** replace the official chat. Instead, it adds a dedicated **Agent Chat** workspace tab where users can describe a project task in plain language, review an AI-generated role/workflow draft, confirm it, and then let a master Agent coordinate SubAgents through planning, execution, QA, documentation, and final handoff.
 
-- **中间 `Agent 群聊` 标签**：通过 `conversation.view` 安全注册，保留官方 `对话` 原样可用。
-- **右侧 `群聊控制台 (HUD)`**：通过 `shell.overlay` 覆盖停靠，展示工作流、执行导演台、黑板、账本、角色和模型配置。
-- **一句话建群/建工作流**：信息足够则生成草案；不足则追问；确认后才写入。
-- **主 Agent + SubAgent**：`commander` 负责理解、拆解、派发、审核、收口；`researcher/backend/frontend/qa/writer` 分别执行专业任务。
-- **工具归口与防重复**：搜索/爬取只归口 researcher，前端/UI 归口 frontend，QA 归口 qa，避免全员重复调用。
-- **工作区作用域**：角色、主题、工作流、最近模型、回退模型、黑板、assignment、mailbox 默认写入 `.pm-workflow/dsh-group-chat/`。
-- **HUD 布局稳定性**：右栏可浮动、可停靠、可拖动、左边线可缩放；不挤压官方 AppFrame；只让 `Agent 群聊` 自身避让。
-- **中/英文自动匹配**：客户端跟随浏览器语言或用户选择，服务端 API、工具输出、Agent Prompt、主题/工作流生成内容支持 `zh-CN / en-US`。
-- **开源友好源码**：`src/**/*.ts(x)` 注释与内部工程说明优先英文；用户可见文案继续保留双语运行能力。
+## Language support
 
-## 已内置主题
+- **Default documentation language:** English, for open-source readability.
+- **Runtime UI:** automatically matches `zh-CN` / `en-US` from browser language or user selection.
+- **Chinese support:** Chinese UI copy, Chinese mention aliases, Chinese role names, and Chinese themed personas remain first-class product behavior.
+- **Source comments:** `src/**/*.ts(x)` comments and internal engineering notes should stay in English.
 
-- 默认（沙雕整活）
-- 沙雕整活
-- 原神提瓦特
-- 现代精英
-- 三国风云
-- 科技传奇（乔布斯 / 马斯克 / 黄仁勋 / 雷布斯 / 比尔·盖茨 / 张小龙）
+## Core capabilities
 
-默认创建使用“沙雕整活”，但角色输出必须说人话、有趣、不水字数，并服务任务推进；切换到“科技传奇”时会营造科技巨头为用户打工的项目小队氛围。
+- **Middle `Agent Chat` tab:** safely registered through `conversation.view` with a stable `prepare()` adapter; the official DSH `Dialog` tab remains untouched.
+- **Right-side `Group Chat HUD`:** mounted through `shell.overlay`; shows workflow, execution status, scratchpad, ledger, team, role, and model settings.
+- **One-line setup flow:** if the user intent is clear, generate a draft; if not, ask a clarifying question; only write to the workspace after user confirmation.
+- **Master Agent + SubAgents:** `commander` understands intent, asks follow-ups, delegates, reviews, and closes; `researcher/backend/frontend/qa/writer` execute specialized work.
+- **Tool ownership and dedupe:** search/crawl/data extraction goes to `researcher`; backend/API/state to `backend`; UI/browser debugging to `frontend`; QA to `qa`; docs to `writer`.
+- **Workspace-scoped state:** roles, themes, workflows, recent models, fallback models, scratchpad, assignments, mailbox, and ledger are stored under `.pm-workflow/dsh-group-chat/` by default.
+- **Stable HUD layout:** docked/floating/draggable/resizable HUD, no global AppFrame squeezing, and scoped spacing only inside the `Agent Chat` tab.
+- **Bilingual runtime generation:** server APIs, tools, Agent prompts, theme drafts, and workflow drafts support `zh-CN / en-US`.
 
-## 项目结构
+## Built-in themes
+
+- Default: Meme Squad
+- Meme Squad
+- Genshin / Teyvat
+- Modern Elite
+- Three Kingdoms
+- Tech Legends: Jobs / Musk / Jensen Huang / Lei Jun / Bill Gates / Zhang Xiaolong
+
+The default generated setup uses the Meme Squad tone: playful, human-readable, and delivery-focused. Switching to Tech Legends creates the feeling of having tech giants working for the user.
+
+## Project structure
 
 ```text
 dsh-group-chat/
@@ -39,7 +47,7 @@ dsh-group-chat/
 │   ├── dispatch-engine.md
 │   ├── standards-and-extensibility.md
 │   ├── workflow-and-role-personas.md
-│   └── ... P 阶段专项文档与验证记录
+│   └── ... phase-specific docs and validation records
 ├── src/
 │   ├── index.ts
 │   ├── types.ts
@@ -47,13 +55,12 @@ dsh-group-chat/
 │   ├── engine/
 │   └── client/
 ├── scripts/
-├── lib/
 ├── package.json
 ├── tsconfig.json
 └── tsdown.config.ts
 ```
 
-## 开发与验证
+## Development and validation
 
 ```bash
 npm run typecheck
@@ -62,23 +69,21 @@ npm run test:matrix
 npm run preflight
 ```
 
-本地 DSH Web 通常运行在：
+Local DSH Web usually runs at:
 
 ```text
 http://127.0.0.1:3080/
 ```
 
-UI 改动必须额外浏览器验证：
+For UI changes, also verify in a browser:
 
-- 官方 `对话` 仍可用。
-- `Agent 群聊` 标签存在且不触发 `prepare` 报错。
-- HUD 不遮挡中间输入框。
-- HUD 文本不撑破右栏。
-- 左侧官方栏展开/收起时中间布局正常。
+- The official `Dialog` tab still works.
+- The `Agent Chat` tab exists and does not trigger `prepare` errors.
+- The HUD does not cover the middle composer.
+- HUD text does not overflow the right panel.
+- The middle layout remains stable when the official left sidebar expands/collapses.
 
-## 提交前检查
-
-当前目录若尚未初始化 Git，先执行 `git init` 并配置远端；提交前建议跑：
+## Pre-push checklist
 
 ```bash
 npm run build:all
@@ -86,12 +91,16 @@ npm run preflight
 npm run test:matrix
 ```
 
-最近一次完整矩阵已通过：`TEST_MATRIX_EXIT:0`。
+Latest full validation result: `TEST_MATRIX_EXIT:0`.
 
-## 文档入口
+## Documentation
 
-详见：`Docs/README.md`。
+See [`Docs/README.md`](Docs/README.md).
 
-## 许可
+## 中文支持
+
+本项目 README 默认使用英文，方便开源社区阅读；运行态仍完整支持中文：中文界面、中文 `@角色`、中文主题名、中文提示词和 `zh-CN / en-US` 自动匹配都保留。
+
+## License
 
 MIT License

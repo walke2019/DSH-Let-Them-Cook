@@ -368,3 +368,6 @@
 
 - [x] Git release checklist 已补充：记录当前非 Git 仓库状态、提交命令、忽略目录与 pre-push 验证。
 
+
+- [x] README 默认改为英文，保留中文支持说明与 zh-CN/en-US 运行态能力说明。
+
