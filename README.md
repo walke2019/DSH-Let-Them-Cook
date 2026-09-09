@@ -33,6 +33,16 @@ Workspace-scoped multi-Agent group-chat orchestration plugin for DeepSeek Harnes
 
 The default generated setup uses the Meme Squad tone: playful, human-readable, and delivery-focused. Switching to Tech Legends creates the feeling of having tech giants working for the user.
 
+## References and integration notes
+
+This project was designed with several prior art and integration constraints in mind:
+
+- **DSH official extension seams:** use `conversation.view` for the middle Agent Chat tab and `shell.overlay` for the companion HUD; do not modify DSH core source or hijack the official Dialog tab.
+- **Hermes-style isolation:** named bot roles, capability stripping, central message routing, and no private external sends from SubAgents.
+- **OpenClaw-style coordination:** `NO_REPLY` silence token, role-scoped responses, anti-loop rules, and explicit dispatcher ownership.
+- **dsh-mnemon / memory integration:** memory/context injection can coexist with this plugin. Historical `prepare` errors should be diagnosed as either frontend `conversation.view.prepare` adapter issues or backend tool scheduler / duplicated `@deepseek-ai/dsh-tools` symbol issues, not blindly attributed to the group-chat plugin.
+- **Workspace-first state:** role themes, workflows, model choices, scratchpad, assignments, mailbox, and ledger stay under the current workspace by default.
+
 ## Project structure
 
 ```text

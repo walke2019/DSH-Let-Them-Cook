@@ -1,6 +1,6 @@
 # DSH 多 Agent 群聊：规范接入与扩展标准
 
-更新日期：2026-09-09
+更新日期：2026-09-10
 
 ## 1. 插件边界
 
@@ -66,3 +66,9 @@ npm run test:matrix
 - HUD 不遮挡中间输入框。
 - HUD 文本无可见溢出。
 - 左侧官方栏展开/收起不破坏中间布局。
+## 7. External references and coexistence
+
+- DSH official seams are the hard integration boundary: `conversation.view`, `shell.overlay`, `ctx.effect()`, `ctx.webServer`, and `agent/request`.
+- Hermes is used as a reference for named roles, capability isolation, and centralized message delivery.
+- OpenClaw is used as a reference for silence tokens, anti-loop behavior, and role-scoped execution.
+- dsh-mnemon is treated as a coexisting memory/context-injection plugin. Do not hijack it, do not store group-chat workspace state inside it, and keep official Dialog compatibility tests green.

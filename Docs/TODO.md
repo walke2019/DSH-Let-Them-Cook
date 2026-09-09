@@ -371,3 +371,5 @@
 
 - [x] README 默认改为英文，保留中文支持说明与 zh-CN/en-US 运行态能力说明。
 
+
+- [x] 对标项目与 dsh-mnemon 共存说明已同步到 README、生态评估和扩展标准：DSH seam / Hermes / OpenClaw / dsh-mnemon。

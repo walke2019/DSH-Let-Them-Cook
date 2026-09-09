@@ -21,9 +21,9 @@
 - `technical-architecture.md`：当前 Host/Client/Engine/Workflow/Runtime Skill 架构。
 - `dispatch-engine.md`：主 Agent + SubAgent、工具归口、workflow 并发、防死循环。
 - `workflow-and-role-personas.md`：角色、主题、自动生成草案、工作流闭环。
-- `standards-and-extensibility.md`：DSH 插件接入规范、UI seam、布局红线。
+- `standards-and-extensibility.md`：DSH 插件接入规范、UI seam、布局红线与外部参考共存边界。
 - `orchestrator-skill-and-policy.md`：扩展 + Runtime Skill 协同策略。
-- `ecosystem-assessment-and-roadmap.md`：生态参考、完成度、路线图。
+- `ecosystem-assessment-and-roadmap.md`：生态参考、完成度、路线图，含 DSH seam / Hermes / OpenClaw / dsh-mnemon 共存说明。
 - `TODO.md`：当前 P0-P61 任务完成状态。
 
 ## UI 维护红线

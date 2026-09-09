@@ -1,6 +1,6 @@
 # 生态评估、完成度与路线图
 
-更新日期：2026-09-09
+更新日期：2026-09-10
 
 ## 1. 当前完成度
 
@@ -32,6 +32,15 @@
 - Hermes 借鉴点：具名 Bot、能力隔离、消息收口、防 Bot 私自外呼。
 - OpenClaw 借鉴点：`NO_REPLY` 静默协议、主控路由、每 Agent 独立状态。
 - 本项目差异点：更强调 DSH 内工作区级体验、对话创建角色/工作流、主题趣味性和用户确认写入。
+
+### dsh-mnemon / memory integration
+
+- dsh-mnemon 属于 DSH 当前环境里的记忆/上下文注入链路，不应被本插件接管或替代。
+- 本插件只通过 `conversation.view` 新增 Agent Chat 标签，通过 `shell.overlay` 新增 HUD；离开 Agent Chat 标签后必须卸载 HUD 和 body 标记，避免污染官方对话与 dsh-mnemon 注入流程。
+- 历史 `Cannot read properties of undefined (reading 'prepare')` 需要分两类排查：
+  1. 前端 slot：`conversation.view` 是否提供稳定 `prepare()`；
+  2. 后端工具调度：是否因多份 `@deepseek-ai/dsh-tools` 导致 scheduler Symbol 不一致。
+- 结论：dsh-mnemon 是共存对象和诊断参考，不是本插件状态存储；本插件自己的记忆/黑板/账本继续写入工作区 `.pm-workflow/dsh-group-chat/`。
 
 ## 3. 已达成的差异化边界
 
