@@ -11,6 +11,10 @@ import {useCurrentGroupChatRoomId} from './current-room.js'
 
 type ClientThemeKey = 'meme_comedy' | 'three_kingdoms' | 'genshin' | 'modern' | 'legends' | string
 
+function SafeMessageText({text, markdown}:{text:string; markdown:boolean}) {
+  return markdown ? <MarkdownText text={text} /> : <span className="gc-plain-text">{text}</span>
+}
+
 function buildThemeQuickTemplates(theme: ClientThemeKey, locale: GroupChatLocale) {
   if (locale === 'en-US') {
     if (theme === 'modern') return [
@@ -143,6 +147,7 @@ function buildThemeOnboarding(theme: ClientThemeKey, locale: GroupChatLocale) {
 
 export interface GroupChatPanelProps { mode?: 'dock' | 'full'; onClose?: () => void }
 export function GroupChatPanel({mode='full'}:GroupChatPanelProps) {
+  const useMarkdown = mode === 'full'
   const [members,setMembers]=useState<AgentProfile[]>([])
   const [activeTheme,setActiveTheme]=useState<ClientThemeKey>('meme_comedy')
   const [locale,setLocale]=useState<GroupChatLocale>(()=>detectGroupChatLocale())
@@ -364,6 +369,7 @@ export function GroupChatPanel({mode='full'}:GroupChatPanelProps) {
       .gc-message{margin:0 0 30px;overflow-wrap:anywhere;}
       .gc-message-user{display:flex;flex-direction:column;align-items:flex-end;}
       .gc-message-body{font-size:13px;line-height:1.7;min-width:0;}
+      .gc-plain-text{white-space:pre-wrap;overflow-wrap:anywhere;}
       .gc-message-user .gc-message-body{max-width:85%;padding:10px 16px;background:var(--dsw-alias-bg-layer-2,#29292e);border-radius:18px;white-space:pre-wrap;}
       .gc-message-meta{display:flex;align-items:center;gap:8px;margin-bottom:10px;font-size:12px;color:var(--dsw-alias-label-secondary,#aaa);}
       .gc-message-avatar{width:22px;height:22px;display:inline-grid;place-items:center;object-fit:cover;border-radius:6px;}
@@ -399,15 +405,15 @@ export function GroupChatPanel({mode='full'}:GroupChatPanelProps) {
       <div className="gc-chat-thread" role="log" aria-label={tx(locale,'群聊消息记录','Group chat message log')} aria-live="polite" aria-relevant="additions">
         {messages.filter(m=>!m.metadata?.isSilent).map(message=>{
           const user=message.sender.kind==='user'
-          if(message.sender.kind==='system')return <div key={message.messageId} className="gc-message gc-message-system"><MarkdownText text={message.content}/>{message.metadata?.autoSetup==='draft'&&<div className="gc-autosetup-actions" aria-label={tx(locale,'自动建群草案操作','Auto setup draft actions')}><button type="button" disabled={sending} onClick={()=>sendContent(locale==='en-US'?'Confirm setup':'确认创建')}>{tx(locale,'确认创建','Confirm setup')}</button><button type="button" disabled={sending} onClick={()=>sendContent(locale==='en-US'?'Cancel setup':'取消创建')}>{tx(locale,'取消创建','Cancel setup')}</button><button type="button" onClick={()=>setDraft(tx(locale,'补充修改：','Revise: '))}>{tx(locale,'补充修改','Revise')}</button></div>}</div>
+          if(message.sender.kind==='system')return <div key={message.messageId} className="gc-message gc-message-system"><SafeMessageText text={message.content} markdown={useMarkdown}/>{message.metadata?.autoSetup==='draft'&&<div className="gc-autosetup-actions" aria-label={tx(locale,'自动建群草案操作','Auto setup draft actions')}><button type="button" disabled={sending} onClick={()=>sendContent(locale==='en-US'?'Confirm setup':'确认创建')}>{tx(locale,'确认创建','Confirm setup')}</button><button type="button" disabled={sending} onClick={()=>sendContent(locale==='en-US'?'Cancel setup':'取消创建')}>{tx(locale,'取消创建','Cancel setup')}</button><button type="button" onClick={()=>setDraft(tx(locale,'补充修改：','Revise: '))}>{tx(locale,'补充修改','Revise')}</button></div>}</div>
           return <article key={message.messageId} className={`gc-message ${user?'gc-message-user':'gc-message-agent'}`} aria-label={`${message.sender.name}的消息`}>
             {!user&&<div className="gc-message-meta">
               <AvatarBadge avatar={message.sender.avatar} className="gc-message-avatar" />
               <span className="gc-message-role">{message.sender.name}</span>
             </div>}
-            {message.reasoningContent&&<details><summary>思考过程</summary><MarkdownText text={message.reasoningContent}/></details>}
+            {message.reasoningContent&&<details><summary>思考过程</summary><SafeMessageText text={message.reasoningContent} markdown={useMarkdown}/></details>}
             {message.metadata?.toolCalls?.map(tool=><details className="gc-message-tools" key={tool.id}><summary>{tool.name} · {tool.status}</summary><pre>{tool.arguments}</pre>{tool.result&&<pre>{tool.result}</pre>}</details>)}
-            <div className="gc-message-body">{user?message.content:<MarkdownText text={message.content}/>}</div>
+            <div className="gc-message-body">{user?message.content:<SafeMessageText text={message.content} markdown={useMarkdown}/>}</div>
             <div className="gc-message-actions">
               <button type="button" className="gc-copy" onClick={()=>copy(message)} aria-label={`复制${message.sender.name}的消息`}>
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" aria-hidden="true"><rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V4H4v12h4"/></svg>{copied===message.messageId?'已复制':'复制'}

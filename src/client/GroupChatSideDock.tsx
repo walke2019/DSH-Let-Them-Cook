@@ -318,7 +318,7 @@ export function GroupChatSideDock() {
   const hudSurfaceActive = extensionTabActive || heroMainActive
 
   return (
-    <>
+    <div data-dsh-group-chat-overlay-root style={{display:'contents'}}>
       {!extensionTabActive && <GroupChatHeroEntry />}
       {hudSurfaceActive && <>
       <style>{`.gc-roster-avatar{width:22px;height:22px;border-radius:7px;display:inline-grid;place-items:center;flex-shrink:0;font-size:14px;color:var(--dsw-alias-state-business-primary,#4d6bfe);background:var(--dsw-alias-bg-layer-3,rgba(255,255,255,0.06));}`}</style>
@@ -616,7 +616,7 @@ export function GroupChatSideDock() {
 
       </div>
       </>}
-    </>
+    </div>
   )
 }
 

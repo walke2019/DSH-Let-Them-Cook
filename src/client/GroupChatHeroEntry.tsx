@@ -6,6 +6,7 @@ const HERO_STYLE_ID = 'dsh-group-chat-hero-entry-style'
 const HERO_OPEN_EVENT = 'dsh-group-chat:open-hero-main'
 const HERO_STYLE = `
 .gc-hero-entry{position:fixed;right:0;top:118px;z-index:48;display:flex;align-items:flex-end;gap:8px;min-width:0;pointer-events:none;flex-direction:column;}
+.gc-input-entry-root{display:inline-flex;align-items:center;min-width:0;}
 .gc-hero-button{pointer-events:auto;display:inline-flex;align-items:center;gap:8px;height:32px;padding:0 12px;border:1px solid var(--dsw-alias-border-l2,#ffffff26);border-top-left-radius:999px;border-bottom-left-radius:999px;border-top-right-radius:0;border-bottom-right-radius:0;background:var(--dsw-alias-bg-layer-1,#202025);color:var(--dsw-alias-label-primary,#f8fafc);font:inherit;font-size:13px;cursor:pointer;box-shadow:0 2px 10px #0000001f;}
 .gc-hero-button:hover{background:var(--dsw-alias-bg-layer-2,#2b2b31);border-color:var(--dsw-alias-state-business-primary,#4d6bfe99);}
 .gc-hero-main{pointer-events:auto;position:fixed;z-index:47;left:var(--dsh-group-chat-hero-left,280px);right:0;top:0;bottom:0;display:flex;flex-direction:column;min-width:0;min-height:0;background:var(--dsw-alias-bg-base,#101014);color:var(--dsw-alias-label-primary,#f8fafc);box-shadow:-1px 0 0 var(--dsw-alias-border-l1,#ffffff12),0 16px 44px #0008;}
@@ -200,7 +201,6 @@ export function GroupChatHeroEntry() {
 /** Official-composer entry: a small in-row shortcut once the DSH session chrome is available. */
 export function GroupChatInputEntry() {
   const [locale, setLocale] = useState<GroupChatLocale>(() => detectGroupChatLocale())
-  const [mainOpen, setMainOpen] = useState(false)
   useEffect(() => {
     installHeroStyle()
     const onLocale = (event: Event) => {
@@ -212,12 +212,11 @@ export function GroupChatInputEntry() {
   }, [])
   const activate = () => {
     if (clickVisibleGroupChatTab()) return
-    setMainOpen(true)
+    openHeroMain()
   }
-  return <>
+  return <span className="gc-input-entry-root" data-dsh-group-chat-input-entry-root>
     <button type="button" className="gc-input-entry-button" onClick={activate} title={tx(locale, '打开 Agent 群聊主界面', 'Open Agent group chat main panel')}>
       <span aria-hidden="true">💬</span><span>{tx(locale, 'Agent 群聊', 'Agent chat')}</span>
     </button>
-    {mainOpen && <DetachedHeroMain locale={locale} onClose={() => setMainOpen(false)} />}
-  </>
+  </span>
 }
