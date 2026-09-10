@@ -155,6 +155,7 @@ export function GroupChatPanel({mode='full'}:GroupChatPanelProps) {
   const [error,setError]=useState('')
   const [copied,setCopied]=useState('')
   const [retry,setRetry]=useState(0)
+  const root=useRef<HTMLDivElement>(null)
   const scroll=useRef<HTMLDivElement>(null)
   const bottom=useRef<HTMLDivElement>(null)
   const follow=useRef(true)
@@ -215,6 +216,21 @@ export function GroupChatPanel({mode='full'}:GroupChatPanelProps) {
     return ()=>{controller.abort();unsubscribe()}
   },[retry, roomId])
   useLayoutEffect(()=>{
+    const syncAvailableHeight=()=>{
+      const el=root.current
+      if(!el||typeof window==='undefined')return
+      const top=Math.max(0,el.getBoundingClientRect().top)
+      el.style.setProperty('--gc-available-height',`${Math.max(320,window.innerHeight-top)}px`)
+    }
+    syncAvailableHeight()
+    const frame=requestAnimationFrame(syncAvailableHeight)
+    window.addEventListener('resize',syncAvailableHeight)
+    const parent=root.current?.parentElement
+    const observer=typeof ResizeObserver!=='undefined'?new ResizeObserver(syncAvailableHeight):null
+    if(parent)observer?.observe(parent)
+    return()=>{cancelAnimationFrame(frame);window.removeEventListener('resize',syncAvailableHeight);observer?.disconnect()}
+  },[])
+  useLayoutEffect(()=>{
     if(follow.current&&scroll.current)scroll.current.scrollTop=scroll.current.scrollHeight
     if(!follow.current||!scroll.current)return
     const el=scroll.current
@@ -273,9 +289,9 @@ export function GroupChatPanel({mode='full'}:GroupChatPanelProps) {
   const copy=async(message:GroupMessage)=>{
     try{await navigator.clipboard.writeText(message.content);setCopied(message.messageId)}catch{setError('复制失败，请选择消息文字复制')}
   }
-  return <div data-dsh-group-chat-panel className="gc-conversation">
+  return <div ref={root} data-dsh-group-chat-panel className="gc-conversation">
     <style>{`
-      .gc-conversation{position:relative;display:flex;flex-direction:column;flex:1;min-height:0;height:100%;width:100%;overflow:hidden;color:var(--dsw-alias-label-primary,#eee);font-family:inherit;background:transparent;box-sizing:border-box;transition:padding-right .18s ease;}
+      .gc-conversation{position:relative;display:flex;flex-direction:column;flex:1;min-height:0;height:var(--gc-available-height,100%);max-height:var(--gc-available-height,100%);width:100%;overflow:hidden;color:var(--dsw-alias-label-primary,#eee);font-family:inherit;background:transparent;box-sizing:border-box;transition:padding-right .18s ease;}
       body[data-dsh-group-chat-tab-active="true"][data-dsh-group-chat-hud-docked-open="true"] .gc-conversation,body[data-dsh-group-chat-hero-open="true"][data-dsh-group-chat-hud-docked-open="true"] .gc-conversation{padding-right:min(var(--dsh-group-chat-hud-overlay-width,360px),max(0px,calc(100% - 320px)));}
       body[data-dsh-group-chat-tab-active="true"][data-dsh-group-chat-hud-docked-open="true"] .gc-chat-messages,body[data-dsh-group-chat-hero-open="true"][data-dsh-group-chat-hud-docked-open="true"] .gc-chat-messages{padding-left:24px;padding-right:24px;}
       body[data-dsh-group-chat-tab-active="true"][data-dsh-group-chat-hud-docked-open="true"] .gc-chat-bottom,body[data-dsh-group-chat-hero-open="true"][data-dsh-group-chat-hud-docked-open="true"] .gc-chat-bottom{padding-right:0;}
