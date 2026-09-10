@@ -203,6 +203,20 @@ export class DispatchArbiter {
         }
       }
 
+      if (latestMessage.sender.id === (moderatorAgentId || 'commander')) {
+        const commanderId = moderatorAgentId || 'commander'
+        const { targetAgentIds } = this.extractMentions(latestMessage.content, members)
+        const validTargets = [...new Set(targetAgentIds.filter(id => id !== commanderId))]
+        if (validTargets.length > 0) {
+          return {
+            nextSpeakerIds: validTargets,
+            reason: `工作流主 Agent 明确 @ 分派 SubAgent：[${validTargets.join(', ')}]`,
+            mode: 'workflow_driven',
+            isTerminal: false,
+          }
+        }
+      }
+
       return {
         nextSpeakerIds: [],
         reason: '当前阶段流转收敛，等待总指挥官或下一阶段指令。',
@@ -303,3 +317,4 @@ export class DispatchArbiter {
     }
   }
 }
+

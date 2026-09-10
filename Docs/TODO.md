@@ -487,3 +487,9 @@
 - [x] 空状态加载失败时在中央区展示错误卡和重试按钮，底部输入框仍可见。
 - [x] 加载、失败、重试文案走 zh-CN/en-US 双语。
 - [x] 增加回归守卫：`npm run test:central-loading-state`。
+
+## P81 — 工作流主 Agent 显式分派继续执行
+- [x] `workflow_driven` 下主 Agent 发言包含明确 @SubAgent 时继续创建下一轮 assignment。
+- [x] 去重并排除主 Agent 自己，避免自激循环。
+- [x] 保留“批准/下一阶段”的原工作流推进逻辑。
+- [x] 增加回归守卫：`npm run test:workflow-commander-delegation`。

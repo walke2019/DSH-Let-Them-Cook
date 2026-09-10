@@ -97,6 +97,7 @@
     "test:central-live-status": "node Docs/p77-central-live-execution-status/test-p77-central-live-execution-status.cjs",
     "test:agent-turn-surface-fallback": "node Docs/p78-agent-turn-surface-fallback/test-p78-agent-turn-surface-fallback.cjs",
     "test:composer-outside-scroll": "node Docs/p79-composer-outside-scroll/test-p79-composer-outside-scroll.cjs",
-    "test:central-loading-state": "node Docs/p80-central-loading-state/test-p80-central-loading-state.cjs"
+    "test:central-loading-state": "node Docs/p80-central-loading-state/test-p80-central-loading-state.cjs",
+    "test:workflow-commander-delegation": "node Docs/p81-workflow-commander-delegation/test-p81-workflow-commander-delegation.cjs"
   }
 }

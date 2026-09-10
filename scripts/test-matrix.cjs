@@ -81,6 +81,7 @@ const steps = [
   ['node', ['Docs/p78-agent-turn-surface-fallback/test-p78-agent-turn-surface-fallback.cjs']],
   ['node', ['Docs/p79-composer-outside-scroll/test-p79-composer-outside-scroll.cjs']],
   ['node', ['Docs/p80-central-loading-state/test-p80-central-loading-state.cjs']],
+  ['node', ['Docs/p81-workflow-commander-delegation/test-p81-workflow-commander-delegation.cjs']],
   ['node', ['scripts/e2e-no-llm.cjs']],
   ['npm', ['run', 'preflight']],
 ]
