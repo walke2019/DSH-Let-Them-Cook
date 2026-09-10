@@ -2,7 +2,7 @@ import { randomUUID } from 'node:crypto'
 import type { Context } from '@deepseek-ai/cordis'
 import type { AgentHandle, AgentRegistry } from '@deepseek-ai/dsh-agent'
 import type { SessionId, UserMessage } from '@deepseek-ai/dsh-session'
-import type { AgentRuntimeMetrics, ModelRef } from '../types.js'
+import type { AgentRuntimeMetrics, ModelRef, ToolCallRecord } from '../types.js'
 import type {GroupChatLocale} from '../client/i18n.js'
 import { getCurrentModel, restrictToolsCompat } from '../compat/dsh.js'
 
@@ -69,6 +69,47 @@ function summarizeRuntimeEventShape(events: readonly any[], session: any): strin
     }
   }
   return `events=${events.length} [${types}], surface=${surface}`
+}
+
+function stringifyToolPayload(value: unknown): string {
+  if (value === undefined || value === null) return ''
+  if (typeof value === 'string') return value
+  try { return JSON.stringify(value, null, 2) } catch { return String(value) }
+}
+
+function extractToolName(data: any): string {
+  return String(data?.name || data?.toolName || data?.call?.name || data?.message?.source?.name || data?.message?.name || 'tool')
+}
+
+function summarizeToolCalls(events: readonly any[]): ToolCallRecord[] {
+  const calls = new Map<string, ToolCallRecord & { startedAt?: number }>()
+  for (const event of events) {
+    const data = event.data || {}
+    if (event.type === 'tool/call') {
+      const id = String(data.callId || data.id || data.call?.id || calls.size + 1)
+      calls.set(id, {
+        id,
+        name: extractToolName(data),
+        arguments: stringifyToolPayload(data.arguments || data.args || data.call?.arguments || data.input),
+        status: 'running',
+        startedAt: typeof event.time === 'number' ? event.time : undefined,
+      })
+    }
+    if (event.type === 'tool/result') {
+      const id = String(data.message?.source?.callId || data.callId || data.id || data.call?.id || calls.size + 1)
+      const prev = calls.get(id)
+      const startedAt = prev?.startedAt
+      calls.set(id, {
+        id,
+        name: prev?.name || extractToolName(data),
+        arguments: prev?.arguments || stringifyToolPayload(data.arguments || data.args || data.input),
+        result: stringifyToolPayload(data.result || data.output || data.message?.content || data.error),
+        status: data.error ? 'error' : 'success',
+        durationMs: typeof startedAt === 'number' && typeof event.time === 'number' ? Math.max(0, event.time - startedAt) : undefined,
+      })
+    }
+  }
+  return [...calls.values()].map(({startedAt, ...call}) => call).slice(-12)
 }
 
 function summarizeRuntimeMetrics(events: readonly any[]): AgentRuntimeMetrics {
@@ -190,7 +231,7 @@ export async function runMemberTurn(ctx: RuntimeContext, model: ModelRef, prompt
     if (!end) {
       console.warn?.(`[GroupChat] completed member turn without turn/end marker; accepting assistant text (${summarizeRuntimeEventShape(events, handle.agent.session)})`)
     }
-    return { content, reasoningContent: '', providerUsed: selected.provider, modelUsed: selected.model, metrics: summarizeRuntimeMetrics(events) }
+    return { content, reasoningContent: '', providerUsed: selected.provider, modelUsed: selected.model, metrics: summarizeRuntimeMetrics(events), toolCalls: summarizeToolCalls(events) }
   } finally {
     signal.removeEventListener('abort', cancel)
     await handle?.dispose()

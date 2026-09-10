@@ -182,6 +182,9 @@ export function GroupChatPanel({mode='full'}:GroupChatPanelProps) {
   const memberName=(roleId:string)=>members.find(member=>member.id===roleId)?.name||roleId
   const memberAvatar=(roleId:string)=>members.find(member=>member.id===roleId)?.avatar||'🤖'
   const assignmentStatusText=(assignment:AssignmentEnvelope)=>assignment.status==='queued'?tx(locale,'已接单，排队中','Queued'):tx(locale,'正在处理','Running')
+  const assignmentLiveTitle=(assignment:AssignmentEnvelope)=>assignment.status==='queued'?tx(locale,'已进入执行队列','Queued for execution'):tx(locale,'正在像官方对话一样生成回复','Generating a reply like the official chat')
+  const assignmentLiveSubtitle=(assignment:AssignmentEnvelope)=>assignment.status==='queued'?tx(locale,'等待调度器分配模型与上下文','Waiting for the dispatcher to attach model and context'):tx(locale,'模型调用中；完成后会在这里直接变成正式回复','Model call is running; the final answer will appear here directly')
+  const assignmentProgress=(assignment:AssignmentEnvelope)=>assignment.startedAt&&assignment.expectedMs?Math.min(96,Math.round((assignmentElapsed(assignment)*1000/assignment.expectedMs)*100)):assignment.status==='queued'?8:36
   const assignmentElapsed=(assignment:AssignmentEnvelope)=>assignment.startedAt?Math.max(0,Math.round((now-assignment.startedAt)/1000)):0
   useEffect(()=>{
     const controller=new AbortController()
@@ -343,9 +346,14 @@ export function GroupChatPanel({mode='full'}:GroupChatPanelProps) {
       .gc-template-chip:hover{background:var(--dsw-alias-bg-layer-3,#33333a);border-color:#4d6bfe66;}
       .gc-message-live{opacity:.98;}
       .gc-message-live .gc-message-body{display:grid;gap:7px;color:var(--dsw-alias-label-secondary,#cbd5e1);}
-      .gc-live-line{display:flex;align-items:center;gap:8px;min-width:0;}
+      .gc-live-line{display:flex;align-items:center;gap:8px;min-width:0;font-weight:600;color:var(--dsw-alias-label-primary,#eee);}
       .gc-live-pulse{width:7px;height:7px;border-radius:50%;background:#4d6bfe;box-shadow:0 0 0 5px #4d6bfe24;animation:gcPulse 1.4s ease-in-out infinite;flex:0 0 auto;}
       .gc-live-brief{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--dsw-alias-label-tertiary,#999);font-size:12px;}
+      .gc-live-subtitle{color:var(--dsw-alias-label-secondary,#cbd5e1);font-size:12px;}
+      .gc-live-details{margin-top:2px;border:1px solid var(--dsw-alias-border-l1,#ffffff14);border-radius:10px;background:var(--dsw-alias-bg-layer-1,#202025);padding:6px 8px;}
+      .gc-live-details summary{cursor:pointer;color:var(--dsw-alias-label-secondary,#cbd5e1);font-size:12px;}
+      .gc-live-detail-grid{display:grid;gap:4px;margin-top:6px;color:var(--dsw-alias-label-tertiary,#999);font-size:11px;}
+      .gc-live-detail-grid code{white-space:pre-wrap;word-break:break-word;color:var(--dsw-alias-label-secondary,#cbd5e1);}
       .gc-live-bar{height:3px;max-width:360px;border-radius:999px;background:#ffffff14;overflow:hidden;}
       .gc-live-bar span{display:block;height:100%;border-radius:inherit;background:#4d6bfe;transition:width .3s ease;}
       .gc-live-dots{display:inline-flex;gap:3px;vertical-align:middle;}
@@ -415,9 +423,18 @@ export function GroupChatPanel({mode='full'}:GroupChatPanelProps) {
             <span className="gc-message-role">{memberName(assignment.ownerRoleId)}</span>
           </div>
           <div className="gc-message-body" aria-live="polite">
-            <div className="gc-live-line"><span className="gc-live-pulse" />{assignmentStatusText(assignment)} <span className="gc-live-dots" aria-hidden="true"><span/><span/><span/></span></div>
-            <div className="gc-live-brief">{assignment.brief}</div>
-            {assignment.startedAt&&assignment.expectedMs?<div className="gc-live-bar" aria-label={tx(locale,'执行进度估计','Estimated progress')}><span style={{width:`${Math.min(96,Math.round((assignmentElapsed(assignment)*1000/assignment.expectedMs)*100))}%`}} /></div>:null}
+            <div className="gc-live-line"><span className="gc-live-pulse" />{assignmentLiveTitle(assignment)} <span className="gc-live-dots" aria-hidden="true"><span/><span/><span/></span></div>
+            <div className="gc-live-subtitle">{assignmentLiveSubtitle(assignment)}</div>
+            <details className="gc-live-details">
+              <summary>{tx(locale,'展开执行详情','Show execution details')}</summary>
+              <div className="gc-live-detail-grid">
+                <span>{tx(locale,'状态','Status')}：{assignmentStatusText(assignment)}</span>
+                <span>{tx(locale,'任务','Task')}：{assignment.brief}</span>
+                <span>{tx(locale,'来源','From')}：@{assignment.createdByRoleId || 'user'}{assignment.workflowTaskId?` · ${tx(locale,'工作流任务','Workflow task')} ${assignment.workflowTaskId}`:''}</span>
+                {assignment.error?<code>{assignment.error}</code>:null}
+              </div>
+            </details>
+            <div className="gc-live-bar" aria-label={tx(locale,'执行进度估计','Estimated progress')}><span style={{width:`${assignmentProgress(assignment)}%`}} /></div>
           </div>
           <div className="gc-message-actions">
             <span>{assignment.taskTier==='long'?tx(locale,'长活','Long'):tx(locale,'快活','Quick')}</span>

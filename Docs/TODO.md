@@ -494,3 +494,9 @@
 - [x] 保留“批准/下一阶段”的原工作流推进逻辑。
 - [x] 增加回归守卫：`npm run test:workflow-commander-delegation`。
 
+
+## P82 — 官方对话式中央执行体验
+- [x] 中央 running/queued assignment 改成 Agent 回复卡，不再只让用户看进度条。
+- [x] 执行卡主文案展示“正在生成回复/模型调用中”，详情可展开查看任务来源、状态、工作流任务和错误。
+- [x] Agent 完成消息 metadata 增加 toolCalls，中央消息可展开查看工具调用参数与结果。
+- [x] 增加回归守卫：`npm run test:official-like-central-execution`。

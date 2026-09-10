@@ -200,6 +200,7 @@ export function apply(ctx: AppContext, config: Config): void {
     let isFallback = false
     let fallbackChain: string[] = []
     let runtimeMetrics: import('./types.js').AgentRuntimeMetrics | undefined
+    let toolCalls: import('./types.js').ToolCallRecord[] = []
 
     try {
       const profile = member.llmConfig.provider && member.llmConfig.model ? member : {
@@ -213,6 +214,7 @@ export function apply(ctx: AppContext, config: Config): void {
       isFallback = execution.isFallback
       fallbackChain = execution.fallbackChain
       runtimeMetrics = execution.result.metrics
+      toolCalls = execution.result.toolCalls || []
       logger.info?.(`[GroupChat] ${member.name} completed with ${providerUsed}/${modelUsed}; elapsed=${execution.totalElapsedMs}ms; attempts=${execution.attempts.length}`)
       try{
         for(const attempt of execution.attempts) modelSettings.markResult({provider:attempt.provider,model:attempt.model}, !attempt.error, attempt.error)
@@ -281,6 +283,7 @@ export function apply(ctx: AppContext, config: Config): void {
         assignmentId,
         taskTier: room.assignments?.find(a=>a.assignmentId===assignmentId)?.taskTier,
         structuredResult: structuredResult ? {status: structuredResult.status, summary: structuredResult.summary, next: structuredResult.next, evidence: structuredResult.evidence} : undefined,
+        toolCalls,
         tokensConsumed: runtimeMetrics ? { promptTokens: runtimeMetrics.inputTokens + runtimeMetrics.cacheReadTokens + runtimeMetrics.cacheWriteTokens, completionTokens: runtimeMetrics.outputTokens, totalTokens: runtimeMetrics.inputTokens + runtimeMetrics.cacheReadTokens + runtimeMetrics.cacheWriteTokens + runtimeMetrics.outputTokens } : undefined,
 
       },

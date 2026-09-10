@@ -177,3 +177,5 @@
 
 - [P81 Workflow commander delegation](p81-workflow-commander-delegation/README.md)：修复 workflow_driven 下主 Agent 明确 @ 分派后调度终止，确保 SubAgent 继续接单执行。
 
+
+- [P82 Official-like central execution](p82-official-like-central-execution/README.md)：中央执行中状态改成官方对话式 Agent 回复卡，支持展开查看任务/工作流/工具详情。

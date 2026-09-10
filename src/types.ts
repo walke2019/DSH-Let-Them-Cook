@@ -483,6 +483,17 @@ export interface MessageSender {
 }
 
 
+
+export interface ToolCallRecord {
+  id: string
+  name: string
+  arguments: string
+  result?: string
+  status: 'pending' | 'running' | 'success' | 'error'
+  durationMs?: number
+  readWritePath?: string
+}
+
 export interface StructuredAgentResultMetadata {
   status: 'passed' | 'failed' | 'request_human'
   summary?: string
@@ -517,6 +528,7 @@ export interface GroupMessageEnvelope {
     autoSetup?: 'draft' | 'applied' | 'clarify' | 'cancelled'
     assignmentId?: string
     structuredResult?: StructuredAgentResultMetadata
+    toolCalls?: ToolCallRecord[]
   }
   timestamp: number
 }
