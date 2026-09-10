@@ -7,7 +7,7 @@ import {GroupChatHudRosterPanel} from './GroupChatHudRosterPanel.js'
 import {GroupChatHudScratchpadPanel} from './GroupChatHudScratchpadPanel.js'
 import type {AssignmentEnvelope, AgentMailboxMessage, GroupMessageData, LedgerData, WorkflowTask} from './group-chat-hud-types.js'
 import type {AgentProfile} from './group-chat-view-types.js'
-import {detectGroupChatLocale, onGroupChatLocaleChange, tx, type GroupChatLocale} from './i18n.js'
+import {detectGroupChatLocale, onGroupChatLocaleChange, setGroupChatLocale, tx, type GroupChatLocale} from './i18n.js'
 import {GroupChatHeroEntry} from './GroupChatHeroEntry.js'
 import {DEFAULT_GROUP_CHAT_ROOM_ID, useCurrentGroupChatRoomId} from './current-room.js'
 
@@ -50,6 +50,7 @@ export function GroupChatSideDock() {
   const selectedTheme = room?.activeTheme === 'meme_comedy' ? 'default' : (room?.activeTheme || 'default')
   const selectedMode = room?.dispatchMode === 'workflow_driven' ? 'default' : (room?.dispatchMode || 'default')
   const displayRoomTitle = room?.title?.includes('特遣') ? tx(locale,'AI 小队工作台','AI squad workspace') : (room?.title || tx(locale,'群聊设置','Group chat settings'))
+  const toggleLocale = () => setGroupChatLocale(locale === 'zh-CN' ? 'en-US' : 'zh-CN')
   useEffect(()=>onGroupChatLocaleChange(setLocale),[])
   useEffect(() => {
     if (heroMainActive) setIsOpen(true)
@@ -436,6 +437,28 @@ export function GroupChatSideDock() {
           <div style={{display:'inline-flex',alignItems:'center',gap:4}} onMouseDown={e=>e.stopPropagation()}>
             <button
               type="button"
+              className="dsh-gc-locale-toggle"
+              onClick={toggleLocale}
+              aria-label={tx(locale,'切换为英文界面','Switch to Chinese UI')}
+              title={tx(locale,'中英切换','Language toggle')}
+              style={{
+                height: '24px',
+                minWidth: '44px',
+                padding: '0 7px',
+                borderRadius: '999px',
+                border: '1px solid var(--dsw-alias-border-l1, rgba(255,255,255,0.10))',
+                background: 'var(--dsw-alias-bg-layer-2, #202025)',
+                color: 'var(--dsw-alias-label-primary, #f8fafc)',
+                cursor: 'pointer',
+                fontSize: '11px',
+                fontWeight: 650,
+                lineHeight: 1,
+              }}
+            >
+              {locale === 'zh-CN' ? '中 / EN' : 'EN / 中'}
+            </button>
+            <button
+              type="button"
               onClick={() => dockFloating ? resetDockPosition() : setDockFloating(true)}
               title={dockFloating ? tx(locale,'贴回右侧','Dock to right') : tx(locale,'切到浮窗','Switch to floating')}
               style={{
@@ -471,7 +494,6 @@ export function GroupChatSideDock() {
           selectedTheme={selectedTheme}
           selectedMode={selectedMode}
           locale={locale}
-          onLocaleChange={setLocale}
           managementError={managementError}
           onThemeChange={theme=>updateRoom('theme',{theme})}
           onModeChange={mode=>updateRoom('mode',{mode})}

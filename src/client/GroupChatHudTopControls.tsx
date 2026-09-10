@@ -1,6 +1,6 @@
 import React, {useState} from 'react'
 import {hudTokens} from './group-chat-hud-styles.js'
-import {setGroupChatLocale, tx, type GroupChatLocale} from './i18n.js'
+import {tx, type GroupChatLocale} from './i18n.js'
 
 type ThemeValue = 'default' | 'meme_comedy' | 'genshin' | 'modern' | 'three_kingdoms' | 'legends' | string
 type ModeValue = 'default' | 'mention_only' | 'workflow_driven' | 'moderator_led' | 'free_discussion' | string
@@ -11,7 +11,6 @@ interface GroupChatHudTopControlsProps {
   managementError?: string
   onThemeChange(theme: string): void | Promise<void>
   locale?: GroupChatLocale
-  onLocaleChange?(locale: GroupChatLocale): void
   onModeChange(mode: string): void | Promise<void>
 }
 
@@ -34,10 +33,9 @@ function SelectChevron() {
   return <svg className="dsh-gc-top-chevron" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M4 6l4 4 4-4"/></svg>
 }
 
-export function GroupChatHudTopControls({selectedTheme, selectedMode, managementError, locale = 'zh-CN', onLocaleChange, onThemeChange, onModeChange}: GroupChatHudTopControlsProps) {
+export function GroupChatHudTopControls({selectedTheme, selectedMode, managementError, locale = 'zh-CN', onThemeChange, onModeChange}: GroupChatHudTopControlsProps) {
   const [modeHelpOpen, setModeHelpOpen] = useState(false)
   const currentModeGuide = MODE_GUIDE[selectedMode] || MODE_GUIDE.default
-  const setLocale = (value: GroupChatLocale) => { setGroupChatLocale(value); onLocaleChange?.(value) }
   return <>
     <span aria-hidden="true" data-dsh-gc-top-style-token style={{display:'none',color:hudTokens.labelPrimary,background:hudTokens.bgLayer2,borderColor:hudTokens.borderL2}} />
     <style>{`
@@ -80,7 +78,6 @@ export function GroupChatHudTopControls({selectedTheme, selectedMode, management
       </span>
       <button type="button" className="dsh-gc-help-button" aria-label={tx(locale,'查看调度模式 QA 说明','View mode QA guide')} title={tx(locale,'调度模式 QA','Mode QA')} onClick={()=>setModeHelpOpen(true)}>?</button>
       {managementError&&<div className="dsh-gc-top-error" role="alert">{managementError}</div>}
-    <span className="dsh-gc-top-label">{tx(locale,'语言','Lang')}</span><span className="dsh-gc-select-wrap"><select className="dsh-gc-top-select" aria-label={tx(locale,'界面语言','UI language')} value={locale} onChange={e=>setLocale(e.target.value as GroupChatLocale)}><option value="zh-CN">中文</option><option value="en-US">English</option></select><SelectChevron /></span><span />
     </div>
     {modeHelpOpen && <div className="dsh-gc-help-backdrop" role="dialog" aria-modal="true" aria-label={tx(locale,'调度模式 QA 说明','Mode QA guide')} onClick={()=>setModeHelpOpen(false)}>
       <div className="dsh-gc-help-dialog" onClick={e=>e.stopPropagation()}>

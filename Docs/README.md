@@ -163,3 +163,5 @@
 - [P74 Session-scoped room binding](p74-session-scoped-room-binding/README.md)：修复左栏新会话仍显示旧任务群聊记录的问题。
 
 - [P75 Distinct theme empty copy](p75-distinct-theme-empty-copy/README.md)：补齐现代精英、科技传奇与沙雕整活的中央起始文案差异。
+
+- [P76 HUD header language toggle](p76-hud-locale-toggle-header/README.md)：把中英双语切换从顶部配置 grid 移到 HUD 标题栏浮动按钮左侧。

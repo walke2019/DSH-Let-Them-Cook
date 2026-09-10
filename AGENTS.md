@@ -246,3 +246,9 @@
 - 新增主题时必须同步 `src/engine/theme-voice.ts`、`src/client/GroupChatPanel.tsx` 的 onboarding 与 quick templates，并覆盖 zh-CN/en-US。
 - 科技传奇必须体现“科技界巨头来给用户打工”的产品感；现代精英必须体现专业交付/约束/验收；沙雕整活必须保留有梗但靠谱的开整感。
 - 涉及中央起始显示文案、主题切换、空态引导和模板按钮的改动，必须执行 `npm run test:distinct-theme-copy`、`npm run test:theme-copy`、`npm run test:tech-legends-theme` 和 `npm run test:matrix`。
+
+### 26. HUD 语言切换入口铁律（P76）
+- HUD 顶部配置区只放“角色主题 / 调度模式 / QA”，不得再把语言 select 塞进同一个紧凑 grid，避免 300px 右栏产生第二行拥挤。
+- zh-CN/en-US 语言切换应放在 HUD 标题栏右侧操作区、浮动/停靠按钮左侧，使用短标签 `中 / EN` 与 `EN / 中`。
+- 语言开关必须继续调用统一 `setGroupChatLocale()`，让中央区、HUD、composer 和后续消息 metadata 同步语言状态。
+- 涉及 HUD 顶部配置、语言切换、浮动按钮排序的改动，必须执行 `npm run test:hud-locale-toggle-header`、`npm run test:ui:entry` 和 `npm run test:matrix`。

@@ -20,7 +20,7 @@ const checks = [
   ['theme voice has english onboarding copy', /Toss in the work/.test(voice) && /Confirm setup/.test(voice)],
   ['composer receives locale prop', /locale\?: GroupChatLocale/.test(composer) && /Send a message, or choose an @ role/.test(composer)],
   ['dock has language-aware labels', /Group chat console \(HUD\)/.test(dock) && /Squad HUD/.test(dock)],
-  ['top controls include language selector', /UI language/.test(top) && /<option value="en-US">English/.test(top)],
+  ['HUD header includes language toggle outside top settings grid', /dsh-gc-locale-toggle/.test(dock) && /setGroupChatLocale/.test(dock) && !/UI language/.test(top)],
   ['legacy workflow tool aliases are mapped', /workflow_advance_stage:\s*'group_chat_workflow_advance'/.test(compat) && /workflow_reject_stage:\s*'group_chat_workflow_reject'/.test(compat)],
   ['restrict retry narrows to known tools', /known global tools/.test(compat) && /tools\.restrict\(\{ allow: retried \}\)/.test(compat)],
   ['saved rooms normalize old tool names', /normalizeToolNames/.test(roomManager) && /member\.permissions\.allowedTools = normalizeToolNames/.test(roomManager)],

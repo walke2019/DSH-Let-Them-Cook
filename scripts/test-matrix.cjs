@@ -76,6 +76,7 @@ const steps = [
   ['node', ['Docs/p73-hero-left-collapse-adaptation/test-p73-hero-left-collapse.cjs']],
   ['node', ['Docs/p74-session-scoped-room-binding/test-p74-session-room-binding.cjs']],
   ['node', ['Docs/p75-distinct-theme-empty-copy/test-p75-distinct-theme-copy.cjs']],
+  ['node', ['Docs/p76-hud-locale-toggle-header/test-p76-hud-locale-toggle-header.cjs']],
   ['node', ['scripts/e2e-no-llm.cjs']],
   ['npm', ['run', 'preflight']],
 ]

@@ -455,3 +455,9 @@
 - [x] 为 modern / legends 补齐独立 zh-CN/en-US ThemeVoiceProfile。
 - [x] 为 modern / legends 补齐独立三步引导和快捷模板。
 - [x] 增加回归守卫：`npm run test:distinct-theme-copy`。
+
+## P76 — HUD 标题栏语言切换
+- [x] 从 HUD 顶部配置 grid 移除语言 select。
+- [x] 在 HUD 标题栏操作区、浮动按钮左侧加入 `中 / EN` 开关。
+- [x] 语言切换继续走 `setGroupChatLocale()`，保持中央区和 HUD 同步。
+- [x] 增加回归守卫：`npm run test:hud-locale-toggle-header`。

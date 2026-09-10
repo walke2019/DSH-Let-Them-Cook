@@ -19,6 +19,7 @@ assert(top.includes('当前模式') && top.includes('Current mode'), 'mode QA cu
 assert(top.includes('会触发谁') && top.includes('Triggers'), 'mode QA trigger text preserved')
 assert(top.includes('调用量') && top.includes('Cost'), 'mode QA cost text preserved')
 assert(top.includes('工作区隔离'), 'workspace scope QA preserved')
+assert(!top.includes("tx(locale,'语言','Lang')"), 'top controls no longer owns language selector')
 assert(matrix.includes('Docs/p21-hud-top-controls-component/test-p21-hud-top-controls-component.cjs'), 'test matrix includes P21')
 assert(todo.includes('- [x] 将 HUD 顶部配置区抽成独立组件，减少 inline style 和重复布局风险。'), 'TODO marks P21 extraction done')
 console.log('P21_HUD_TOP_CONTROLS_COMPONENT_EXIT:0')
