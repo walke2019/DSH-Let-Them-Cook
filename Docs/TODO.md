@@ -481,3 +481,9 @@
 - [x] 将 `.gc-chat-bottom` 移出 `.gc-chat-scroll`，作为 `.gc-conversation` 的固定 flex 底部区域。
 - [x] 保留 `--gc-bottom-height` 测量和消息区 bottom padding，避免最新消息被输入框遮挡。
 - [x] 增加回归守卫：`npm run test:composer-outside-scroll`。
+
+## P80 — 中央加载态兜底
+- [x] 房间加载请求增加 10s 超时收敛，断线/重启不会无限显示“正在加载…”。
+- [x] 空状态加载失败时在中央区展示错误卡和重试按钮，底部输入框仍可见。
+- [x] 加载、失败、重试文案走 zh-CN/en-US 双语。
+- [x] 增加回归守卫：`npm run test:central-loading-state`。

@@ -178,12 +178,16 @@ export function GroupChatPanel({mode='full'}:GroupChatPanelProps) {
     return ()=>document.body.removeAttribute('data-dsh-group-chat-active')
   },[mode])
   const activeAssignments=Object.values(liveAssignments).filter(item=>item.status==='queued'||item.status==='running').sort((a,b)=>(b.startedAt||b.updatedAt||0)-(a.startedAt||a.updatedAt||0)).slice(0,4)
+  const isEmptyState=!messages.length&&!activeAssignments.length
   const memberName=(roleId:string)=>members.find(member=>member.id===roleId)?.name||roleId
   const memberAvatar=(roleId:string)=>members.find(member=>member.id===roleId)?.avatar||'🤖'
   const assignmentStatusText=(assignment:AssignmentEnvelope)=>assignment.status==='queued'?tx(locale,'已接单，排队中','Queued'):tx(locale,'正在处理','Running')
   const assignmentElapsed=(assignment:AssignmentEnvelope)=>assignment.startedAt?Math.max(0,Math.round((now-assignment.startedAt)/1000)):0
   useEffect(()=>{
     const controller=new AbortController()
+    let active=true
+    let timedOut=false
+    const timeout=window.setTimeout(()=>{timedOut=true;controller.abort()},10000)
     setMessages([]);setAgentStatuses({});setLiveAssignments({})
     const upsert=(list:GroupMessage[])=>setMessages(prev=>{
       const byId=new Map(prev.map(m=>[m.messageId,m]))
@@ -192,12 +196,16 @@ export function GroupChatPanel({mode='full'}:GroupChatPanelProps) {
     })
     setLoading(true);setError('')
     fetch(`/dsh-group-chat/api/room?id=${encodeURIComponent(roomId)}&ensure=1`,{signal:controller.signal}).then(async r=>{
-      if(!r.ok)throw Error(`加载失败 (${r.status})`)
+      if(!r.ok)throw Error(tx(locale,'群聊加载失败','Group chat load failed')+` (${r.status})`)
       const data=await r.json()
-      if(!data.room)throw Error('群聊数据暂未就绪')
-      if(controller.signal.aborted)return
+      if(!data.room)throw Error(tx(locale,'群聊数据暂未就绪','Group chat data is not ready yet'))
+      if(!active||controller.signal.aborted)return
       setMembers(data.room.members);setActiveTheme(data.room.activeTheme || 'meme_comedy');setLiveAssignments(Object.fromEntries((data.room.assignments||[]).map((assignment:AssignmentEnvelope)=>[assignment.assignmentId,assignment])));upsert(data.messages||[])
-    }).catch(e=>{if(!controller.signal.aborted)setError(e.message)}).finally(()=>{if(!controller.signal.aborted)setLoading(false)})
+    }).catch(e=>{
+      if(!active)return
+      const message=timedOut?tx(locale,'群聊数据加载超时，请点重试或重新打开 dsh web 打印的认证链接。','Group chat data load timed out. Click retry or reopen the authenticated URL printed by dsh web.'):e instanceof Error?e.message:String(e)
+      setError(message)
+    }).finally(()=>{window.clearTimeout(timeout);if(active)setLoading(false)})
     const unsubscribe=subscribeGroupChat(e=>{
       if(controller.signal.aborted)return
       try{
@@ -213,8 +221,8 @@ export function GroupChatPanel({mode='full'}:GroupChatPanelProps) {
         }
       }catch{/* Ignore malformed transport messages, not valid errors. */}
     })
-    return ()=>{controller.abort();unsubscribe()}
-  },[retry, roomId])
+    return ()=>{active=false;window.clearTimeout(timeout);controller.abort();unsubscribe()}
+  },[retry, roomId, locale])
   useLayoutEffect(()=>{
     const syncAvailableHeight=()=>{
       const el=root.current
@@ -318,6 +326,9 @@ export function GroupChatPanel({mode='full'}:GroupChatPanelProps) {
       .gc-chat-thread{width:100%;max-width:960px;margin:0 auto;}
       .gc-chat-empty{height:100%;min-height:130px;display:grid;place-content:center;text-align:center;gap:10px;color:var(--dsw-alias-label-tertiary,#999);font-size:13px;}
       .gc-chat-empty strong{font-size:20px;font-weight:500;color:var(--dsw-alias-label-primary,#eee);}
+      .gc-load-error{display:grid;gap:8px;max-width:560px;margin:0 auto;padding:16px;border:1px solid #f8717144;border-radius:16px;background:#7f1d1d22;color:#fecaca;}
+      .gc-load-error strong{font-size:16px;color:#fee2e2;}
+      .gc-load-error button{justify-self:center;border:1px solid #f8717166;border-radius:999px;background:#ef444422;color:#fee2e2;font:inherit;font-size:12px;padding:6px 12px;cursor:pointer;}
       .gc-onboarding{display:grid;gap:14px;max-width:760px;margin:0 auto;color:var(--dsw-alias-label-secondary,#cbd5e1);}
       .gc-onboarding-steps{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;}
       .gc-onboarding-step{padding:10px 12px;border:1px solid var(--dsw-alias-border-l1,#ffffff14);border-radius:14px;background:var(--dsw-alias-bg-layer-1,#202025);text-align:left;}
@@ -371,7 +382,7 @@ export function GroupChatPanel({mode='full'}:GroupChatPanelProps) {
     </div>
     <div ref={scroll} className="gc-chat-scroll" onScroll={e=>{const el=e.currentTarget;follow.current=el.scrollHeight-el.scrollTop-el.clientHeight<80;setShowLatest(!follow.current)}}>
       <div className="gc-scroll-content"><div className="gc-chat-messages">
-      {!messages.length&&!activeAssignments.length ? <div className="gc-chat-empty">{loading?<><strong>正在加载…</strong></>:<div className="gc-onboarding" aria-label={tx(locale,'Agent 群聊首次使用三步引导','Agent group chat onboarding')}><strong>{voice.emptyTitle}</strong><span>{voice.emptySubtitle}</span><div className="gc-onboarding-steps">{onboardingSteps.map(([title,body])=><div className="gc-onboarding-step" key={title}><b>{title}</b><span>{body}</span></div>)}</div><div className="gc-template-row" aria-label={tx(locale,'常见项目模板','Common project templates')}>{quickTemplates.map(item=><button type="button" key={item.label} className="gc-template-chip" onClick={()=>setDraft(item.text)}>{item.label}</button>)}</div></div>}</div> :
+      {isEmptyState ? <div className="gc-chat-empty">{loading?<><strong>{tx(locale,'正在加载…','Loading…')}</strong><span>{tx(locale,'正在同步当前会话的群聊房间。','Syncing the group chat room for this session.')}</span></>:error?<div className="gc-load-error" role="alert"><strong>{tx(locale,'群聊加载失败','Group chat load failed')}</strong><span>{error}</span><button type="button" onClick={()=>setRetry(v=>v+1)}>{tx(locale,'重试加载','Retry loading')}</button></div>:<div className="gc-onboarding" aria-label={tx(locale,'Agent 群聊首次使用三步引导','Agent group chat onboarding')}><strong>{voice.emptyTitle}</strong><span>{voice.emptySubtitle}</span><div className="gc-onboarding-steps">{onboardingSteps.map(([title,body])=><div className="gc-onboarding-step" key={title}><b>{title}</b><span>{body}</span></div>)}</div><div className="gc-template-row" aria-label={tx(locale,'常见项目模板','Common project templates')}>{quickTemplates.map(item=><button type="button" key={item.label} className="gc-template-chip" onClick={()=>setDraft(item.text)}>{item.label}</button>)}</div></div>}</div> :
       <div className="gc-chat-thread" role="log" aria-label={tx(locale,'群聊消息记录','Group chat message log')} aria-live="polite" aria-relevant="additions">
         {messages.filter(m=>!m.metadata?.isSilent).map(message=>{
           const user=message.sender.kind==='user'
@@ -413,9 +424,8 @@ export function GroupChatPanel({mode='full'}:GroupChatPanelProps) {
     </div>
     <div className="gc-chat-bottom" ref={bottom}>
       {showLatest&&<button className="gc-latest" aria-label="滚动到底部" onClick={()=>{follow.current=true;setShowLatest(false);if(scroll.current)scroll.current.scrollTop=scroll.current.scrollHeight}}>↓ 回到最新</button>}
-      {error&&<div className="gc-chat-error" role="alert">{error} <button type="button" onClick={()=>setRetry(v=>v+1)}>重试加载</button></div>}
+      {error&&!isEmptyState&&<div className="gc-chat-error" role="alert">{error} <button type="button" onClick={()=>setRetry(v=>v+1)}>{tx(locale,'重试加载','Retry loading')}</button></div>}
       <GroupChatComposer members={members} value={draft} onChange={setDraft} onSend={send} sending={sending} taskTier={taskTier} onTaskTierChange={setTaskTier} locale={locale}/>
     </div>
   </div>
 }
-

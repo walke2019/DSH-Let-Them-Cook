@@ -80,6 +80,7 @@ const steps = [
   ['node', ['Docs/p77-central-live-execution-status/test-p77-central-live-execution-status.cjs']],
   ['node', ['Docs/p78-agent-turn-surface-fallback/test-p78-agent-turn-surface-fallback.cjs']],
   ['node', ['Docs/p79-composer-outside-scroll/test-p79-composer-outside-scroll.cjs']],
+  ['node', ['Docs/p80-central-loading-state/test-p80-central-loading-state.cjs']],
   ['node', ['scripts/e2e-no-llm.cjs']],
   ['npm', ['run', 'preflight']],
 ]
@@ -93,29 +94,4 @@ for (const [cmd, args] of steps) {
   }
 }
 console.log('\nTEST_MATRIX_EXIT:0')
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 

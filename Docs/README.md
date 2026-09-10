@@ -172,3 +172,5 @@
 - [P78 Agent turn surface fallback](p78-agent-turn-surface-fallback/README.md)：缺少 `turn/end` 时从 assistant event/surface 提取回复，并输出可诊断 event 形态。
 
 - [P79 Composer outside scroll](p79-composer-outside-scroll/README.md)：把底部输入框移出消息滚动容器，确保新对话收到长回复后输入框仍像官方对话一样常驻可见。
+
+- [P80 Central loading state guard](p80-central-loading-state/README.md)：中央 Agent 群聊房间加载增加 10s 超时、错误卡与重试按钮，避免一直停在“正在加载…”。
