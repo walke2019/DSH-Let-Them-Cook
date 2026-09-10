@@ -1,11 +1,9 @@
 import React, {useEffect, useState} from 'react'
-import {createRoot, type Root} from 'react-dom/client'
 import {GroupChatPanel} from './GroupChatPanel.js'
 import {detectGroupChatLocale, tx, type GroupChatLocale} from './i18n.js'
 
 const HERO_STYLE_ID = 'dsh-group-chat-hero-entry-style'
 const HERO_OPEN_EVENT = 'dsh-group-chat:open-hero-main'
-const DETACHED_HERO_ROOT_ID = 'dsh-group-chat-detached-hero-root'
 const HERO_STYLE = `
 .gc-hero-entry{position:fixed;right:0;top:118px;z-index:48;display:flex;align-items:flex-end;gap:8px;min-width:0;pointer-events:none;flex-direction:column;}
 .gc-hero-button{pointer-events:auto;display:inline-flex;align-items:center;gap:8px;height:32px;padding:0 12px;border:1px solid var(--dsw-alias-border-l2,#ffffff26);border-top-left-radius:999px;border-bottom-left-radius:999px;border-top-right-radius:0;border-bottom-right-radius:0;background:var(--dsw-alias-bg-layer-1,#202025);color:var(--dsw-alias-label-primary,#f8fafc);font:inherit;font-size:13px;cursor:pointer;box-shadow:0 2px 10px #0000001f;}
@@ -133,25 +131,6 @@ function DetachedHeroMain({locale, onClose}:{locale:GroupChatLocale; onClose:()=
   </div>
 }
 
-let detachedHeroRoot: Root | null = null
-function openDetachedHeroMain(locale:GroupChatLocale): void {
-  if (typeof document === 'undefined') return
-  installHeroStyle()
-  let host = document.getElementById(DETACHED_HERO_ROOT_ID)
-  if (!host) {
-    host = document.createElement('div')
-    host.id = DETACHED_HERO_ROOT_ID
-    document.body.appendChild(host)
-    detachedHeroRoot = createRoot(host)
-  }
-  const close = () => {
-    detachedHeroRoot?.unmount()
-    detachedHeroRoot = null
-    document.getElementById(DETACHED_HERO_ROOT_ID)?.remove()
-  }
-  detachedHeroRoot?.render(<DetachedHeroMain locale={locale} onClose={close} />)
-}
-
 /** New-session launcher: opens the original middle group-chat surface when DSH has not exposed the real tab yet. */
 export function GroupChatHeroEntry() {
   const [mainOpen, setMainOpen] = useState(false)
@@ -221,6 +200,7 @@ export function GroupChatHeroEntry() {
 /** Official-composer entry: a small in-row shortcut once the DSH session chrome is available. */
 export function GroupChatInputEntry() {
   const [locale, setLocale] = useState<GroupChatLocale>(() => detectGroupChatLocale())
+  const [mainOpen, setMainOpen] = useState(false)
   useEffect(() => {
     installHeroStyle()
     const onLocale = (event: Event) => {
@@ -232,9 +212,12 @@ export function GroupChatInputEntry() {
   }, [])
   const activate = () => {
     if (clickVisibleGroupChatTab()) return
-    openDetachedHeroMain(locale)
+    setMainOpen(true)
   }
-  return <button type="button" className="gc-input-entry-button" onClick={activate} title={tx(locale, '打开 Agent 群聊主界面', 'Open Agent group chat main panel')}>
-    <span aria-hidden="true">💬</span><span>{tx(locale, 'Agent 群聊', 'Agent chat')}</span>
-  </button>
+  return <>
+    <button type="button" className="gc-input-entry-button" onClick={activate} title={tx(locale, '打开 Agent 群聊主界面', 'Open Agent group chat main panel')}>
+      <span aria-hidden="true">💬</span><span>{tx(locale, 'Agent 群聊', 'Agent chat')}</span>
+    </button>
+    {mainOpen && <DetachedHeroMain locale={locale} onClose={() => setMainOpen(false)} />}
+  </>
 }

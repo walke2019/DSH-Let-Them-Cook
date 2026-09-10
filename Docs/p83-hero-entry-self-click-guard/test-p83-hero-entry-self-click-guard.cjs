@@ -16,8 +16,8 @@ assert(source.includes("el.closest('[data-dsh-group-chat-hero-entry],.gc-hero-ma
 assert(source.includes("el.classList.contains('gc-input-entry-button')") && source.includes("el.classList.contains('gc-hero-button')"), 'real-tab lookup excludes its own entry buttons')
 assert(source.includes("el.getAttribute('role') === 'tab'") || source.includes('[role="tab"]'), 'real-tab lookup requires tab semantics before clicking')
 assert(source.includes("siblingText.includes('对话') && siblingText.includes('轨迹')"), 'fallback tab heuristic stays scoped to the official conversation tab strip')
-assert(source.includes('if (clickVisibleGroupChatTab()) return') && source.includes('setMainOpen(true)') && source.includes('openDetachedHeroMain(locale)'), 'entries fall back to the temporary hero main when no real tab exists')
-assert(source.includes("const DETACHED_HERO_ROOT_ID = 'dsh-group-chat-detached-hero-root'") && source.includes('createRoot(host)') && source.includes('document.body.appendChild(host)'), 'input entry can open a detached body-level hero surface even if its slot unmounts')
-assert(source.includes('detachedHeroRoot?.unmount()') && source.includes("document.getElementById(DETACHED_HERO_ROOT_ID)?.remove()"), 'detached hero close path unmounts and removes its body host')
+assert(source.includes('if (clickVisibleGroupChatTab()) return') && source.includes('setMainOpen(true)'), 'entries fall back to the temporary hero main when no real tab exists')
+assert(source.includes('function DetachedHeroMain') && source.includes('<GroupChatPanel mode="dock" />'), 'temporary hero main renders the real group chat panel')
+assert(!source.includes('react-dom/client') && !source.includes('createRoot('), 'temporary hero must not use a nested React root that crashes DSH slot rendering')
 
 console.log('P83_HERO_ENTRY_SELF_CLICK_GUARD_EXIT:0')
