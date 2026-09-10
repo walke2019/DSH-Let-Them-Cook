@@ -90,6 +90,7 @@
     "test:model-health-switching": "node Docs/p70-model-health-and-switching/test-p70-model-health-and-switching.cjs",
     "test:new-session-agent-entry": "node Docs/p71-new-session-agent-entry/test-p71-new-session-agent-entry.cjs",
     "test:hud-message-margins": "node Docs/p72-hud-message-margins/test-p72-hud-message-margins.cjs",
-    "test:hero-left-collapse": "node Docs/p73-hero-left-collapse-adaptation/test-p73-hero-left-collapse.cjs"
+    "test:hero-left-collapse": "node Docs/p73-hero-left-collapse-adaptation/test-p73-hero-left-collapse.cjs",
+    "test:session-room-binding": "node Docs/p74-session-scoped-room-binding/test-p74-session-room-binding.cjs"
   }
 }

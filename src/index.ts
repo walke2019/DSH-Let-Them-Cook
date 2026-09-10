@@ -378,12 +378,14 @@ export function apply(ctx: AppContext, config: Config): void {
         // Host plugin entry: REST API, message dispatch, workflow actions, and lifecycle-safe registration.
         if (method === 'GET' && pathname === '/room') {
           const roomId = url.searchParams.get('id') || 'dev-team-alpha'
-          const room = roomManager.getRoom(roomId)
+          const shouldEnsure = url.searchParams.get('ensure') === '1'
+          const room = shouldEnsure ? roomManager.ensureRoomForSession(roomId, roomId.replace(/^dsh-/, '')) : roomManager.getRoom(roomId)
           if (!room) {
             res.writeHead(404, { 'Content-Type': 'application/json' })
             res.end(JSON.stringify({ error: 'Room not found' }))
             return
           }
+          if (shouldEnsure) persistRoomState(roomId)
           const messages = roomManager.getMessages(roomId)
           const ledger = roomManager.getLedger(roomId)
           res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' })

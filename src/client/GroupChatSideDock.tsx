@@ -9,6 +9,7 @@ import type {AssignmentEnvelope, AgentMailboxMessage, GroupMessageData, LedgerDa
 import type {AgentProfile} from './group-chat-view-types.js'
 import {detectGroupChatLocale, onGroupChatLocaleChange, tx, type GroupChatLocale} from './i18n.js'
 import {GroupChatHeroEntry} from './GroupChatHeroEntry.js'
+import {DEFAULT_GROUP_CHAT_ROOM_ID, useCurrentGroupChatRoomId} from './current-room.js'
 
 const SIDEBAR_DEFAULT_WIDTH = 360
 const SIDEBAR_MIN_WIDTH = 300
@@ -45,6 +46,7 @@ export function GroupChatSideDock() {
   const [isResizingHud, setIsResizingHud] = useState(false)
   const [extensionTabActive, setExtensionTabActive] = useState(false)
   const [heroMainActive, setHeroMainActive] = useState(false)
+  const roomId = useCurrentGroupChatRoomId()
   const selectedTheme = room?.activeTheme === 'meme_comedy' ? 'default' : (room?.activeTheme || 'default')
   const selectedMode = room?.dispatchMode === 'workflow_driven' ? 'default' : (room?.dispatchMode || 'default')
   const displayRoomTitle = room?.title?.includes('特遣') ? tx(locale,'AI 小队工作台','AI squad workspace') : (room?.title || tx(locale,'群聊设置','Group chat settings'))
@@ -67,7 +69,7 @@ export function GroupChatSideDock() {
 
   const fetchRoomData = async () => {
     try {
-      const res = await fetch('/dsh-group-chat/api/room?id=dev-team-alpha')
+      const res = await fetch(`/dsh-group-chat/api/room?id=${encodeURIComponent(roomId)}&ensure=1`)
       if (!res.ok) return
       const data = await res.json()
       if (data.room) {
@@ -87,6 +89,7 @@ export function GroupChatSideDock() {
     const unsubscribe=subscribeGroupChat(e=>{
         try {
           const data = JSON.parse(e.data)
+          if (data.roomId && data.roomId !== roomId) return
           if (data.type === 'room:updated' || data.type === 'stage:advanced' || data.type === 'stage:rejected') {
             setRoom(data.payload)
           } else if (data.type === 'scratchpad:updated') {
@@ -97,7 +100,7 @@ export function GroupChatSideDock() {
         } catch {}
     })
     return unsubscribe
-  }, [])
+  }, [roomId])
 
   // Companion HUD: status, configuration, scratchpad, team, workflow, and ledger without duplicating the central chat input.
   useEffect(()=>onGroupChatLocaleChange(setLocale),[])
@@ -119,7 +122,7 @@ export function GroupChatSideDock() {
 
   useEffect(() => {
     if (typeof localStorage !== 'undefined') localStorage.setItem('dsh-group-chat.hud-width', String(hudWidth))
-  }, [])
+  }, [roomId])
 
   // Companion HUD: status, configuration, scratchpad, team, workflow, and ledger without duplicating the central chat input.
   useEffect(() => {
@@ -215,7 +218,7 @@ export function GroupChatSideDock() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          roomId: room?.roomId || 'dev-team-alpha',
+          roomId: room?.roomId || roomId || DEFAULT_GROUP_CHAT_ROOM_ID,
           scratchpad: scratchpadDraft,
           operatorRoleId: 'commander',
         }),
@@ -233,7 +236,7 @@ export function GroupChatSideDock() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          roomId: room?.roomId || 'dev-team-alpha',
+          roomId: room?.roomId || roomId || DEFAULT_GROUP_CHAT_ROOM_ID,
           action: 'advance',
           approverRoleId: 'commander',
           summary: '指挥官审核通过，批准进入下一阶段',
@@ -248,7 +251,7 @@ export function GroupChatSideDock() {
   const updateRoom = async (path:string, data:Record<string,unknown>) => {
     setManagementError('')
     try {
-      const response=await fetch('/dsh-group-chat/api/'+path,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({roomId:room?.roomId||'dev-team-alpha',...data})})
+      const response=await fetch('/dsh-group-chat/api/'+path,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({roomId:room?.roomId || roomId || DEFAULT_GROUP_CHAT_ROOM_ID,...data})})
       const result=await response.json()
       if(!response.ok||result.success===false)throw Error(result.error||result.message||tx(locale,'更新失败','Update failed'))
       await fetchRoomData()
@@ -262,7 +265,7 @@ export function GroupChatSideDock() {
       const response = await fetch('/dsh-group-chat/api/workflow/task', {
         method:'POST',
         headers:{'Content-Type':'application/json'},
-        body:JSON.stringify({roomId:room?.roomId||'dev-team-alpha', stageId, taskId, status, verifiedByRoleId:'commander', verificationOutput:`HUD 手动修正为 ${status}`}),
+        body:JSON.stringify({roomId:room?.roomId || roomId || DEFAULT_GROUP_CHAT_ROOM_ID, stageId, taskId, status, verifiedByRoleId:'commander', verificationOutput:`HUD 手动修正为 ${status}`}),
       })
       const result = await response.json()
       if(!response.ok||result.success===false)throw Error(result.error||result.message||'任务状态修正失败')
@@ -276,7 +279,7 @@ export function GroupChatSideDock() {
       const response = await fetch('/dsh-group-chat/api/workflow/task-action', {
         method:'POST',
         headers:{'Content-Type':'application/json'},
-        body:JSON.stringify({roomId:room?.roomId||'dev-team-alpha', stageId, taskId, action, actorRoleId:'commander', reason}),
+        body:JSON.stringify({roomId:room?.roomId || roomId || DEFAULT_GROUP_CHAT_ROOM_ID, stageId, taskId, action, actorRoleId:'commander', reason}),
       })
       const result = await response.json()
       if(!response.ok||result.success===false)throw Error(result.error||result.message||'任务动作执行失败')
@@ -290,7 +293,7 @@ export function GroupChatSideDock() {
       const response = await fetch('/dsh-group-chat/api/mailbox/read', {
         method:'POST',
         headers:{'Content-Type':'application/json'},
-        body:JSON.stringify({roomId:room?.roomId||'dev-team-alpha', mailboxMessageId, readerRoleId:'commander'}),
+        body:JSON.stringify({roomId:room?.roomId || roomId || DEFAULT_GROUP_CHAT_ROOM_ID, mailboxMessageId, readerRoleId:'commander'}),
       })
       const result = await response.json()
       if(!response.ok||result.success===false)throw Error(result.error||result.message||'Mailbox 标记已读失败')
@@ -302,7 +305,7 @@ export function GroupChatSideDock() {
     setManagementError('')
     setThemeBusy(true)
     try {
-      const response = await fetch(`/dsh-group-chat/api/theme/${apply ? 'apply-draft' : 'draft'}`, {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({roomId:room?.roomId||'dev-team-alpha', brief:themeBrief, members:themeDraft, workflow:workflowDraft, locale})})
+      const response = await fetch(`/dsh-group-chat/api/theme/${apply ? 'apply-draft' : 'draft'}`, {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({roomId:room?.roomId || roomId || DEFAULT_GROUP_CHAT_ROOM_ID, brief:themeBrief, members:themeDraft, workflow:workflowDraft, locale})})
       const result = await response.json()
       if(!response.ok||result.success===false)throw Error(result.error||result.message||tx(locale,'主题生成失败','Theme generation failed'))
       if(apply){ setThemeDraft([]); setWorkflowDraft(null); await fetchRoomData() }
@@ -318,7 +321,7 @@ export function GroupChatSideDock() {
       {!extensionTabActive && <GroupChatHeroEntry />}
       {hudSurfaceActive && <>
       <style>{`.gc-roster-avatar{width:22px;height:22px;border-radius:7px;display:inline-grid;place-items:center;flex-shrink:0;font-size:14px;color:var(--dsw-alias-state-business-primary,#4d6bfe);background:var(--dsw-alias-bg-layer-3,rgba(255,255,255,0.06));}`}</style>
-      {editingAgent&&<GroupChatRoleEditor editingAgent={editingAgent} roomId={room?.roomId||'dev-team-alpha'} onClose={()=>setEditingAgent(null)} onSaved={()=>void fetchRoomData()}/>}
+      {editingAgent&&<GroupChatRoleEditor editingAgent={editingAgent} roomId={room?.roomId || roomId || DEFAULT_GROUP_CHAT_ROOM_ID} onClose={()=>setEditingAgent(null)} onSaved={()=>void fetchRoomData()}/>}
       {/**
  * Companion HUD: status, configuration, scratchpad, team, workflow, and ledger without duplicating the central chat input.
  */}

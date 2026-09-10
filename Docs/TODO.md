@@ -444,3 +444,9 @@
 - [x] 将新会话临时 `Agent 群聊` 面板从固定 `left:280px` 改为 `--dsh-group-chat-hero-left` 动态左边界。
 - [x] 打开面板时读取官方中间列当前位置，左栏收起后对齐 56px rail，展开时仍对齐 280px。
 - [x] 增加回归守卫：`npm run test:hero-left-collapse`。
+
+## P74 — 新会话与群聊房间绑定
+- [x] 从官方 `dsh.sessions.current.sessionId` 推导 session-scoped roomId。
+- [x] 中央群聊与 HUD 按 roomId 切换数据源，并过滤非当前 room 的 SSE 事件。
+- [x] 新 session 首次进入通过 `ensure=1` 创建空房间，不复用旧消息记录。
+- [x] 增加回归守卫：`npm run test:session-room-binding`。

@@ -74,6 +74,7 @@ const steps = [
   ['node', ['Docs/p71-new-session-agent-entry/test-p71-new-session-agent-entry.cjs']],
   ['node', ['Docs/p72-hud-message-margins/test-p72-hud-message-margins.cjs']],
   ['node', ['Docs/p73-hero-left-collapse-adaptation/test-p73-hero-left-collapse.cjs']],
+  ['node', ['Docs/p74-session-scoped-room-binding/test-p74-session-room-binding.cjs']],
   ['node', ['scripts/e2e-no-llm.cjs']],
   ['npm', ['run', 'preflight']],
 ]

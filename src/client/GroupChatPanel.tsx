@@ -6,6 +6,7 @@ import {GroupChatComposer} from './GroupChatComposer.js'
 import {getThemeVoice} from '../engine/theme-voice.js'
 import {detectGroupChatLocale, onGroupChatLocaleChange, tx, type GroupChatLocale} from './i18n.js'
 import type {AgentProfile, AgentStatus, GroupMessage} from './group-chat-view-types.js'
+import {useCurrentGroupChatRoomId} from './current-room.js'
 
 type ClientThemeKey = 'meme_comedy' | 'three_kingdoms' | 'genshin' | 'modern' | 'legends' | string
 
@@ -113,7 +114,7 @@ export function GroupChatPanel({mode='full'}:GroupChatPanelProps) {
   const [statusOpen,setStatusOpen]=useState(()=>localStorage.getItem('dsh-group-chat.status-open')!=='false')
   const [statusPos,setStatusPos]=useState(()=>{try{return JSON.parse(localStorage.getItem('dsh-group-chat.status-pos')||'{"x":18,"y":18}')}catch{return {x:18,y:18}}})
   const drag=useRef<{dx:number;dy:number}|null>(null)
-  const roomId='dev-team-alpha'
+  const roomId = useCurrentGroupChatRoomId()
   const voice = getThemeVoice(activeTheme as any, locale)
   const quickTemplates = buildThemeQuickTemplates(activeTheme, locale)
   const onboardingSteps = buildThemeOnboarding(activeTheme, locale)
@@ -127,13 +128,14 @@ export function GroupChatPanel({mode='full'}:GroupChatPanelProps) {
   },[mode])
   useEffect(()=>{
     const controller=new AbortController()
+    setMessages([]);setAgentStatuses({})
     const upsert=(list:GroupMessage[])=>setMessages(prev=>{
       const byId=new Map(prev.map(m=>[m.messageId,m]))
       for(const message of list)byId.set(message.messageId,message)
       return [...byId.values()].sort((a,b)=>a.timestamp-b.timestamp)
     })
     setLoading(true);setError('')
-    fetch(`/dsh-group-chat/api/room?id=${roomId}`,{signal:controller.signal}).then(async r=>{
+    fetch(`/dsh-group-chat/api/room?id=${encodeURIComponent(roomId)}&ensure=1`,{signal:controller.signal}).then(async r=>{
       if(!r.ok)throw Error(`加载失败 (${r.status})`)
       const data=await r.json()
       if(!data.room)throw Error('群聊数据暂未就绪')
@@ -153,7 +155,7 @@ export function GroupChatPanel({mode='full'}:GroupChatPanelProps) {
       }catch{/* Ignore malformed transport messages, not valid errors. */}
     })
     return ()=>{controller.abort();unsubscribe()}
-  },[retry])
+  },[retry, roomId])
   useLayoutEffect(()=>{
     if(follow.current&&scroll.current)scroll.current.scrollTop=scroll.current.scrollHeight
     if(!follow.current||!scroll.current)return

@@ -233,3 +233,10 @@
 - 计算左边界时优先读取官方中间层实际 DOM 几何，找不到时才使用左侧 collapsed rail 兜底；不得依赖 DSH 哈希 class 名作为唯一判断条件。
 - 左栏收起、窗口 resize、官方 shell DOM reflow 后必须重新计算临时面板左边界；避免用户看到左侧大空洞或中间层被旧 sidebar 宽度卡住。
 - 涉及新会话入口、临时中间工作面、左栏收起/展开的改动，必须执行 `npm run test:hero-left-collapse` 并用真实浏览器测量 `hero.left === centerLeft`。
+
+### 24. 新会话与房间绑定铁律（P74）
+- 中央 `Agent 群聊` 与右侧 HUD 不得长期硬编码读取 `dev-team-alpha`；在官方 DSH 对话内运行时，必须从当前官方 session 推导工作区内的群聊 roomId。
+- 用户从左栏开启或切换官方新会话后，插件必须切到对应 session-scoped room；新 session 首次打开时展示空群聊引导，不得复用上一会话任务的 messages、ledger、assignments。
+- roomId 切换时中央消息列表、Agent 状态和 HUD 数据必须立即清空并重新拉取；SSE 事件必须按当前 roomId 过滤，避免旧会话后台事件串屏。
+- `/dsh-group-chat/api/room?id=...&ensure=1` 只允许创建当前 session 对应的空房间与默认队伍，不得拷贝旧房间消息记录。
+- 涉及官方会话切换、roomId 推导、HUD 数据源和消息持久化的改动，必须执行 `npm run test:session-room-binding`、`npm run test:ui:switch`、`npm run test:ui:refresh` 和 `npm run test:matrix`。
