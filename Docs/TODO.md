@@ -450,3 +450,8 @@
 - [x] 中央群聊与 HUD 按 roomId 切换数据源，并过滤非当前 room 的 SSE 事件。
 - [x] 新 session 首次进入通过 `ensure=1` 创建空房间，不复用旧消息记录。
 - [x] 增加回归守卫：`npm run test:session-room-binding`。
+
+## P75 — 中央起始文案主题差异
+- [x] 为 modern / legends 补齐独立 zh-CN/en-US ThemeVoiceProfile。
+- [x] 为 modern / legends 补齐独立三步引导和快捷模板。
+- [x] 增加回归守卫：`npm run test:distinct-theme-copy`。

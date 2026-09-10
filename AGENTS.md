@@ -240,3 +240,9 @@
 - roomId 切换时中央消息列表、Agent 状态和 HUD 数据必须立即清空并重新拉取；SSE 事件必须按当前 roomId 过滤，避免旧会话后台事件串屏。
 - `/dsh-group-chat/api/room?id=...&ensure=1` 只允许创建当前 session 对应的空房间与默认队伍，不得拷贝旧房间消息记录。
 - 涉及官方会话切换、roomId 推导、HUD 数据源和消息持久化的改动，必须执行 `npm run test:session-room-binding`、`npm run test:ui:switch`、`npm run test:ui:refresh` 和 `npm run test:matrix`。
+
+### 25. 中央起始文案主题差异铁律（P75）
+- 每个内置主题（沙雕整活、现代精英、科技传奇、三国风云、原神提瓦特）的中央空态标题、副标题、三步引导和快捷模板必须有独立口吻；不得让 modern / legends 静默回退到 meme/default 文案。
+- 新增主题时必须同步 `src/engine/theme-voice.ts`、`src/client/GroupChatPanel.tsx` 的 onboarding 与 quick templates，并覆盖 zh-CN/en-US。
+- 科技传奇必须体现“科技界巨头来给用户打工”的产品感；现代精英必须体现专业交付/约束/验收；沙雕整活必须保留有梗但靠谱的开整感。
+- 涉及中央起始显示文案、主题切换、空态引导和模板按钮的改动，必须执行 `npm run test:distinct-theme-copy`、`npm run test:theme-copy`、`npm run test:tech-legends-theme` 和 `npm run test:matrix`。

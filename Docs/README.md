@@ -161,3 +161,5 @@
 - [P73 Hero 左栏收起自适应](p73-hero-left-collapse-adaptation/README.md)：修复新会话临时 Agent 群聊面板在官方左栏收起时仍按 280px 固定左边界渲染的问题。
 
 - [P74 Session-scoped room binding](p74-session-scoped-room-binding/README.md)：修复左栏新会话仍显示旧任务群聊记录的问题。
+
+- [P75 Distinct theme empty copy](p75-distinct-theme-empty-copy/README.md)：补齐现代精英、科技传奇与沙雕整活的中央起始文案差异。

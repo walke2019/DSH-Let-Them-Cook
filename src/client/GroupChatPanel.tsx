@@ -12,6 +12,20 @@ type ClientThemeKey = 'meme_comedy' | 'three_kingdoms' | 'genshin' | 'modern' | 
 
 function buildThemeQuickTemplates(theme: ClientThemeKey, locale: GroupChatLocale) {
   if (locale === 'en-US') {
+    if (theme === 'modern') return [
+      {label:'Define scope', text:'Project task: [goal]. Constraints: [time/risk/quality]. Acceptance criteria: [how we know it is done]. Ask the lead Agent to plan execution.'},
+      {label:'Fix issue', text:'Resolve issue in [page/module]. Current behavior: [symptom]. Expected behavior: [target]. Include tests and rollback notes.'},
+      {label:'Improve UX', text:'Improve UX for [page/component]. Audience: [users]. Success metric: [metric]. Keep implementation scoped and verifiable.'},
+      {label:'Write spec', text:'Write or update docs for [feature/process]. Cover decisions, API/UI impact, tests, and open risks.'},
+      {label:'Release review', text:'Run a release readiness review: build, tests, UI regressions, docs, risk list, and go/no-go recommendation.'},
+    ]
+    if (theme === 'legends') return [
+      {label:'Launch mission', text:'Launch mission: [what to build]. Product taste bar: [quality]. Technical leverage: [approach]. Ask the tech legends to split and ship.'},
+      {label:'Jobs review', text:'Review [feature/UI] like a product keynote: what feels magical, what feels clumsy, and what must be cut before launch.'},
+      {label:'Build engine', text:'Build the engine for [capability]. Need architecture, implementation path, tests, and measurable performance criteria.'},
+      {label:'Find leverage', text:'Research leverage for [problem]: market/technical references, shortcuts, risks, and the highest-impact next move.'},
+      {label:'Board check', text:'Run a board-level launch check: product clarity, engineering risk, QA evidence, docs, and final launch call.'},
+    ]
     if (theme === 'three_kingdoms') return [
       {label:'Fix defenses', text:'Campaign task: fix a bug. Symptom: [describe issue]. Expected: [expected result]. Ask the master Agent to assign generals first.'},
       {label:'Polish troops', text:'Improve UI for [page/component]. Problem: [what feels off]. Target style: [reference].'},
@@ -34,6 +48,20 @@ function buildThemeQuickTemplates(theme: ClientThemeKey, locale: GroupChatLocale
       {label:'Preflight', text:'Run release checks: tests, UI, docs, risks. For failures, suggest retry/skip/ask-user.'},
     ]
   }
+  if (theme === 'modern') return [
+    {label:'定范围', text:'项目任务：【目标】。约束：【时间/风险/质量】。验收标准：【怎样算完成】。请主 Agent 先拆执行方案。'},
+    {label:'修问题', text:'修复【页面/模块】问题。当前现象：【描述】。期望结果：【目标】。请包含测试与回滚说明。'},
+    {label:'提体验', text:'优化【页面/组件】体验。目标用户：【人群】。成功指标：【指标】。要求范围可控、结果可验收。'},
+    {label:'写规范', text:'更新【功能/流程】文档，覆盖决策、API/UI 影响、测试记录和风险。'},
+    {label:'发版评审', text:'做发布前评审：构建、测试、UI 回归、文档、风险清单和 go/no-go 建议。'},
+  ]
+  if (theme === 'legends') return [
+    {label:'开发布会', text:'发布会任务：【要构建什么】。产品品味线：【质量标准】。技术杠杆：【方案方向】。请科技传奇分工交付。'},
+    {label:'乔布斯评审', text:'像产品发布会一样评审【功能/UI】：哪里惊艳、哪里笨重、上线前必须砍掉什么。'},
+    {label:'造引擎', text:'为【能力】打造技术引擎：需要架构、实现路径、测试和性能验收标准。'},
+    {label:'找杠杆', text:'调研【问题】的高杠杆解法：市场/技术参考、捷径、风险和最高影响力下一步。'},
+    {label:'董事会检查', text:'做发布会级检查：产品清晰度、工程风险、QA 证据、文档和最终上线判断。'},
+  ]
   if (theme === 'three_kingdoms') return [
     {label:'修城防', text:'此役要修一个 Bug：现象是【描述问题】，期望是【期望结果】，请主 Agent 先点将分工。'},
     {label:'整军容', text:'帮我打磨一个 UI：页面/组件是【名称】，问题是【不够好看的地方】，目标风格是【参考风格】。'},
@@ -59,6 +87,16 @@ function buildThemeQuickTemplates(theme: ClientThemeKey, locale: GroupChatLocale
 
 function buildThemeOnboarding(theme: ClientThemeKey, locale: GroupChatLocale) {
   if (locale === 'en-US') {
+    if (theme === 'modern') return [
+      ['1. Define outcome', 'State the goal, constraints, owner expectations, and acceptance criteria.'],
+      ['2. Build the plan', 'The lead Agent converts the brief into roles, workflow, risks, and verification steps.'],
+      ['3. Execute with evidence', 'After confirmation, specialists work by responsibility and close with testable results.'],
+    ]
+    if (theme === 'legends') return [
+      ['1. Pitch the mission', 'Describe the product moment, technical ambition, and why it matters.'],
+      ['2. Assemble legends', 'Jobs frames taste, Musk seeks leverage, Jensen shapes the engine, and the team splits execution.'],
+      ['3. Launch or cut', 'Confirm the route, then specialists report evidence and the commander makes the launch call.'],
+    ]
     if (theme === 'three_kingdoms') return [
       ['1. Give orders', 'Say whether this campaign fixes bugs, polishes UI, writes docs, scouts intel, or prepares release.'],
       ['2. Assign generals', 'The master Agent reads the situation, asks follow-ups if needed, then drafts roles and route.'],
@@ -75,6 +113,16 @@ function buildThemeOnboarding(theme: ClientThemeKey, locale: GroupChatLocale) {
       ['3. Confirm to start', 'Only after confirmation will it write into this workspace; SubAgents execute and report back.'],
     ]
   }
+  if (theme === 'modern') return [
+    ['1. 定目标', '说清业务目标、约束、负责人预期和验收标准。'],
+    ['2. 出方案', '主 Agent 把 brief 变成角色分工、工作流、风险和验证步骤。'],
+    ['3. 凭证据闭环', '确认后专员按职责执行，最后用可测试结果收口。'],
+  ]
+  if (theme === 'legends') return [
+    ['1. 讲发布会', '说清产品时刻、技术野心，以及这件事为什么值得做。'],
+    ['2. 召集传奇', '乔布斯定品味，马斯克找杠杆，黄仁勋搭引擎，小队分路推进。'],
+    ['3. 上线或砍掉', '确认路线后专员交证据，主 Agent 做最终发布判断。'],
+  ]
   if (theme === 'three_kingdoms') return [
     ['1. 下军令', '直接说此役要修 Bug、整 UI、写文书、探情报还是发版点卯。'],
     ['2. 先点将', '主 Agent 先判军情，必要时追问，再排将领和行军路线。'],
