@@ -93,6 +93,7 @@
     "test:hero-left-collapse": "node Docs/p73-hero-left-collapse-adaptation/test-p73-hero-left-collapse.cjs",
     "test:session-room-binding": "node Docs/p74-session-scoped-room-binding/test-p74-session-room-binding.cjs",
     "test:distinct-theme-copy": "node Docs/p75-distinct-theme-empty-copy/test-p75-distinct-theme-copy.cjs",
-    "test:hud-locale-toggle-header": "node Docs/p76-hud-locale-toggle-header/test-p76-hud-locale-toggle-header.cjs"
+    "test:hud-locale-toggle-header": "node Docs/p76-hud-locale-toggle-header/test-p76-hud-locale-toggle-header.cjs",
+    "test:central-live-status": "node Docs/p77-central-live-execution-status/test-p77-central-live-execution-status.cjs"
   }
 }

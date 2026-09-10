@@ -5,6 +5,7 @@ import {MarkdownText} from '@deepseek-ai/dsh-client-ui-primitives'
 import {GroupChatComposer} from './GroupChatComposer.js'
 import {getThemeVoice} from '../engine/theme-voice.js'
 import {detectGroupChatLocale, onGroupChatLocaleChange, tx, type GroupChatLocale} from './i18n.js'
+import type {AssignmentEnvelope} from './group-chat-hud-types.js'
 import type {AgentProfile, AgentStatus, GroupMessage} from './group-chat-view-types.js'
 import {useCurrentGroupChatRoomId} from './current-room.js'
 
@@ -159,6 +160,7 @@ export function GroupChatPanel({mode='full'}:GroupChatPanelProps) {
   const follow=useRef(true)
   const [showLatest,setShowLatest]=useState(false)
   const [agentStatuses,setAgentStatuses]=useState<Record<string,AgentStatus>>({})
+  const [liveAssignments,setLiveAssignments]=useState<Record<string,AssignmentEnvelope>>({})
   const [statusOpen,setStatusOpen]=useState(()=>localStorage.getItem('dsh-group-chat.status-open')!=='false')
   const [statusPos,setStatusPos]=useState(()=>{try{return JSON.parse(localStorage.getItem('dsh-group-chat.status-pos')||'{"x":18,"y":18}')}catch{return {x:18,y:18}}})
   const drag=useRef<{dx:number;dy:number}|null>(null)
@@ -174,9 +176,14 @@ export function GroupChatPanel({mode='full'}:GroupChatPanelProps) {
     document.body.setAttribute('data-dsh-group-chat-active','true')
     return ()=>document.body.removeAttribute('data-dsh-group-chat-active')
   },[mode])
+  const activeAssignments=Object.values(liveAssignments).filter(item=>item.status==='queued'||item.status==='running').sort((a,b)=>(b.startedAt||b.updatedAt||0)-(a.startedAt||a.updatedAt||0)).slice(0,4)
+  const memberName=(roleId:string)=>members.find(member=>member.id===roleId)?.name||roleId
+  const memberAvatar=(roleId:string)=>members.find(member=>member.id===roleId)?.avatar||'🤖'
+  const assignmentStatusText=(assignment:AssignmentEnvelope)=>assignment.status==='queued'?tx(locale,'已接单，排队中','Queued'):tx(locale,'正在处理','Running')
+  const assignmentElapsed=(assignment:AssignmentEnvelope)=>assignment.startedAt?Math.max(0,Math.round((now-assignment.startedAt)/1000)):0
   useEffect(()=>{
     const controller=new AbortController()
-    setMessages([]);setAgentStatuses({})
+    setMessages([]);setAgentStatuses({});setLiveAssignments({})
     const upsert=(list:GroupMessage[])=>setMessages(prev=>{
       const byId=new Map(prev.map(m=>[m.messageId,m]))
       for(const message of list)byId.set(message.messageId,message)
@@ -188,7 +195,7 @@ export function GroupChatPanel({mode='full'}:GroupChatPanelProps) {
       const data=await r.json()
       if(!data.room)throw Error('群聊数据暂未就绪')
       if(controller.signal.aborted)return
-      setMembers(data.room.members);setActiveTheme(data.room.activeTheme || 'meme_comedy');upsert(data.messages||[])
+      setMembers(data.room.members);setActiveTheme(data.room.activeTheme || 'meme_comedy');setLiveAssignments(Object.fromEntries((data.room.assignments||[]).map((assignment:AssignmentEnvelope)=>[assignment.assignmentId,assignment])));upsert(data.messages||[])
     }).catch(e=>{if(!controller.signal.aborted)setError(e.message)}).finally(()=>{if(!controller.signal.aborted)setLoading(false)})
     const unsubscribe=subscribeGroupChat(e=>{
       if(controller.signal.aborted)return
@@ -196,7 +203,10 @@ export function GroupChatPanel({mode='full'}:GroupChatPanelProps) {
         const event=JSON.parse(e.data)
         if(event.roomId&&event.roomId!==roomId)return
         if(event.type==='message:new')upsert([event.payload])
-        if(event.type==='room:updated'&&event.payload){if(event.payload.members)setMembers(event.payload.members); if(event.payload.activeTheme)setActiveTheme(event.payload.activeTheme)}
+        if(event.type==='room:updated'&&event.payload){if(event.payload.members)setMembers(event.payload.members); if(event.payload.activeTheme)setActiveTheme(event.payload.activeTheme); if(event.payload.assignments)setLiveAssignments(Object.fromEntries(event.payload.assignments.map((assignment:AssignmentEnvelope)=>[assignment.assignmentId,assignment])))}
+        if(event.type==='assignment:updated'&&event.payload?.assignmentId){
+          setLiveAssignments(prev=>({...prev,[event.payload.assignmentId]:event.payload}))
+        }
         if(event.type==='agent:status'&&event.payload?.agentId){
           setAgentStatuses(prev=>({...prev,[event.payload.agentId]:event.payload}))
         }
@@ -212,7 +222,7 @@ export function GroupChatPanel({mode='full'}:GroupChatPanelProps) {
     sync()
     const frame=requestAnimationFrame(()=>{sync();requestAnimationFrame(sync)})
     return ()=>cancelAnimationFrame(frame)
-  },[messages.length, loading])
+  },[messages.length, loading, activeAssignments.length])
   useEffect(()=>{
     const el=scroll.current
     if(!el)return
@@ -299,6 +309,15 @@ export function GroupChatPanel({mode='full'}:GroupChatPanelProps) {
       .gc-template-row{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;}
       .gc-template-chip{border:1px solid var(--dsw-alias-border-l2,#ffffff22);border-radius:999px;background:var(--dsw-alias-bg-layer-2,#29292e);color:var(--dsw-alias-label-primary,#eee);font:inherit;font-size:12px;padding:6px 10px;cursor:pointer;}
       .gc-template-chip:hover{background:var(--dsw-alias-bg-layer-3,#33333a);border-color:#4d6bfe66;}
+      .gc-live-status{width:100%;max-width:960px;margin:0 auto 18px;display:grid;gap:8px;}
+      .gc-live-status-title{font-size:12px;font-weight:700;color:var(--dsw-alias-label-primary,#eee);display:flex;align-items:center;gap:8px;}
+      .gc-live-pulse{width:7px;height:7px;border-radius:50%;background:#4d6bfe;box-shadow:0 0 0 5px #4d6bfe24;animation:gcPulse 1.4s ease-in-out infinite;}
+      .gc-live-card{display:grid;grid-template-columns:24px 1fr;gap:8px;padding:8px 10px;border:1px solid #4d6bfe33;border-radius:13px;background:linear-gradient(135deg,#4d6bfe18,#ffffff08);color:var(--dsw-alias-label-secondary,#cbd5e1);font-size:12px;line-height:1.45;}
+      .gc-live-card b{color:var(--dsw-alias-label-primary,#eee);}
+      .gc-live-brief{grid-column:2;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--dsw-alias-label-tertiary,#999);}
+      .gc-live-bar{grid-column:2;height:3px;border-radius:999px;background:#ffffff14;overflow:hidden;}
+      .gc-live-bar span{display:block;height:100%;border-radius:inherit;background:#4d6bfe;transition:width .3s ease;}
+      @keyframes gcPulse{0%,100%{opacity:.55;transform:scale(.85)}50%{opacity:1;transform:scale(1.05)}}
       .gc-message{margin:0 0 30px;overflow-wrap:anywhere;}
       .gc-message-user{display:flex;flex-direction:column;align-items:flex-end;}
       .gc-message-body{font-size:13px;line-height:1.7;min-width:0;}
@@ -333,6 +352,7 @@ export function GroupChatPanel({mode='full'}:GroupChatPanelProps) {
     </div>
     <div ref={scroll} className="gc-chat-scroll" onScroll={e=>{const el=e.currentTarget;follow.current=el.scrollHeight-el.scrollTop-el.clientHeight<80;setShowLatest(!follow.current)}}>
       <div className="gc-scroll-content"><div className="gc-chat-messages">
+      {!!activeAssignments.length&&<div className="gc-live-status" aria-live="polite" aria-label={tx(locale,'中央执行状态','Central execution status')}><div className="gc-live-status-title"><span className="gc-live-pulse" />{tx(locale,'Agent 正在执行','Agents are working')}</div>{activeAssignments.map(assignment=><div className="gc-live-card" data-status={assignment.status} key={assignment.assignmentId}><AvatarBadge avatar={memberAvatar(assignment.ownerRoleId)} /><div><b>{memberName(assignment.ownerRoleId)}</b> · {assignmentStatusText(assignment)}{assignment.taskTier?` · ${assignment.taskTier==='quick'?tx(locale,'快活','Quick'):tx(locale,'长活','Long')}`:''}{assignment.startedAt?` · ${assignmentElapsed(assignment)}s`:''}{assignment.expectedMs?`/${Math.round(assignment.expectedMs/1000)}s`:''}</div><div className="gc-live-brief">{assignment.brief}</div>{assignment.startedAt&&assignment.expectedMs?<div className="gc-live-bar" aria-label={tx(locale,'执行进度估计','Estimated progress')}><span style={{width:`${Math.min(96,Math.round((assignmentElapsed(assignment)*1000/assignment.expectedMs)*100))}%`}} /></div>:null}</div>)}</div>}
       {!messages.length ? <div className="gc-chat-empty">{loading?<><strong>正在加载…</strong></>:<div className="gc-onboarding" aria-label={tx(locale,'Agent 群聊首次使用三步引导','Agent group chat onboarding')}><strong>{voice.emptyTitle}</strong><span>{voice.emptySubtitle}</span><div className="gc-onboarding-steps">{onboardingSteps.map(([title,body])=><div className="gc-onboarding-step" key={title}><b>{title}</b><span>{body}</span></div>)}</div><div className="gc-template-row" aria-label={tx(locale,'常见项目模板','Common project templates')}>{quickTemplates.map(item=><button type="button" key={item.label} className="gc-template-chip" onClick={()=>setDraft(item.text)}>{item.label}</button>)}</div></div>}</div> :
       <div className="gc-chat-thread" role="log" aria-label={tx(locale,'群聊消息记录','Group chat message log')} aria-live="polite" aria-relevant="additions">
         {messages.filter(m=>!m.metadata?.isSilent).map(message=>{

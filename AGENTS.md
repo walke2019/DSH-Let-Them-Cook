@@ -252,3 +252,9 @@
 - zh-CN/en-US 语言切换应放在 HUD 标题栏右侧操作区、浮动/停靠按钮左侧，使用短标签 `中 / EN` 与 `EN / 中`。
 - 语言开关必须继续调用统一 `setGroupChatLocale()`，让中央区、HUD、composer 和后续消息 metadata 同步语言状态。
 - 涉及 HUD 顶部配置、语言切换、浮动按钮排序的改动，必须执行 `npm run test:hud-locale-toggle-header`、`npm run test:ui:entry` 和 `npm run test:matrix`。
+
+### 27. 中央执行状态可见铁律（P77）
+- 用户在中央 `Agent 群聊` 发送任务后，queued/running assignment 必须在中央消息区直接可见，不能只依赖右侧 HUD 或悬浮 Agent 状态面板。
+- 中央状态必须从实时 `assignment:updated` 事件更新，并在刷新后从 `room.assignments` 恢复，直到 assignment 收敛为 completed/failed/blocked/cancelled。
+- DSH session events 可能缺失或不是数组；运行时不得直接调用 `events.findLast()`，必须先做数组规整和兼容反向查找，避免模型结果阶段被兼容错误覆盖。
+- 涉及中央任务推进、assignment 可见性、agent runtime 事件读取的改动，必须执行 `npm run test:central-live-status`、`npm run test:ui:entry` 和 `npm run test:matrix`。

@@ -461,3 +461,10 @@
 - [x] 在 HUD 标题栏操作区、浮动按钮左侧加入 `中 / EN` 开关。
 - [x] 语言切换继续走 `setGroupChatLocale()`，保持中央区和 HUD 同步。
 - [x] 增加回归守卫：`npm run test:hud-locale-toggle-header`。
+
+
+## P77 — 中央执行状态与运行兼容
+- [x] 中央消息区订阅并渲染 queued/running assignment 状态。
+- [x] 首次加载房间时从持久化 assignments 恢复执行中卡片。
+- [x] `agent-runtime` 移除直接 `findLast()` 调用，兼容 session events 缺失或非数组。
+- [x] 增加回归守卫：`npm run test:central-live-status`。

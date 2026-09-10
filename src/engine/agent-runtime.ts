@@ -18,6 +18,18 @@ function hasVisibleDelta(chunk: any): boolean {
     || chunk?.type === 'tool-call-delta' && (!!chunk.argumentsDelta || !!chunk.name)
 }
 
+function asRuntimeEvents(events: unknown): readonly any[] {
+  return Array.isArray(events) ? events : []
+}
+
+function findLastRuntimeEvent(events: readonly any[], predicate: (event: any) => boolean): any | undefined {
+  for (let index = events.length - 1; index >= 0; index -= 1) {
+    const event = events[index]
+    if (predicate(event)) return event
+  }
+  return undefined
+}
+
 function summarizeRuntimeMetrics(events: readonly any[]): AgentRuntimeMetrics {
   const metrics = emptyRuntimeMetrics()
   metrics.turnCount = events.filter(e=>e.type==='turn/start').length
@@ -121,8 +133,8 @@ export async function runMemberTurn(ctx: RuntimeContext, model: ModelRef, prompt
     } as UserMessage)
     await waitForMemberIdle(handle.agent, signal)
     signal.throwIfAborted()
-    const events = handle.agent.session.events
-    const end = events.findLast(e => e.type === 'turn/end')
+    const events = asRuntimeEvents(handle.agent.session?.events)
+    const end = findLastRuntimeEvent(events, e => e.type === 'turn/end')
     if (!end || end.data.reason.kind !== 'completed') {
       throw new Error(`Group-chat agent turn failed: ${JSON.stringify(end?.data.reason ?? 'missing turn/end')}`)
     }

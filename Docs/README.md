@@ -165,3 +165,6 @@
 - [P75 Distinct theme empty copy](p75-distinct-theme-empty-copy/README.md)：补齐现代精英、科技传奇与沙雕整活的中央起始文案差异。
 
 - [P76 HUD header language toggle](p76-hud-locale-toggle-header/README.md)：把中英双语切换从顶部配置 grid 移到 HUD 标题栏浮动按钮左侧。
+
+
+- [P77 Central live execution status](p77-central-live-execution-status/README.md)：中央消息区直接显示 queued/running Agent assignment，并修复 session events `findLast` 兼容崩溃。
