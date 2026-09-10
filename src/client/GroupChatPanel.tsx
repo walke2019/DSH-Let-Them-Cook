@@ -283,7 +283,7 @@ export function GroupChatPanel({mode='full'}:GroupChatPanelProps) {
       .gc-chat-scroll{flex:1;min-height:0;overflow:auto;overscroll-behavior:contain;scrollbar-gutter:stable;scroll-behavior:auto;overflow-anchor:none;}
       .gc-scroll-content{min-height:100%;display:flex;flex-direction:column;}
       .gc-chat-messages{flex:1;padding:28px 24px calc(var(--gc-bottom-height,150px) + 24px);}
-      .gc-chat-bottom{position:sticky;bottom:0;z-index:5;background:linear-gradient(180deg,transparent 0,var(--dsw-alias-bg-base,#101014) 18px,var(--dsw-alias-bg-base,#101014) 100%);padding-top:18px;}
+      .gc-chat-bottom{position:relative;flex:0 0 auto;z-index:5;background:linear-gradient(180deg,transparent 0,var(--dsw-alias-bg-base,#101014) 18px,var(--dsw-alias-bg-base,#101014) 100%);padding-top:18px;}
       .gc-latest{display:block;margin:0 auto 4px;padding:5px 12px;border-radius:16px;border:1px solid #8885;background:var(--dsw-alias-bg-layer-1,#222);color:inherit;cursor:pointer;}
       .gc-agent-float{position:absolute;z-index:6;width:210px;max-width:calc(100% - 36px);border:1px solid var(--dsw-alias-border-l2,#ffffff24);border-radius:16px;background:color-mix(in oklab,var(--dsw-alias-bg-layer-1,#202025) 90%,transparent);box-shadow:0 10px 30px #0004;backdrop-filter:blur(12px);padding:10px;color:inherit;font-size:12px;touch-action:none;}
       .gc-agent-float[data-open=false]{width:auto;padding:6px 8px;}
@@ -393,12 +393,13 @@ export function GroupChatPanel({mode='full'}:GroupChatPanelProps) {
           </div>
         </article>)}
       </div>}
+      </div></div>
     </div>
     <div className="gc-chat-bottom" ref={bottom}>
-    {showLatest&&<button className="gc-latest" aria-label="滚动到底部" onClick={()=>{follow.current=true;setShowLatest(false);if(scroll.current)scroll.current.scrollTop=scroll.current.scrollHeight}}>↓ 回到最新</button>}
-    {error&&<div className="gc-chat-error" role="alert">{error} <button type="button" onClick={()=>setRetry(v=>v+1)}>重试加载</button></div>}
-    <GroupChatComposer members={members} value={draft} onChange={setDraft} onSend={send} sending={sending} taskTier={taskTier} onTaskTierChange={setTaskTier} locale={locale}/>
-    </div></div></div>
+      {showLatest&&<button className="gc-latest" aria-label="滚动到底部" onClick={()=>{follow.current=true;setShowLatest(false);if(scroll.current)scroll.current.scrollTop=scroll.current.scrollHeight}}>↓ 回到最新</button>}
+      {error&&<div className="gc-chat-error" role="alert">{error} <button type="button" onClick={()=>setRetry(v=>v+1)}>重试加载</button></div>}
+      <GroupChatComposer members={members} value={draft} onChange={setDraft} onSend={send} sending={sending} taskTier={taskTier} onTaskTierChange={setTaskTier} locale={locale}/>
+    </div>
   </div>
 }
 

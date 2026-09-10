@@ -475,3 +475,9 @@
 - [x] 优先从 `assistant/message` events 提取文本，兜底从 `session.deriveMessages()` 提取 assistant surface。
 - [x] event/surface 都没有文本时输出 event 类型计数和 surface 角色列表，方便继续定位模型或 DSH loop 问题。
 - [x] 增加回归守卫：`npm run test:agent-turn-surface-fallback`。
+
+
+## P79 — 输入框常驻底部
+- [x] 将 `.gc-chat-bottom` 移出 `.gc-chat-scroll`，作为 `.gc-conversation` 的固定 flex 底部区域。
+- [x] 保留 `--gc-bottom-height` 测量和消息区 bottom padding，避免最新消息被输入框遮挡。
+- [x] 增加回归守卫：`npm run test:composer-outside-scroll`。

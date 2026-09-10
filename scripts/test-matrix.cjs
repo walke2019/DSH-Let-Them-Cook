@@ -79,6 +79,7 @@ const steps = [
   ['node', ['Docs/p76-hud-locale-toggle-header/test-p76-hud-locale-toggle-header.cjs']],
   ['node', ['Docs/p77-central-live-execution-status/test-p77-central-live-execution-status.cjs']],
   ['node', ['Docs/p78-agent-turn-surface-fallback/test-p78-agent-turn-surface-fallback.cjs']],
+  ['node', ['Docs/p79-composer-outside-scroll/test-p79-composer-outside-scroll.cjs']],
   ['node', ['scripts/e2e-no-llm.cjs']],
   ['npm', ['run', 'preflight']],
 ]

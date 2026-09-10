@@ -265,3 +265,10 @@
 - 只有 event log 与 derived surface 都没有 assistant text 时，才允许失败，并且错误必须包含 event 类型计数与 surface 角色列表，避免再次出现不可诊断的 `missing turn/end`。
 - 如果存在非 completed 的 `turn/end`，仍按真实失败处理，不得把失败 turn 的残留文本伪装成功。
 - 涉及 `runMemberTurn()`、session events、surface fallback、模型失败诊断的改动，必须执行 `npm run test:agent-turn-surface-fallback`、`npm run test:central-live-status` 和 `npm run test:matrix`。
+
+
+### 28. 输入框常驻底部铁律（P79）
+- 中央 `Agent 群聊` 的底部输入框必须像官方“对话”一样常驻可见，不得被长回复、执行中气泡或消息滚动区域挤出视口。
+- `.gc-chat-bottom` 必须作为 `.gc-conversation` 的直接 flex 底部子节点渲染在 `.gc-chat-scroll` 外侧；消息区只负责滚动，输入区不参与滚动内容高度。
+- 继续用 `--gc-bottom-height` 给 `.gc-chat-messages` 留出底部 padding，避免自动滚到底部时最新消息被 composer 遮挡。
+- 涉及中央消息流、执行中气泡、composer、HUD 避让或新会话入口布局的改动，必须执行 `npm run test:composer-outside-scroll`、`npm run test:chat-ui-composer-progression`、`npm run test:ui:entry` 和 `npm run test:matrix`。

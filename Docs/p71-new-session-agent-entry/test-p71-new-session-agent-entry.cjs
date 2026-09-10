@@ -30,7 +30,7 @@ assert(!hero.includes('role="dialog"'), 'fallback should be a center work surfac
 assert(hero.includes('position:fixed;right:0;top:118px'), 'launcher must be visible on fresh official chats')
 assert(!client.includes('conversation.body'), 'plugin must not take over conversation.body')
 assert(!layout.includes('body[data-dsh-group-chat-hero-open="true"] [data-composer-seat]'), 'hero entry must not globally hide official composer via layout CSS')
-assert(panel.includes('.gc-chat-bottom{position:sticky;bottom:0;'), 'group-chat composer must stay fixed at the bottom of the chat surface')
+assert(panel.includes('.gc-chat-bottom{position:relative;flex:0 0 auto;'), 'group-chat composer must stay as a non-scrolling bottom flex child')
 assert(panel.includes('body[data-dsh-group-chat-hero-open="true"][data-dsh-group-chat-hud-docked-open="true"] .gc-conversation'), 'temporary surface must avoid the HUD just like the real Agent tab')
 assert(composer.includes('grid-template-areas:"mention tier help send" "hint hint hint send"'), 'send button must stay in the bottom-right grid area')
 assert(composer.includes('.gc-send { grid-area:send; align-self:end; justify-self:end;'), 'send button position guard missing')
