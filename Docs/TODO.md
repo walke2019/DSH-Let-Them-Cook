@@ -483,8 +483,8 @@
 - [x] 增加回归守卫：`npm run test:composer-outside-scroll`。
 
 ## P80 — 中央加载态兜底
-- [x] 房间加载请求增加 10s 超时收敛，断线/重启不会无限显示“正在加载…”。
-- [x] 空状态加载失败时在中央区展示错误卡和重试按钮，底部输入框仍可见。
+- [x] 房间加载请求增加 45s 超时收敛，给 DSH 启动与 client generation 留足恢复时间，断线/重启不会无限显示“正在加载…”。
+- [x] 空状态加载失败时在中央区展示错误卡和重试按钮，并自动重试，底部输入框仍可见。
 - [x] 加载、失败、重试文案走 zh-CN/en-US 双语。
 - [x] 增加回归守卫：`npm run test:central-loading-state`。
 
@@ -493,3 +493,4 @@
 - [x] 去重并排除主 Agent 自己，避免自激循环。
 - [x] 保留“批准/下一阶段”的原工作流推进逻辑。
 - [x] 增加回归守卫：`npm run test:workflow-commander-delegation`。
+

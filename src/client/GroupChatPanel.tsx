@@ -187,7 +187,7 @@ export function GroupChatPanel({mode='full'}:GroupChatPanelProps) {
     const controller=new AbortController()
     let active=true
     let timedOut=false
-    const timeout=window.setTimeout(()=>{timedOut=true;controller.abort()},10000)
+    const timeout=window.setTimeout(()=>{timedOut=true;controller.abort()},45000)
     setMessages([]);setAgentStatuses({});setLiveAssignments({})
     const upsert=(list:GroupMessage[])=>setMessages(prev=>{
       const byId=new Map(prev.map(m=>[m.messageId,m]))
@@ -203,7 +203,7 @@ export function GroupChatPanel({mode='full'}:GroupChatPanelProps) {
       setMembers(data.room.members);setActiveTheme(data.room.activeTheme || 'meme_comedy');setLiveAssignments(Object.fromEntries((data.room.assignments||[]).map((assignment:AssignmentEnvelope)=>[assignment.assignmentId,assignment])));upsert(data.messages||[])
     }).catch(e=>{
       if(!active)return
-      const message=timedOut?tx(locale,'群聊数据加载超时，请点重试或重新打开 dsh web 打印的认证链接。','Group chat data load timed out. Click retry or reopen the authenticated URL printed by dsh web.'):e instanceof Error?e.message:String(e)
+      const message=timedOut?tx(locale,'群聊数据加载超时，正在自动重试；也可点重试或重新打开 dsh web 打印的认证链接。','Group chat data load timed out and will auto-retry. You can also click retry or reopen the authenticated URL printed by dsh web.'):e instanceof Error?e.message:String(e)
       setError(message)
     }).finally(()=>{window.clearTimeout(timeout);if(active)setLoading(false)})
     const unsubscribe=subscribeGroupChat(e=>{
@@ -223,6 +223,11 @@ export function GroupChatPanel({mode='full'}:GroupChatPanelProps) {
     })
     return ()=>{active=false;window.clearTimeout(timeout);controller.abort();unsubscribe()}
   },[retry, roomId, locale])
+  useEffect(()=>{
+    if(!error||!isEmptyState)return
+    const timer=window.setTimeout(()=>setRetry(v=>v+1),5000)
+    return()=>window.clearTimeout(timer)
+  },[error,isEmptyState])
   useLayoutEffect(()=>{
     const syncAvailableHeight=()=>{
       const el=root.current
