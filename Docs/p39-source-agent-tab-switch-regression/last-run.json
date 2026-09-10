@@ -6,9 +6,9 @@
     "hasHud": false,
     "hasGcConversationTab": false,
     "hasOfficialComposer": true,
-    "hasAgentTabLabel": false,
+    "hasAgentTabLabel": true,
     "hasHudTabs": false,
-    "hasOfficialDialogLabel": false,
+    "hasOfficialDialogLabel": true,
     "bodyFlags": {
       "tabActive": null,
       "hudOpen": null
@@ -33,7 +33,7 @@
     "hasGcConversationTab": false,
     "hasOfficialComposer": true,
     "hasAgentTabLabel": true,
-    "hasHudTabs": false,
+    "hasHudTabs": true,
     "hasOfficialDialogLabel": true,
     "bodyFlags": {
       "tabActive": null,

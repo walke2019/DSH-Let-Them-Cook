@@ -204,3 +204,12 @@
 - 角色在对话中切换主模型或回退模型后，后续 assignment 必须读取最新 room member 配置，不得复用旧执行快照。
 - 模型失败时优先走用户配置的 fallback chain；全部失败后必须把候选链和最后错误写入 assignment/ledger，并让用户能按 health 选择已验证模型。
 - 若 DSH 当前 tools service 只暴露全局上下文导致 `tools.restrict() requires a scoped context`，插件必须降级为 Prompt 工具权限约束并继续模型调用，不得把工具白名单兼容问题误报为模型不可用。
+
+
+### 20. 新会话入口守则（P71）
+- 新开的官方 DSH 对话处于 blank hero 状态时，`conversation.view` 标签可能尚不可见；插件入口必须采用 demand-driven 方案：默认只露轻量入口，不遮挡普通对话。
+- 严禁注册 `conversation.hero.agentPreset`；这是官方单槽位，会与源版 agent preset 入口冲突并导致插件启动失败。
+- 入口点击后必须优先切到真实 `Agent 群聊` 标签；若标签尚不可见，才打开 `#dsh-group-chat-hero-main` 临时中间工作面，并直接渲染 `GroupChatPanel`，确保底部群聊输入框可见可用。
+- 新会话入口不得接管 `conversation.body`、不得替换官方 header、不得默认隐藏官方 composer；不得从入口写入 `data-dsh-group-chat-tab-active`，该标记只属于真实 `Agent 群聊` 标签。
+- 临时工作面只允许写入 `data-dsh-group-chat-hero-open`，关闭/卸载后必须清理；HUD 仍只在真实 `Agent 群聊` 标签激活时挂载。
+- 入口文案必须支持 zh-CN/en-US，优先使用“进入 Agent 群聊 / Open Agent group chat”这类低理解成本标签。

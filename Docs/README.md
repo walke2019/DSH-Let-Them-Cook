@@ -153,3 +153,5 @@
 - [P69 Task Cockpit Productization](./p69-task-cockpit-productization/README.md): HUD now emphasizes current work, loop quality, captain plan and approval cards instead of chat-only novelty.
 
 - [P70 Model health and mid-chat switching](./p70-model-health-and-switching/README.md): workspace-scoped success/failure memory for model IDs, graceful tool-scope fallback, and user-facing switch guidance.
+
+- [P71 New-session Agent entry](./p71-new-session-agent-entry/README.md): adds a visible Agent group-chat entry on fresh official chat hero screens without taking over source DSH layout.

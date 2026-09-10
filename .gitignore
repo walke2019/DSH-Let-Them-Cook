@@ -5,3 +5,4 @@ lib/
 .pm-workflow/
 .playwright-cli/
 
+Docs/**/.p*-runner.js

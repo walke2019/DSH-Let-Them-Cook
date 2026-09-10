@@ -20,8 +20,8 @@
     "hasGcConversationTab": false,
     "gcTabVisible": false,
     "hasComposer": true,
-    "hasAgentLabel": false,
-    "hasOfficialDialogLabel": false,
+    "hasAgentLabel": true,
+    "hasOfficialDialogLabel": true,
     "bodyFlags": {
       "tabActive": null,
       "hudOpen": null

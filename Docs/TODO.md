@@ -425,3 +425,11 @@
 - [x] `/models` API 返回 health，模型选择器展示可用/失败/未实测状态。
 - [x] 模型失败时记录 fallback attempts，支持用户手动更换或自动回退。
 - [x] `tools.restrict()` scoped context 不可用时降级为 Prompt 约束，不再提前打断模型调用。
+
+
+## P71 — 新会话 Agent 群聊入口
+
+- [x] 在官方新会话 hero 区增加 `进入 Agent 群聊` 入口。
+- [x] 点击后打开插件中间群聊面板，关闭后清理 body 状态。
+- [x] 不接管 `conversation.body` / `conversation.session.header`，保持源版对话兼容。
+- [x] 新增 P71 回归测试并纳入 matrix/preflight。

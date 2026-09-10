@@ -68,19 +68,19 @@ export function GroupChatComposer({ members, value, onChange, onSend, sending, t
       .gc-composer-card:focus-within { border-color:var(--dsw-alias-label-tertiary,#757580); }
       .gc-composer textarea { display:block; box-sizing:border-box; width:100%; min-height:76px; max-height:160px; resize:none; border:0; padding:3px 5px 8px; outline:none; background:transparent; color:inherit; font-size:14px; font-family:inherit; line-height:1.6; overflow-y:auto; }
       .gc-composer textarea::placeholder { color:var(--dsw-alias-label-tertiary,#9696a3); }
-      .gc-composer-tools { display:flex; align-items:center; justify-content:space-between; gap:8px; flex-wrap:wrap; }
-      .gc-tier-toggle{display:inline-flex;align-items:center;gap:3px;padding:3px;border:1px solid var(--dsw-alias-border-l1,#ffffff17);border-radius:999px;background:var(--dsw-alias-bg-base,#121216);}
+      .gc-composer-tools { display:grid; grid-template-columns:auto auto minmax(0,1fr) auto; grid-template-areas:"mention tier help send" "hint hint hint send"; align-items:center; gap:8px; }
+      .gc-tier-toggle{grid-area:tier;display:inline-flex;align-items:center;gap:3px;padding:3px;border:1px solid var(--dsw-alias-border-l1,#ffffff17);border-radius:999px;background:var(--dsw-alias-bg-base,#121216);}
       .gc-tier-toggle button{border:0;border-radius:999px;padding:5px 8px;background:transparent;color:var(--dsw-alias-label-tertiary,#999);font:inherit;font-size:11px;cursor:pointer;}
       .gc-tier-toggle button[data-active=true]{background:var(--dsw-alias-state-business-primary,#4d6bfe);color:white;box-shadow:0 2px 8px #4d6bfe44;}
-      .gc-tier-hint{font-size:10px;color:var(--dsw-alias-label-tertiary,#999);min-width:100%;padding-left:4px;}
-      .gc-mention-trigger { display:flex; align-items:center; gap:6px; padding:6px 9px; border:0; border-radius:9px; background:transparent; color:var(--dsw-alias-label-secondary,#cbd5e1); font:inherit; font-size:12px; cursor:pointer; }
+      .gc-tier-hint{grid-area:hint;font-size:10px;color:var(--dsw-alias-label-tertiary,#999);min-width:0;padding-left:4px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+      .gc-mention-trigger { grid-area:mention; display:flex; align-items:center; gap:6px; padding:6px 9px; border:0; border-radius:9px; background:transparent; color:var(--dsw-alias-label-secondary,#cbd5e1); font:inherit; font-size:12px; cursor:pointer; }
       .gc-mention-chevron{width:14px;height:14px;display:block;transition:transform .15s ease;opacity:.8;}
       .gc-mention-trigger[aria-expanded=true] .gc-mention-chevron{transform:rotate(180deg);}
       .gc-mention-trigger:hover,.gc-mention-trigger[aria-expanded=true] { background:var(--dsw-alias-bg-layer-2,#303036); }
       .gc-composer button:focus-visible,.gc-member-search:focus-visible { outline:2px solid #7b91ff; outline-offset:2px; }
-      .gc-send { display:grid; place-items:center; flex-shrink:0; width:32px; height:32px; border:0; border-radius:50%; color:#fff; background:#4d6bfe; cursor:pointer; }
+      .gc-send { grid-area:send; align-self:end; justify-self:end; display:grid; place-items:center; flex-shrink:0; width:32px; height:32px; border:0; border-radius:50%; color:#fff; background:#4d6bfe; cursor:pointer; }
       .gc-send:disabled { background:var(--dsw-alias-bg-layer-2,#303036); color:#777782; cursor:default; }
-      .gc-composer-help { color:var(--dsw-alias-label-tertiary,#9999a5); font-size:11px; margin-left:auto; }
+      .gc-composer-help { grid-area:help; min-width:0; color:var(--dsw-alias-label-tertiary,#9999a5); font-size:11px; text-align:right; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
       .gc-member-picker { position:absolute; left:10px; bottom:54px; z-index:30; width:min(300px,calc(100% - 20px)); padding:8px; box-sizing:border-box; border:1px solid var(--dsw-alias-border-l2,#42424b); border-radius:14px; background:var(--dsw-alias-bg-layer-1,#202025); box-shadow:0 8px 28px #0005; }
       .gc-picker-title { font-size:12px; color:var(--dsw-alias-label-secondary,#cbd5e1); padding:3px 4px 8px; }
       .gc-member-search { box-sizing:border-box; width:100%; border:1px solid var(--dsw-alias-border-l2,#42424b); border-radius:8px; padding:8px; color:inherit; background:var(--dsw-alias-bg-base,#151519); font:inherit; font-size:12px; }
@@ -91,7 +91,7 @@ export function GroupChatComposer({ members, value, onChange, onSend, sending, t
       .gc-member-copy { min-width:0; display:flex; flex-direction:column; gap:2px; }
       .gc-member-copy strong { font-size:12px; font-weight:500; }
       .gc-member-copy small { font-size:11px; color:var(--dsw-alias-label-tertiary,#9999a5); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-      @media(max-width:600px) { .gc-composer{padding:8px;} .gc-composer-help{display:none;} }
+      @media(max-width:600px) { .gc-composer{padding:8px;} .gc-composer-tools{grid-template-columns:auto 1fr auto;grid-template-areas:"mention tier send" "hint hint send";} .gc-composer-help{display:none;} }
     `}</style>
     <div className="gc-composer-card">
       <textarea ref={textarea} aria-label={tx(locale,'群聊消息','Group chat message')} placeholder={tx(locale,'发送消息，或选择 @ 角色…','Send a message, or choose an @ role…')} value={value} disabled={sending}

@@ -71,6 +71,7 @@ const steps = [
   ['node', ['Docs/p68-team-coordination-tools/test-p68-team-coordination-tools.cjs']],
   ['node', ['Docs/p69-task-cockpit-productization/test-p69-task-cockpit-productization.cjs']],
   ['node', ['Docs/p70-model-health-and-switching/test-p70-model-health-and-switching.cjs']],
+  ['node', ['Docs/p71-new-session-agent-entry/test-p71-new-session-agent-entry.cjs']],
   ['node', ['scripts/e2e-no-llm.cjs']],
   ['npm', ['run', 'preflight']],
 ]

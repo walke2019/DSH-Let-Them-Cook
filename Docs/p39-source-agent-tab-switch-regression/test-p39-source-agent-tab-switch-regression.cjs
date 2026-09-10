@@ -51,6 +51,22 @@ const code = String.raw`async (page) => {
     return ''
   }
 
+
+  const clickConversationTab = async (text) => {
+    const clicked = await page.evaluate((needle) => {
+      const visible = el => { const r = el.getBoundingClientRect(); const st = getComputedStyle(el); return r.width > 0 && r.height > 0 && st.display !== 'none' && st.visibility !== 'hidden' }
+      const tabs = [...document.querySelectorAll('button[role="tab"],[role="tab"]')]
+        .filter(el => visible(el) && (el.textContent || '').replace(/\s+/g, ' ').trim() === needle)
+      const hit = tabs[0]
+      if (!hit) return false
+      hit.dispatchEvent(new MouseEvent('mousedown', {bubbles:true, cancelable:true, view:window}))
+      hit.dispatchEvent(new MouseEvent('mouseup', {bubbles:true, cancelable:true, view:window}))
+      hit.dispatchEvent(new MouseEvent('click', {bubbles:true, cancelable:true, view:window}))
+      return true
+    }, text).catch(() => false)
+    if (clicked) await wait(650)
+    return clicked
+  }
   const clickSidebarConversation = async (...texts) => {
     for (const text of texts) {
       const clicked = await page.evaluate((needle) => {
@@ -125,11 +141,11 @@ const code = String.raw`async (page) => {
     if (s.hasAgentTabLabel) break
     await wait(500)
   }
-  await clickVisibleText('Agent 群聊')
+  await clickConversationTab('Agent 群聊')
   await wait(900)
   const agentChat = await snapshot()
 
-  await clickVisibleText('对话')
+  await clickConversationTab('对话')
   await wait(900)
   const officialAfter = await snapshot()
 

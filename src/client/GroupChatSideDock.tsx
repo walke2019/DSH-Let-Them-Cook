@@ -8,6 +8,7 @@ import {GroupChatHudScratchpadPanel} from './GroupChatHudScratchpadPanel.js'
 import type {AssignmentEnvelope, AgentMailboxMessage, GroupMessageData, LedgerData, WorkflowTask} from './group-chat-hud-types.js'
 import type {AgentProfile} from './group-chat-view-types.js'
 import {detectGroupChatLocale, onGroupChatLocaleChange, tx, type GroupChatLocale} from './i18n.js'
+import {GroupChatHeroEntry} from './GroupChatHeroEntry.js'
 
 const SIDEBAR_DEFAULT_WIDTH = 360
 const SIDEBAR_MIN_WIDTH = 300
@@ -43,19 +44,26 @@ export function GroupChatSideDock() {
   const resizeRef = useRef<{ startX:number; startWidth:number; originX:number; floating:boolean; pointerId?:number } | null>(null)
   const [isResizingHud, setIsResizingHud] = useState(false)
   const [extensionTabActive, setExtensionTabActive] = useState(false)
+  const [heroMainActive, setHeroMainActive] = useState(false)
   const selectedTheme = room?.activeTheme === 'meme_comedy' ? 'default' : (room?.activeTheme || 'default')
   const selectedMode = room?.dispatchMode === 'workflow_driven' ? 'default' : (room?.dispatchMode || 'default')
   const displayRoomTitle = room?.title?.includes('特遣') ? tx(locale,'AI 小队工作台','AI squad workspace') : (room?.title || tx(locale,'群聊设置','Group chat settings'))
   useEffect(()=>onGroupChatLocaleChange(setLocale),[])
   useEffect(() => {
+    if (heroMainActive) setIsOpen(true)
+  }, [heroMainActive])
+  useEffect(() => {
     if (typeof document === 'undefined') return
-    const refresh = () => setExtensionTabActive(document.body.getAttribute('data-dsh-group-chat-tab-active') === 'true')
+    const refresh = () => {
+      setExtensionTabActive(document.body.getAttribute('data-dsh-group-chat-tab-active') === 'true')
+      setHeroMainActive(document.body.getAttribute('data-dsh-group-chat-hero-open') === 'true')
+    }
     refresh()
     const observer = new MutationObserver(refresh)
-    observer.observe(document.body, { attributes: true, attributeFilter: ['data-dsh-group-chat-tab-active'] })
+    observer.observe(document.body, { attributes: true, attributeFilter: ['data-dsh-group-chat-tab-active', 'data-dsh-group-chat-hero-open'] })
     window.addEventListener('focus', refresh)
     return () => { observer.disconnect(); window.removeEventListener('focus', refresh) }
-  }, []) // dsh-group-chat: observe active conversation tab
+  }, []) // dsh-group-chat: observe active conversation tab and temporary hero surface
 
   const fetchRoomData = async () => {
     try {
@@ -96,7 +104,7 @@ export function GroupChatSideDock() {
   useEffect(() => {
     if (typeof document === 'undefined') return
     const body = document.body
-    if (extensionTabActive && isOpen && !dockFloating) {
+    if ((extensionTabActive || heroMainActive) && isOpen && !dockFloating) {
       body.setAttribute('data-dsh-group-chat-hud-docked-open', 'true')
       body.style.setProperty('--dsh-group-chat-hud-overlay-width', `${Math.max(0, hudWidth - 16)}px`)
     } else {
@@ -107,7 +115,7 @@ export function GroupChatSideDock() {
       body.removeAttribute('data-dsh-group-chat-hud-docked-open')
       body.style.removeProperty('--dsh-group-chat-hud-overlay-width')
     }
-  }, [extensionTabActive, isOpen, dockFloating, hudWidth])
+  }, [extensionTabActive, heroMainActive, isOpen, dockFloating, hudWidth])
 
   useEffect(() => {
     if (typeof localStorage !== 'undefined') localStorage.setItem('dsh-group-chat.hud-width', String(hudWidth))
@@ -303,10 +311,12 @@ export function GroupChatSideDock() {
     finally { setThemeBusy(false) }
   }
 
-  if (!extensionTabActive) return null
+  const hudSurfaceActive = extensionTabActive || heroMainActive
 
   return (
     <>
+      {!extensionTabActive && <GroupChatHeroEntry />}
+      {hudSurfaceActive && <>
       <style>{`.gc-roster-avatar{width:22px;height:22px;border-radius:7px;display:inline-grid;place-items:center;flex-shrink:0;font-size:14px;color:var(--dsw-alias-state-business-primary,#4d6bfe);background:var(--dsw-alias-bg-layer-3,rgba(255,255,255,0.06));}`}</style>
       {editingAgent&&<GroupChatRoleEditor editingAgent={editingAgent} roomId={room?.roomId||'dev-team-alpha'} onClose={()=>setEditingAgent(null)} onSaved={()=>void fetchRoomData()}/>}
       {/**
@@ -580,6 +590,7 @@ export function GroupChatSideDock() {
         </div>
 
       </div>
+      </>}
     </>
   )
 }
