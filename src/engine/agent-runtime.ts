@@ -150,17 +150,21 @@ export async function runMemberTurn(ctx: RuntimeContext, model: ModelRef, prompt
       signal,
       agentOptions: { provider: selected.provider, model: selected.model, maxTokens: 2048 },
       setup(agentCtx) {
-        // Inherit the role prompt and only the role-scoped tool surface.
-        const scoped = agentCtx as RuntimeContext
-        agentCtx.effect(() => {
-          const scope = restrictToolsCompat(scoped.tools, allowedTools)
-          if (scope.missing.length) console.warn?.(`[GroupChat] 未找到工具别名，将跳过: ${scope.missing.join(', ')}`)
-          if (scope.warning) console.warn?.(`[GroupChat] 工具白名单降级为 Prompt 约束: ${scope.warning}`)
-          return scope.effect || (() => {})
+        // Agent-scoped services must be resolved from the child context. Holding a
+        // registry object from the parent can register into the global layer on
+        // newer DSH builds and collide across concurrent group-chat members.
+        agentCtx.inject(['systemPrompt', 'tools'], (scopedCtx) => {
+          const scoped = scopedCtx as RuntimeContext
+          agentCtx.effect(() => {
+            const scope = restrictToolsCompat(scoped.tools, allowedTools)
+            if (scope.missing.length) console.warn?.(`[GroupChat] 未找到工具别名，将跳过: ${scope.missing.join(', ')}`)
+            if (scope.warning) console.warn?.(`[GroupChat] 工具白名单降级为 Prompt 约束: ${scope.warning}`)
+            return scope.effect || (() => {})
+          })
+          agentCtx.effect(() => scoped.systemPrompt.section({
+            name: 'group-chat:role', order: 0, text: `${prompt}\n\n${formatToolScope(options.roleId, allowedTools, options.locale)}`, complete: true,
+          }))
         })
-        agentCtx.effect(() => scoped.systemPrompt.section({
-          name: 'group-chat:role', order: 0, text: `${prompt}\n\n${formatToolScope(options.roleId, allowedTools, options.locale)}`, complete: true,
-        }))
         agentCtx.effect(() => agentCtx.on('agent/request', async (_payload, next) => ({
           ...await next(), provider: selected.provider, model: selected.model,
           temperature: model.temperature ?? 0.3,
