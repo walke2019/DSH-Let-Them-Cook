@@ -106,7 +106,7 @@ export function GroupChatSideDock() {
     const body = document.body
     if ((extensionTabActive || heroMainActive) && isOpen && !dockFloating) {
       body.setAttribute('data-dsh-group-chat-hud-docked-open', 'true')
-      body.style.setProperty('--dsh-group-chat-hud-overlay-width', `${Math.max(0, hudWidth - 16)}px`)
+      body.style.setProperty('--dsh-group-chat-hud-overlay-width', `${Math.max(0, hudWidth + 8)}px`)
     } else {
       body.removeAttribute('data-dsh-group-chat-hud-docked-open')
       body.style.removeProperty('--dsh-group-chat-hud-overlay-width')
@@ -594,3 +594,4 @@ export function GroupChatSideDock() {
     </>
   )
 }
+

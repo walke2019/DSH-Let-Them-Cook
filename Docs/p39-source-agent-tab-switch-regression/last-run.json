@@ -33,12 +33,15 @@
     "hasGcConversationTab": false,
     "hasOfficialComposer": true,
     "hasAgentTabLabel": true,
-    "hasHudTabs": true,
+    "hasHudTabs": false,
     "hasOfficialDialogLabel": true,
     "bodyFlags": {
       "tabActive": null,
       "hudOpen": null
     }
   },
-  "errors": []
+  "errors": [
+    "Failed to load resource: the server responded with a status of 405 (Method Not Allowed)",
+    "Failed to load resource: the server responded with a status of 405 (Method Not Allowed)"
+  ]
 }

@@ -63,7 +63,7 @@ export function GroupChatComposer({ members, value, onChange, onSend, sending, t
   }}>
     <style>{`
       .gc-composer { flex-shrink:0; padding:12px 20px 16px; color:var(--dsw-alias-label-primary,#f8fafc); }
-      body[data-dsh-group-chat-tab-active="true"][data-dsh-group-chat-hud-docked-open="true"] .gc-composer{padding-left:8px;padding-right:8px;}
+      body[data-dsh-group-chat-tab-active="true"][data-dsh-group-chat-hud-docked-open="true"] .gc-composer{padding-left:24px;padding-right:24px;}
       .gc-composer-card { position:relative; max-width:960px; margin:0 auto; padding:12px; border:1px solid var(--dsw-alias-border-l2,#34343a); border-radius:22px; background:var(--dsw-alias-bg-layer-1,#18181c); box-shadow:0 2px 10px #00000010; }
       .gc-composer-card:focus-within { border-color:var(--dsw-alias-label-tertiary,#757580); }
       .gc-composer textarea { display:block; box-sizing:border-box; width:100%; min-height:76px; max-height:160px; resize:none; border:0; padding:3px 5px 8px; outline:none; background:transparent; color:inherit; font-size:14px; font-family:inherit; line-height:1.6; overflow-y:auto; }
@@ -137,3 +137,4 @@ export function GroupChatComposer({ members, value, onChange, onSend, sending, t
     </div>
   </div>
 }
+

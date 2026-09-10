@@ -8,7 +8,7 @@ const HERO_STYLE = `
 .gc-hero-entry{position:fixed;right:0;top:118px;z-index:48;display:flex;align-items:flex-end;gap:8px;min-width:0;pointer-events:none;flex-direction:column;}
 .gc-hero-button{pointer-events:auto;display:inline-flex;align-items:center;gap:8px;height:32px;padding:0 12px;border:1px solid var(--dsw-alias-border-l2,#ffffff26);border-top-left-radius:999px;border-bottom-left-radius:999px;border-top-right-radius:0;border-bottom-right-radius:0;background:var(--dsw-alias-bg-layer-1,#202025);color:var(--dsw-alias-label-primary,#f8fafc);font:inherit;font-size:13px;cursor:pointer;box-shadow:0 2px 10px #0000001f;}
 .gc-hero-button:hover{background:var(--dsw-alias-bg-layer-2,#2b2b31);border-color:var(--dsw-alias-state-business-primary,#4d6bfe99);}
-.gc-hero-main{pointer-events:auto;position:fixed;z-index:47;left:280px;right:0;top:0;bottom:0;display:flex;flex-direction:column;min-width:0;min-height:0;background:var(--dsw-alias-bg-base,#101014);color:var(--dsw-alias-label-primary,#f8fafc);box-shadow:-1px 0 0 var(--dsw-alias-border-l1,#ffffff12),0 16px 44px #0008;}
+.gc-hero-main{pointer-events:auto;position:fixed;z-index:47;left:var(--dsh-group-chat-hero-left,280px);right:0;top:0;bottom:0;display:flex;flex-direction:column;min-width:0;min-height:0;background:var(--dsw-alias-bg-base,#101014);color:var(--dsw-alias-label-primary,#f8fafc);box-shadow:-1px 0 0 var(--dsw-alias-border-l1,#ffffff12),0 16px 44px #0008;}
 .gc-hero-main-head{height:48px;min-height:48px;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:0 18px;border-bottom:1px solid var(--dsw-alias-border-l1,#ffffff12);background:var(--dsw-alias-bg-layer-1,#151518);}
 .gc-hero-main-title{display:flex;align-items:center;gap:8px;min-width:0;font-size:14px;font-weight:650;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
 .gc-hero-main-subtitle{font-size:12px;font-weight:400;color:var(--dsw-alias-label-tertiary,#94a3b8);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
@@ -28,6 +28,47 @@ function installHeroStyle(): void {
   style.id = HERO_STYLE_ID
   style.textContent = HERO_STYLE
   document.head.appendChild(style)
+}
+
+
+function resolveHeroLeftOffset(): number {
+  if (typeof document === 'undefined' || typeof window === 'undefined') return 280
+  const viewportWidth = window.innerWidth || document.documentElement.clientWidth || 0
+  const root = document.getElementById('root')
+  const nodes = Array.from((root || document.body).querySelectorAll('div')) as HTMLElement[]
+  const candidates = nodes
+    .filter(el => {
+      if (el.closest('[data-dsh-group-chat-hero-entry],.gc-hero-main,.dsh-gc-sidebar-host')) return false
+      const rect = el.getBoundingClientRect()
+      const text = (el.textContent || '').replace(/\s+/g, ' ')
+      return rect.height >= Math.max(320, window.innerHeight * 0.6)
+        && rect.width >= 320
+        && rect.left >= 40
+        && rect.left <= Math.min(360, viewportWidth - 320)
+        && (text.includes('探索未至之境')
+          || text.includes('Describe what')
+          || text.includes('描述你想要构建')
+          || text.includes('Agent 群聊')
+          || text.includes('Agent group chat'))
+    })
+    .map(el => Math.round(el.getBoundingClientRect().left))
+    .filter(left => Number.isFinite(left) && left >= 0)
+    .sort((a, b) => a - b)
+  if (candidates.length) return candidates[0]
+  const collapsedRail = Array.from((root || document.body).querySelectorAll('*'))
+    .map(el => (el as HTMLElement).getBoundingClientRect())
+    .filter(rect => rect.left === 0 && rect.width > 40 && rect.width < 120 && rect.height >= window.innerHeight * 0.8)
+    .map(rect => Math.round(rect.right))
+    .sort((a, b) => b - a)[0]
+  return collapsedRail || 280
+}
+
+function applyHeroLeftOffset(): void {
+  if (typeof document === 'undefined') return
+  const value = `${resolveHeroLeftOffset()}px`
+  if (document.body.style.getPropertyValue('--dsh-group-chat-hero-left') !== value) {
+    document.body.style.setProperty('--dsh-group-chat-hero-left', value)
+  }
 }
 
 function clickVisibleGroupChatTab(): boolean {
@@ -67,7 +108,19 @@ export function GroupChatHeroEntry() {
   useEffect(() => {
     if (typeof document === 'undefined' || !mainOpen) return
     document.body.setAttribute('data-dsh-group-chat-hero-open', 'true')
-    return () => document.body.removeAttribute('data-dsh-group-chat-hero-open')
+    applyHeroLeftOffset()
+    const onReflow = () => applyHeroLeftOffset()
+    const observer = new MutationObserver(onReflow)
+    observer.observe(document.body, {attributes: true, childList: true, subtree: true})
+    window.addEventListener('resize', onReflow)
+    window.setTimeout(onReflow, 50)
+    window.setTimeout(onReflow, 250)
+    return () => {
+      observer.disconnect()
+      window.removeEventListener('resize', onReflow)
+      document.body.removeAttribute('data-dsh-group-chat-hero-open')
+      document.body.style.removeProperty('--dsh-group-chat-hero-left')
+    }
   }, [mainOpen])
 
   const activate = () => {

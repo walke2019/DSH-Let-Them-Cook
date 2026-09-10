@@ -155,3 +155,7 @@
 - [P70 Model health and mid-chat switching](./p70-model-health-and-switching/README.md): workspace-scoped success/failure memory for model IDs, graceful tool-scope fallback, and user-facing switch guidance.
 
 - [P71 New-session Agent entry](./p71-new-session-agent-entry/README.md): adds a visible Agent group-chat entry on fresh official chat hero screens without taking over source DSH layout.
+
+- [P72 HUD message margin alignment](./p72-hud-message-margins/README.md): keeps the Agent chat message list and composer horizontally balanced while the docked HUD is open.
+
+- [P73 Hero 左栏收起自适应](p73-hero-left-collapse-adaptation/README.md)：修复新会话临时 Agent 群聊面板在官方左栏收起时仍按 280px 固定左边界渲染的问题。

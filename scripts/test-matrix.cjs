@@ -72,6 +72,8 @@ const steps = [
   ['node', ['Docs/p69-task-cockpit-productization/test-p69-task-cockpit-productization.cjs']],
   ['node', ['Docs/p70-model-health-and-switching/test-p70-model-health-and-switching.cjs']],
   ['node', ['Docs/p71-new-session-agent-entry/test-p71-new-session-agent-entry.cjs']],
+  ['node', ['Docs/p72-hud-message-margins/test-p72-hud-message-margins.cjs']],
+  ['node', ['Docs/p73-hero-left-collapse-adaptation/test-p73-hero-left-collapse.cjs']],
   ['node', ['scripts/e2e-no-llm.cjs']],
   ['npm', ['run', 'preflight']],
 ]
@@ -85,6 +87,7 @@ for (const [cmd, args] of steps) {
   }
 }
 console.log('\nTEST_MATRIX_EXIT:0')
+
 
 
 

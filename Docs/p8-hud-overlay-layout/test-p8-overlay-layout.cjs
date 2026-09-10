@@ -35,7 +35,8 @@ assert(dock.includes('details{width:auto!important'), 'HUD details should not ex
 assert(topControls.includes('grid-template-columns:46px minmax(0,1fr) 46px minmax(0,1fr) 24px'), 'HUD top controls should fit compact width')
 assert(panel.includes('data-dsh-group-chat-hud-docked-open'), 'panel should adapt only inside group chat tab when HUD is docked open')
 assert(panel.includes('padding-right:min(var(--dsh-group-chat-hud-overlay-width'), 'panel should reserve right space for docked HUD')
-assert(panel.includes('.gc-chat-messages{padding-left:8px;padding-right:8px;}'), 'messages should keep symmetric tight padding next to HUD')
-assert(composer.includes('.gc-composer{padding-left:8px;padding-right:8px;}'), 'composer should keep symmetric tight padding next to HUD')
+assert(panel.includes('.gc-chat-messages{padding-left:24px;padding-right:24px;}'), 'messages should keep symmetric balanced padding next to HUD')
+assert(composer.includes('.gc-composer{padding-left:24px;padding-right:24px;}'), 'composer should keep symmetric balanced padding next to HUD')
 assert(client.includes('without taking over the official chat'), 'client slot comment updated')
 console.log('P8_HUD_OVERLAY_LAYOUT_EXIT:0')
+

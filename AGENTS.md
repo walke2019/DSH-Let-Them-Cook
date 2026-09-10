@@ -213,3 +213,23 @@
 - 新会话入口不得接管 `conversation.body`、不得替换官方 header、不得默认隐藏官方 composer；不得从入口写入 `data-dsh-group-chat-tab-active`，该标记只属于真实 `Agent 群聊` 标签。
 - 临时工作面只允许写入 `data-dsh-group-chat-hero-open`，关闭/卸载后必须清理；HUD 仍只在真实 `Agent 群聊` 标签激活时挂载。
 - 入口文案必须支持 zh-CN/en-US，优先使用“进入 Agent 群聊 / Open Agent group chat”这类低理解成本标签。
+
+### 21. 官方默认启动与认证避坑（P72/P73 调试沉淀）
+- 官方默认启动命令必须保持可用：`npx @deepseek-ai/dsh web` / `npx -y @deepseek-ai/dsh web --no-open`。本扩展不得要求用户通过 preload、NODE_OPTIONS 或修改 `@deepseek-ai/dsh` 核心源码才能正常进入。
+- DSH web 打印带 `?token=...` 的一次性认证入口时，浏览器裸开 `http://127.0.0.1:3080/` 可能返回 `dsh web authentication required; reopen the URL printed by dsh web.`；验证 UI/E2E 时必须使用当前启动日志里的完整 token URL，并写入 `DSH_GC_URL`。
+- 遇到 `agent-presets: refusing to compose an unscoped context` 时，先检查官方 DSH 版本和 profile 依赖是否把 `@deepseek-ai/dsh-scope` 拉成多份；优先升级/收敛官方包版本，不要把插件兼容层变成官方启动前置条件。
+- 第三方 profile 插件若阻断官方启动（例如导入已不存在的 DSH settings export），只禁用具体问题 loader id，不得禁用或污染官方源版对话能力。
+- 本扩展接入 profile 时使用插件 loader entry 加 `link:C:/项目/dsh-group-chat` 依赖；不得把普通插件误塞进 `dsh.profile.bundles`，否则会触发 `declares no dsh.bundle` 类启动错误。
+
+### 22. HUD 消息边距与右侧避让铁律（P72）
+- HUD 停靠展开时，`.gc-chat-messages` 与 `.gc-composer` 左右 padding 必须保持对称；当前验收值为 24px / 24px，避免消息区左贴边、右侧被 HUD 视觉挤压。
+- 中间 `.gc-conversation` 只在 `body[data-dsh-group-chat-tab-active="true"]` 或 `body[data-dsh-group-chat-hero-open="true"]` 且 HUD 停靠展开时避让右栏；避让宽度使用 HUD 实测宽度 + 8px 安全缝，并仍需受中间面板宽度上限约束。
+- 不得通过修改官方 AppFrame、centerCol、details 栅格或 documentElement 全局宽度变量来解决 HUD 间距；只允许插件根节点与插件 body data 标记作用域内的样式。
+- 涉及 HUD 间距、消息区、composer、右侧 seam 的改动，至少执行 `npm run test:hud-message-margins`、`npm run test:ui:entry`、`npm run test:ui:switch`、`npm run test:ui:refresh`，发布前执行 `npm run test:matrix`。
+
+### 23. 新会话入口左栏收起自适应铁律（P73）
+- 新会话 blank hero 场景的临时 `#dsh-group-chat-hero-main` 不得固定 `left:280px`；必须跟随官方中间列当前 left，左栏展开对齐约 280px，左栏收起对齐约 56px。
+- 临时入口只能写入 `--dsh-group-chat-hero-left` 和 `data-dsh-group-chat-hero-open` 这类插件作用域状态；关闭/卸载时必须清理，避免污染源版官方对话。
+- 计算左边界时优先读取官方中间层实际 DOM 几何，找不到时才使用左侧 collapsed rail 兜底；不得依赖 DSH 哈希 class 名作为唯一判断条件。
+- 左栏收起、窗口 resize、官方 shell DOM reflow 后必须重新计算临时面板左边界；避免用户看到左侧大空洞或中间层被旧 sidebar 宽度卡住。
+- 涉及新会话入口、临时中间工作面、左栏收起/展开的改动，必须执行 `npm run test:hero-left-collapse` 并用真实浏览器测量 `hero.left === centerLeft`。

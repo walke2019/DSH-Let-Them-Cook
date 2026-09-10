@@ -433,3 +433,14 @@
 - [x] 点击后打开插件中间群聊面板，关闭后清理 body 状态。
 - [x] 不接管 `conversation.body` / `conversation.session.header`，保持源版对话兼容。
 - [x] 新增 P71 回归测试并纳入 matrix/preflight。
+
+## P72 — HUD 消息区左右边距
+- [x] HUD 展开时消息列表左右保持 24px 对称边距。
+- [x] HUD 展开时输入框左右保持 24px 对称边距。
+- [x] 中间视图右侧避让使用 HUD 宽度 + 8px 安全缝。
+- [x] 增加回归守卫：npm run test:hud-message-margins。
+
+## P73 Hero 左栏收起自适应
+- [x] 将新会话临时 `Agent 群聊` 面板从固定 `left:280px` 改为 `--dsh-group-chat-hero-left` 动态左边界。
+- [x] 打开面板时读取官方中间列当前位置，左栏收起后对齐 56px rail，展开时仍对齐 280px。
+- [x] 增加回归守卫：`npm run test:hero-left-collapse`。
