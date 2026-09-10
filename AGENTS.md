@@ -272,3 +272,13 @@
 - `.gc-chat-bottom` 必须作为 `.gc-conversation` 的直接 flex 底部子节点渲染在 `.gc-chat-scroll` 外侧；消息区只负责滚动，输入区不参与滚动内容高度；`.gc-conversation` 必须按自身实际 top 计算可用视口高度，防止官方容器按内容高度把 composer 顶出屏幕。
 - 继续用 `--gc-bottom-height` 给 `.gc-chat-messages` 留出底部 padding，避免自动滚到底部时最新消息被 composer 遮挡。
 - 涉及中央消息流、执行中气泡、composer、HUD 避让或新会话入口布局的改动，必须执行 `npm run test:composer-outside-scroll`、`npm run test:chat-ui-composer-progression`、`npm run test:ui:entry` 和 `npm run test:matrix`。
+
+### 28. 新会话入口自点击守卫（P83）
+- 官方 blank hero 中的 Agent 群聊 小入口不得被 clickVisibleGroupChatTab() 当成真实会话 tab；真实 tab 查找必须排除插件自身入口、临时 hero 面板和 HUD。
+- 没有真实 Agent 群聊 顶部标签时，入口点击必须打开 #dsh-group-chat-hero-main，不得提前返回导致中央对话区消失或无响应。
+- 涉及新会话入口点击、临时中央群聊面板、顶部标签切换的改动，必须执行 
+pm run test:hero-entry-self-click-guard、
+pm run test:new-session-agent-entry、
+pm run test:hero-left-collapse 和 
+pm run test:ui:entry。
+

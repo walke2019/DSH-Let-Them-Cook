@@ -500,3 +500,10 @@
 - [x] 执行卡主文案展示“正在生成回复/模型调用中”，详情可展开查看任务来源、状态、工作流任务和错误。
 - [x] Agent 完成消息 metadata 增加 toolCalls，中央消息可展开查看工具调用参数与结果。
 - [x] 增加回归守卫：`npm run test:official-like-central-execution`。
+
+## P83 新会话入口自点击守卫
+- [x] 排除 .gc-input-entry-button / .gc-hero-button 自身，避免入口点击被误判成真实标签。
+- [x] 没有真实 Agent 群聊 tab 时回退打开临时中央群聊面板。
+- [x] 新增 
+pm run test:hero-entry-self-click-guard 并接入 matrix/preflight。
+

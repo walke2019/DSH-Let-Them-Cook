@@ -179,3 +179,6 @@
 
 
 - [P82 Official-like central execution](p82-official-like-central-execution/README.md)：中央执行中状态改成官方对话式 Agent 回复卡，支持展开查看任务/工作流/工具详情。
+
+- [P83 新会话入口自点击守卫](p83-hero-entry-self-click-guard/README.md)：修复 blank hero 中 Agent 群聊 小入口误点自身，导致临时中央群聊面板没有打开的问题。
+

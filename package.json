@@ -99,6 +99,7 @@
     "test:composer-outside-scroll": "node Docs/p79-composer-outside-scroll/test-p79-composer-outside-scroll.cjs",
     "test:central-loading-state": "node Docs/p80-central-loading-state/test-p80-central-loading-state.cjs",
     "test:workflow-commander-delegation": "node Docs/p81-workflow-commander-delegation/test-p81-workflow-commander-delegation.cjs",
-    "test:official-like-central-execution": "node Docs/p82-official-like-central-execution/test-p82-official-like-central-execution.cjs"
+    "test:official-like-central-execution": "node Docs/p82-official-like-central-execution/test-p82-official-like-central-execution.cjs",
+    "test:hero-entry-self-click-guard": "node Docs/p83-hero-entry-self-click-guard/test-p83-hero-entry-self-click-guard.cjs"
   }
 }

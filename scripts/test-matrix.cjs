@@ -83,6 +83,7 @@ const steps = [
   ['node', ['Docs/p80-central-loading-state/test-p80-central-loading-state.cjs']],
   ['node', ['Docs/p81-workflow-commander-delegation/test-p81-workflow-commander-delegation.cjs']],
   ['node', ['Docs/p82-official-like-central-execution/test-p82-official-like-central-execution.cjs']],
+  ['node', ['Docs/p83-hero-entry-self-click-guard/test-p83-hero-entry-self-click-guard.cjs']],
   ['node', ['scripts/e2e-no-llm.cjs']],
   ['npm', ['run', 'preflight']],
 ]
@@ -96,4 +97,5 @@ for (const [cmd, args] of steps) {
   }
 }
 console.log('\nTEST_MATRIX_EXIT:0')
+
 

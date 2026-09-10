@@ -1,9 +1,11 @@
 import React, {useEffect, useState} from 'react'
+import {createRoot, type Root} from 'react-dom/client'
 import {GroupChatPanel} from './GroupChatPanel.js'
 import {detectGroupChatLocale, tx, type GroupChatLocale} from './i18n.js'
 
 const HERO_STYLE_ID = 'dsh-group-chat-hero-entry-style'
 const HERO_OPEN_EVENT = 'dsh-group-chat:open-hero-main'
+const DETACHED_HERO_ROOT_ID = 'dsh-group-chat-detached-hero-root'
 const HERO_STYLE = `
 .gc-hero-entry{position:fixed;right:0;top:118px;z-index:48;display:flex;align-items:flex-end;gap:8px;min-width:0;pointer-events:none;flex-direction:column;}
 .gc-hero-button{pointer-events:auto;display:inline-flex;align-items:center;gap:8px;height:32px;padding:0 12px;border:1px solid var(--dsw-alias-border-l2,#ffffff26);border-top-left-radius:999px;border-bottom-left-radius:999px;border-top-right-radius:0;border-bottom-right-radius:0;background:var(--dsw-alias-bg-layer-1,#202025);color:var(--dsw-alias-label-primary,#f8fafc);font:inherit;font-size:13px;cursor:pointer;box-shadow:0 2px 10px #0000001f;}
@@ -73,8 +75,19 @@ function applyHeroLeftOffset(): void {
 
 function clickVisibleGroupChatTab(): boolean {
   if (typeof document === 'undefined') return false
-  const candidates = Array.from(document.querySelectorAll('button,[role="tab"]')) as HTMLElement[]
-  const target = candidates.find(el => (el.textContent || '').replace(/\s+/g, ' ').trim() === 'Agent 群聊')
+  const candidates = Array.from(document.querySelectorAll('[role="tab"],button')) as HTMLElement[]
+  const target = candidates.find(el => {
+    if (el.closest('[data-dsh-group-chat-hero-entry],.gc-hero-main,.dsh-gc-sidebar-host')) return false
+    if (el.classList.contains('gc-input-entry-button') || el.classList.contains('gc-hero-button')) return false
+    const text = (el.textContent || '').replace(/\s+/g, ' ').trim()
+    if (text !== 'Agent 群聊') return false
+    if (el.getAttribute('role') === 'tab') return true
+    if (el.getAttribute('aria-selected') !== null) return true
+    const group = el.closest('[role="tablist"],[role="tabgroup"]')
+    if (group) return true
+    const siblingText = (el.parentElement?.textContent || '').replace(/\s+/g, ' ')
+    return siblingText.includes('对话') && siblingText.includes('轨迹')
+  })
   if (!target) return false
   target.click()
   return true
@@ -83,6 +96,60 @@ function clickVisibleGroupChatTab(): boolean {
 function openHeroMain(): void {
   if (typeof window === 'undefined') return
   window.dispatchEvent(new CustomEvent(HERO_OPEN_EVENT))
+}
+
+function DetachedHeroMain({locale, onClose}:{locale:GroupChatLocale; onClose:()=>void}) {
+  useEffect(() => {
+    if (typeof document === 'undefined') return
+    document.body.setAttribute('data-dsh-group-chat-hero-open', 'true')
+    applyHeroLeftOffset()
+    const onReflow = () => applyHeroLeftOffset()
+    const observer = new MutationObserver(onReflow)
+    observer.observe(document.body, {attributes: true, childList: true, subtree: true})
+    window.addEventListener('resize', onReflow)
+    window.setTimeout(onReflow, 50)
+    window.setTimeout(onReflow, 250)
+    return () => {
+      observer.disconnect()
+      window.removeEventListener('resize', onReflow)
+      document.body.removeAttribute('data-dsh-group-chat-hero-open')
+      document.body.style.removeProperty('--dsh-group-chat-hero-left')
+    }
+  }, [])
+  return <div className="gc-hero-main" id="dsh-group-chat-hero-main" data-dsh-group-chat-hero-open>
+    <div className="gc-hero-main-head">
+      <div className="gc-hero-main-title">
+        <span aria-hidden="true">💬</span>
+        <span>{tx(locale, 'Agent 群聊', 'Agent group chat')}</span>
+        <span className="gc-hero-main-subtitle">{tx(locale, '先在这里开整；会话建立后可切到顶部同名标签', 'Start here; after the session is created you can use the top tab')}</span>
+      </div>
+      <div className="gc-hero-main-actions">
+        <button type="button" onClick={onClose}>{tx(locale, '回到源对话', 'Back to source chat')}</button>
+      </div>
+    </div>
+    <div className="gc-hero-main-body">
+      <GroupChatPanel mode="dock" />
+    </div>
+  </div>
+}
+
+let detachedHeroRoot: Root | null = null
+function openDetachedHeroMain(locale:GroupChatLocale): void {
+  if (typeof document === 'undefined') return
+  installHeroStyle()
+  let host = document.getElementById(DETACHED_HERO_ROOT_ID)
+  if (!host) {
+    host = document.createElement('div')
+    host.id = DETACHED_HERO_ROOT_ID
+    document.body.appendChild(host)
+    detachedHeroRoot = createRoot(host)
+  }
+  const close = () => {
+    detachedHeroRoot?.unmount()
+    detachedHeroRoot = null
+    document.getElementById(DETACHED_HERO_ROOT_ID)?.remove()
+  }
+  detachedHeroRoot?.render(<DetachedHeroMain locale={locale} onClose={close} />)
 }
 
 /** New-session launcher: opens the original middle group-chat surface when DSH has not exposed the real tab yet. */
@@ -165,7 +232,7 @@ export function GroupChatInputEntry() {
   }, [])
   const activate = () => {
     if (clickVisibleGroupChatTab()) return
-    openHeroMain()
+    openDetachedHeroMain(locale)
   }
   return <button type="button" className="gc-input-entry-button" onClick={activate} title={tx(locale, '打开 Agent 群聊主界面', 'Open Agent group chat main panel')}>
     <span aria-hidden="true">💬</span><span>{tx(locale, 'Agent 群聊', 'Agent chat')}</span>
