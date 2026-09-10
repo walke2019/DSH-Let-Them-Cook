@@ -30,6 +30,47 @@ function findLastRuntimeEvent(events: readonly any[], predicate: (event: any) =>
   return undefined
 }
 
+function extractAssistantTextFromEvents(events: readonly any[]): string {
+  return events.filter(event => event.type === 'assistant/message')
+    .flatMap(event => event.data?.message?.content || [])
+    .filter(block => block?.type === 'text' && typeof block.text === 'string')
+    .map(block => block.text)
+    .join('\n')
+    .trim()
+}
+
+function extractAssistantTextFromSurface(session: any): string {
+  if (typeof session?.deriveMessages !== 'function') return ''
+  try {
+    return session.deriveMessages()
+      .filter((message: any) => message?.role === 'assistant')
+      .flatMap((message: any) => message.content || [])
+      .filter((block: any) => block?.type === 'text' && typeof block.text === 'string')
+      .map((block: any) => block.text)
+      .join('\n')
+      .trim()
+  } catch (error) {
+    console.warn?.(`[GroupChat] failed to derive assistant surface: ${error instanceof Error ? error.message : String(error)}`)
+    return ''
+  }
+}
+
+function summarizeRuntimeEventShape(events: readonly any[], session: any): string {
+  const typeCounts = new Map<string, number>()
+  for (const event of events) typeCounts.set(String(event?.type || 'unknown'), (typeCounts.get(String(event?.type || 'unknown')) || 0) + 1)
+  const types = [...typeCounts.entries()].map(([type, count]) => `${type}:${count}`).join(', ') || 'none'
+  let surface = 'unavailable'
+  if (typeof session?.deriveMessages === 'function') {
+    try {
+      const messages = session.deriveMessages()
+      surface = messages.map((message: any) => message?.role || 'unknown').join(', ') || 'empty'
+    } catch (error) {
+      surface = `error:${error instanceof Error ? error.message : String(error)}`
+    }
+  }
+  return `events=${events.length} [${types}], surface=${surface}`
+}
+
 function summarizeRuntimeMetrics(events: readonly any[]): AgentRuntimeMetrics {
   const metrics = emptyRuntimeMetrics()
   metrics.turnCount = events.filter(e=>e.type==='turn/start').length
@@ -135,13 +176,16 @@ export async function runMemberTurn(ctx: RuntimeContext, model: ModelRef, prompt
     signal.throwIfAborted()
     const events = asRuntimeEvents(handle.agent.session?.events)
     const end = findLastRuntimeEvent(events, e => e.type === 'turn/end')
-    if (!end || end.data.reason.kind !== 'completed') {
-      throw new Error(`Group-chat agent turn failed: ${JSON.stringify(end?.data.reason ?? 'missing turn/end')}`)
+    if (end && end.data?.reason?.kind !== 'completed') {
+      throw new Error(`Group-chat agent turn failed: ${JSON.stringify(end.data?.reason)}`)
     }
-    const answers = events.filter(e => e.type === 'assistant/message')
-    const content = answers.flatMap(e => e.data.message.content)
-      .filter(b => b.type === 'text').map(b => b.text).join('\n').trim()
-    if (!content) throw new Error('Group-chat model returned no text')
+    const content = extractAssistantTextFromEvents(events) || extractAssistantTextFromSurface(handle.agent.session)
+    if (!content) {
+      throw new Error(`Group-chat model returned no assistant text after idle (${summarizeRuntimeEventShape(events, handle.agent.session)})`)
+    }
+    if (!end) {
+      console.warn?.(`[GroupChat] completed member turn without turn/end marker; accepting assistant text (${summarizeRuntimeEventShape(events, handle.agent.session)})`)
+    }
     return { content, reasoningContent: '', providerUsed: selected.provider, modelUsed: selected.model, metrics: summarizeRuntimeMetrics(events) }
   } finally {
     signal.removeEventListener('abort', cancel)

@@ -168,3 +168,5 @@
 
 
 - [P77 Central live execution status](p77-central-live-execution-status/README.md)：中央消息流用官方同款 Agent 回复气泡显示 queued/running assignment，并修复 session events `findLast` 兼容崩溃。
+
+- [P78 Agent turn surface fallback](p78-agent-turn-surface-fallback/README.md)：缺少 `turn/end` 时从 assistant event/surface 提取回复，并输出可诊断 event 形态。

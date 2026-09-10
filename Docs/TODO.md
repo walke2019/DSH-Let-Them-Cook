@@ -468,3 +468,10 @@
 - [x] 首次加载房间时从持久化 assignments 恢复执行中卡片。
 - [x] `agent-runtime` 移除直接 `findLast()` 调用，兼容 session events 缺失或非数组。
 - [x] 增加回归守卫：`npm run test:central-live-status`。
+
+
+## P78 — Agent turn surface fallback
+- [x] 缺少 `turn/end` 时不再直接覆盖为模型失败。
+- [x] 优先从 `assistant/message` events 提取文本，兜底从 `session.deriveMessages()` 提取 assistant surface。
+- [x] event/surface 都没有文本时输出 event 类型计数和 surface 角色列表，方便继续定位模型或 DSH loop 问题。
+- [x] 增加回归守卫：`npm run test:agent-turn-surface-fallback`。

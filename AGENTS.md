@@ -258,3 +258,10 @@
 - 中央状态必须从实时 `assignment:updated` 事件更新，并在刷新后从 `room.assignments` 恢复，直到 assignment 收敛为 completed/failed/blocked/cancelled。
 - DSH session events 可能缺失或不是数组；运行时不得直接调用 `events.findLast()`，必须先做数组规整和兼容反向查找，避免模型结果阶段被兼容错误覆盖。
 - 涉及中央任务推进、assignment 可见性、agent runtime 事件读取的改动，必须执行 `npm run test:central-live-status`、`npm run test:ui:entry` 和 `npm run test:matrix`。
+
+
+### 28. Agent turn surface fallback 铁律（P78）
+- 群聊成员运行时不得把缺少 `turn/end` 单独判定为模型失败；必须先从 `assistant/message` events 和 `session.deriveMessages()` surface 提取可见 assistant 文本。
+- 只有 event log 与 derived surface 都没有 assistant text 时，才允许失败，并且错误必须包含 event 类型计数与 surface 角色列表，避免再次出现不可诊断的 `missing turn/end`。
+- 如果存在非 completed 的 `turn/end`，仍按真实失败处理，不得把失败 turn 的残留文本伪装成功。
+- 涉及 `runMemberTurn()`、session events、surface fallback、模型失败诊断的改动，必须执行 `npm run test:agent-turn-surface-fallback`、`npm run test:central-live-status` 和 `npm run test:matrix`。

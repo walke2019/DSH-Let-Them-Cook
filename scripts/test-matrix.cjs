@@ -78,6 +78,7 @@ const steps = [
   ['node', ['Docs/p75-distinct-theme-empty-copy/test-p75-distinct-theme-copy.cjs']],
   ['node', ['Docs/p76-hud-locale-toggle-header/test-p76-hud-locale-toggle-header.cjs']],
   ['node', ['Docs/p77-central-live-execution-status/test-p77-central-live-execution-status.cjs']],
+  ['node', ['Docs/p78-agent-turn-surface-fallback/test-p78-agent-turn-surface-fallback.cjs']],
   ['node', ['scripts/e2e-no-llm.cjs']],
   ['npm', ['run', 'preflight']],
 ]
