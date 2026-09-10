@@ -14,10 +14,8 @@ for (const marker of [
   "event.type==='assignment:updated'",
   'setLiveAssignments(Object.fromEntries((data.room.assignments||[])',
   'activeAssignments',
-  'gc-live-status',
-  "tx(locale,'中央执行状态','Central execution status')",
-  "tx(locale,'Agent 正在执行','Agents are working')",
-  "tx(locale,'已接单，排队中','Queued')",
+  'gc-message-live',
+    "tx(locale,'已接单，排队中','Queued')",
   "tx(locale,'正在处理','Running')",
 ]) {
   if (!panel.includes(marker)) errors.push(`GroupChatPanel missing marker: ${marker}`)
@@ -51,4 +49,4 @@ if (errors.length) {
   console.error(JSON.stringify({ P77_CENTRAL_LIVE_STATUS_EXIT: 1, errors }, null, 2))
   process.exit(1)
 }
-console.log(JSON.stringify({ P77_CENTRAL_LIVE_STATUS_EXIT: 0, centralLiveStatus: true, findLastCompat: true }, null, 2))
+console.log(JSON.stringify({ P77_CENTRAL_LIVE_STATUS_EXIT: 0, centralLiveStatus: 'official-like-agent-message', findLastCompat: true }, null, 2))

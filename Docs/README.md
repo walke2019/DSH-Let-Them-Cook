@@ -167,4 +167,4 @@
 - [P76 HUD header language toggle](p76-hud-locale-toggle-header/README.md)：把中英双语切换从顶部配置 grid 移到 HUD 标题栏浮动按钮左侧。
 
 
-- [P77 Central live execution status](p77-central-live-execution-status/README.md)：中央消息区直接显示 queued/running Agent assignment，并修复 session events `findLast` 兼容崩溃。
+- [P77 Central live execution status](p77-central-live-execution-status/README.md)：中央消息流用官方同款 Agent 回复气泡显示 queued/running assignment，并修复 session events `findLast` 兼容崩溃。

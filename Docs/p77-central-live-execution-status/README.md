@@ -7,7 +7,7 @@
 ## 修复
 
 - `GroupChatPanel` 订阅并缓存 `assignment:updated`，首次拉取 `/room` 时也读取 `room.assignments`。
-- 中央消息区新增 `.gc-live-status`，对 `queued/running` assignment 显示执行中卡片、角色名、快/长任务、耗时/预计耗时和 brief，不再只依赖右栏 HUD。
+- 中央消息流新增 `.gc-message-live`，用与官方/普通 Agent 回复一致的头像、姓名、正文、meta 样式显示 `queued/running` assignment；内容包含角色名、快/长任务、耗时/预计耗时和 brief，不再只依赖右栏 HUD。
 - `agent-runtime` 不再直接调用 `events.findLast()`；先把 session events 规整为数组，再用兼容的反向遍历 helper 查找 `turn/end`。
 - 所有新增中央文案继续使用 `tx(locale, zh, en)`。
 

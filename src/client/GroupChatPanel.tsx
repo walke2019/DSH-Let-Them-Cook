@@ -309,15 +309,18 @@ export function GroupChatPanel({mode='full'}:GroupChatPanelProps) {
       .gc-template-row{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;}
       .gc-template-chip{border:1px solid var(--dsw-alias-border-l2,#ffffff22);border-radius:999px;background:var(--dsw-alias-bg-layer-2,#29292e);color:var(--dsw-alias-label-primary,#eee);font:inherit;font-size:12px;padding:6px 10px;cursor:pointer;}
       .gc-template-chip:hover{background:var(--dsw-alias-bg-layer-3,#33333a);border-color:#4d6bfe66;}
-      .gc-live-status{width:100%;max-width:960px;margin:0 auto 18px;display:grid;gap:8px;}
-      .gc-live-status-title{font-size:12px;font-weight:700;color:var(--dsw-alias-label-primary,#eee);display:flex;align-items:center;gap:8px;}
-      .gc-live-pulse{width:7px;height:7px;border-radius:50%;background:#4d6bfe;box-shadow:0 0 0 5px #4d6bfe24;animation:gcPulse 1.4s ease-in-out infinite;}
-      .gc-live-card{display:grid;grid-template-columns:24px 1fr;gap:8px;padding:8px 10px;border:1px solid #4d6bfe33;border-radius:13px;background:linear-gradient(135deg,#4d6bfe18,#ffffff08);color:var(--dsw-alias-label-secondary,#cbd5e1);font-size:12px;line-height:1.45;}
-      .gc-live-card b{color:var(--dsw-alias-label-primary,#eee);}
-      .gc-live-brief{grid-column:2;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--dsw-alias-label-tertiary,#999);}
-      .gc-live-bar{grid-column:2;height:3px;border-radius:999px;background:#ffffff14;overflow:hidden;}
+      .gc-message-live{opacity:.98;}
+      .gc-message-live .gc-message-body{display:grid;gap:7px;color:var(--dsw-alias-label-secondary,#cbd5e1);}
+      .gc-live-line{display:flex;align-items:center;gap:8px;min-width:0;}
+      .gc-live-pulse{width:7px;height:7px;border-radius:50%;background:#4d6bfe;box-shadow:0 0 0 5px #4d6bfe24;animation:gcPulse 1.4s ease-in-out infinite;flex:0 0 auto;}
+      .gc-live-brief{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--dsw-alias-label-tertiary,#999);font-size:12px;}
+      .gc-live-bar{height:3px;max-width:360px;border-radius:999px;background:#ffffff14;overflow:hidden;}
       .gc-live-bar span{display:block;height:100%;border-radius:inherit;background:#4d6bfe;transition:width .3s ease;}
+      .gc-live-dots{display:inline-flex;gap:3px;vertical-align:middle;}
+      .gc-live-dots span{width:4px;height:4px;border-radius:50%;background:currentColor;opacity:.45;animation:gcDot 1.2s ease-in-out infinite;}
+      .gc-live-dots span:nth-child(2){animation-delay:.18s}.gc-live-dots span:nth-child(3){animation-delay:.36s}
       @keyframes gcPulse{0%,100%{opacity:.55;transform:scale(.85)}50%{opacity:1;transform:scale(1.05)}}
+      @keyframes gcDot{0%,80%,100%{opacity:.28;transform:translateY(0)}40%{opacity:1;transform:translateY(-2px)}}
       .gc-message{margin:0 0 30px;overflow-wrap:anywhere;}
       .gc-message-user{display:flex;flex-direction:column;align-items:flex-end;}
       .gc-message-body{font-size:13px;line-height:1.7;min-width:0;}
@@ -352,8 +355,7 @@ export function GroupChatPanel({mode='full'}:GroupChatPanelProps) {
     </div>
     <div ref={scroll} className="gc-chat-scroll" onScroll={e=>{const el=e.currentTarget;follow.current=el.scrollHeight-el.scrollTop-el.clientHeight<80;setShowLatest(!follow.current)}}>
       <div className="gc-scroll-content"><div className="gc-chat-messages">
-      {!!activeAssignments.length&&<div className="gc-live-status" aria-live="polite" aria-label={tx(locale,'中央执行状态','Central execution status')}><div className="gc-live-status-title"><span className="gc-live-pulse" />{tx(locale,'Agent 正在执行','Agents are working')}</div>{activeAssignments.map(assignment=><div className="gc-live-card" data-status={assignment.status} key={assignment.assignmentId}><AvatarBadge avatar={memberAvatar(assignment.ownerRoleId)} /><div><b>{memberName(assignment.ownerRoleId)}</b> · {assignmentStatusText(assignment)}{assignment.taskTier?` · ${assignment.taskTier==='quick'?tx(locale,'快活','Quick'):tx(locale,'长活','Long')}`:''}{assignment.startedAt?` · ${assignmentElapsed(assignment)}s`:''}{assignment.expectedMs?`/${Math.round(assignment.expectedMs/1000)}s`:''}</div><div className="gc-live-brief">{assignment.brief}</div>{assignment.startedAt&&assignment.expectedMs?<div className="gc-live-bar" aria-label={tx(locale,'执行进度估计','Estimated progress')}><span style={{width:`${Math.min(96,Math.round((assignmentElapsed(assignment)*1000/assignment.expectedMs)*100))}%`}} /></div>:null}</div>)}</div>}
-      {!messages.length ? <div className="gc-chat-empty">{loading?<><strong>正在加载…</strong></>:<div className="gc-onboarding" aria-label={tx(locale,'Agent 群聊首次使用三步引导','Agent group chat onboarding')}><strong>{voice.emptyTitle}</strong><span>{voice.emptySubtitle}</span><div className="gc-onboarding-steps">{onboardingSteps.map(([title,body])=><div className="gc-onboarding-step" key={title}><b>{title}</b><span>{body}</span></div>)}</div><div className="gc-template-row" aria-label={tx(locale,'常见项目模板','Common project templates')}>{quickTemplates.map(item=><button type="button" key={item.label} className="gc-template-chip" onClick={()=>setDraft(item.text)}>{item.label}</button>)}</div></div>}</div> :
+      {!messages.length&&!activeAssignments.length ? <div className="gc-chat-empty">{loading?<><strong>正在加载…</strong></>:<div className="gc-onboarding" aria-label={tx(locale,'Agent 群聊首次使用三步引导','Agent group chat onboarding')}><strong>{voice.emptyTitle}</strong><span>{voice.emptySubtitle}</span><div className="gc-onboarding-steps">{onboardingSteps.map(([title,body])=><div className="gc-onboarding-step" key={title}><b>{title}</b><span>{body}</span></div>)}</div><div className="gc-template-row" aria-label={tx(locale,'常见项目模板','Common project templates')}>{quickTemplates.map(item=><button type="button" key={item.label} className="gc-template-chip" onClick={()=>setDraft(item.text)}>{item.label}</button>)}</div></div>}</div> :
       <div className="gc-chat-thread" role="log" aria-label={tx(locale,'群聊消息记录','Group chat message log')} aria-live="polite" aria-relevant="additions">
         {messages.filter(m=>!m.metadata?.isSilent).map(message=>{
           const user=message.sender.kind==='user'
@@ -375,6 +377,21 @@ export function GroupChatPanel({mode='full'}:GroupChatPanelProps) {
             </div>
           </article>
         })}
+        {activeAssignments.map(assignment=><article key={`live-${assignment.assignmentId}`} className="gc-message gc-message-agent gc-message-live" aria-label={`${memberName(assignment.ownerRoleId)}${tx(locale,'正在执行',' is working')}`} data-assignment-id={assignment.assignmentId}>
+          <div className="gc-message-meta">
+            <AvatarBadge avatar={memberAvatar(assignment.ownerRoleId)} className="gc-message-avatar" />
+            <span className="gc-message-role">{memberName(assignment.ownerRoleId)}</span>
+          </div>
+          <div className="gc-message-body" aria-live="polite">
+            <div className="gc-live-line"><span className="gc-live-pulse" />{assignmentStatusText(assignment)} <span className="gc-live-dots" aria-hidden="true"><span/><span/><span/></span></div>
+            <div className="gc-live-brief">{assignment.brief}</div>
+            {assignment.startedAt&&assignment.expectedMs?<div className="gc-live-bar" aria-label={tx(locale,'执行进度估计','Estimated progress')}><span style={{width:`${Math.min(96,Math.round((assignmentElapsed(assignment)*1000/assignment.expectedMs)*100))}%`}} /></div>:null}
+          </div>
+          <div className="gc-message-actions">
+            <span>{assignment.taskTier==='long'?tx(locale,'长活','Long'):tx(locale,'快活','Quick')}</span>
+            {assignment.startedAt?<span>{assignmentElapsed(assignment)}s{assignment.expectedMs?`/${Math.round(assignment.expectedMs/1000)}s`:''}</span>:null}
+          </div>
+        </article>)}
       </div>}
     </div>
     <div className="gc-chat-bottom" ref={bottom}>
