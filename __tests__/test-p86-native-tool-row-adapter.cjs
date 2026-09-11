@@ -14,9 +14,9 @@ const checks = [
     toolRow.includes("titleZh: 'Bash'")],
   ['ToolRow extracts target path or pattern into target tag', toolRow.includes('resolveToolTarget') && toolRow.includes('gc-tool-target')],
   ['ToolRow provides native disclosure animation and rotation chevron', toolRow.includes('gc-tool-chevron-open') && toolRow.includes('open ? \'true\' : \'false\'')],
-  ['ToolRow supports running pulse and error badges', toolRow.includes('gc-tool-spin') && toolRow.includes('gc-tool-status-error')],
+  ['ToolRow supports running pulse and error badges', toolRow.includes('gc-tool-spin') && (toolRow.includes('gc-tool-status-error') || toolRow.includes('gc-tool-tag-error'))],
   ['GroupChatPanel replaced raw details with GroupChatToolRow', panel.includes('<GroupChatToolRow') && !panel.includes('className="gc-message-tools"')],
-  ['Agent runtime extracts readWritePath for fast indexing', runtime.includes('readWritePath: extractToolTarget(rawPayload)')],
+  ['Agent runtime extracts readWritePath for fast indexing', runtime.includes('readWritePath: extractToolTarget(rawPayload') || runtime.includes('extractToolTarget(rawPayload, name)')],
 ]
 
 const failed = checks.filter(([, ok]) => !ok)

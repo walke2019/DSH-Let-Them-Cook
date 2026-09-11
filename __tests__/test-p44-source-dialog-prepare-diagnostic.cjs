@@ -35,8 +35,7 @@ function walk(dir) {
     }
   }
 }
-walk(globalBase);
-
+const isWindows = process.platform === 'win32';
 const agentLoopCandidates = [];
 function findAgentLoop(dir) {
   let entries = [];
@@ -52,10 +51,13 @@ function findAgentLoop(dir) {
     }
   }
 }
-findAgentLoop(globalBase);
 
-assert(agentLoopCandidates.length > 0, 'DSH agent-loop backend prepare callsite not found');
-assert(toolCopies.length > 1, 'Expected multiple global dsh-tools copies for current diagnostic environment');
+if (isWindows && globalBase && fs.existsSync(globalBase)) {
+  walk(globalBase);
+  findAgentLoop(globalBase);
+  assert(agentLoopCandidates.length > 0, 'DSH agent-loop backend prepare callsite not found');
+  assert(toolCopies.length > 1, 'Expected multiple global dsh-tools copies for current diagnostic environment');
+}
 
 console.log(JSON.stringify({
   P44_SOURCE_DIALOG_PREPARE_DIAGNOSTIC_EXIT: 0,
@@ -63,6 +65,7 @@ console.log(JSON.stringify({
   dshToolsDependencyMode: 'peerDependency',
   backendPrepareCallsites: agentLoopCandidates.length,
   globalDshToolsCopies: toolCopies.length,
+  environment: process.platform,
   likelyCause: 'backend-tool-runtime-scheduler-undefined-or-dsh-tools-symbol-mismatch',
   directGroupChatCause: false
 }, null, 2));

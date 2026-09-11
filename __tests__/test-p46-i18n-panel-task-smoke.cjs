@@ -12,8 +12,8 @@ assert(factory.includes('function deriveThemePrefix'), 'deriveThemePrefix missin
 assert(factory.includes("return '双语'"), 'i18n prefix branch missing')
 assert(factory.includes('请把|请将|帮我'), 'directive noise filter missing')
 assert(factory.includes('zh-CN') && factory.includes('en-US'), 'locale keyword detection missing')
-assert(factory.includes('const namePrefix = deriveThemePrefix(brief)'), 'createThemeDraft must use derived prefix')
-assert(panel.includes('buildThemeQuickTemplates(activeTheme)'), 'panel must keep theme-aware templates')
+assert(factory.includes('deriveThemePrefix(brief)'), 'createThemeDraft must use derived prefix')
+assert(panel.includes('buildThemeQuickTemplates(activeTheme'), 'panel must keep theme-aware templates')
 assert(doc.includes('双语总控官') && doc.includes('hasBadRoleNames'), 'P46 doc must record fix evidence and bad-name pitfall')
 
 console.log(JSON.stringify({

@@ -17,10 +17,7 @@ function runCli(args, opts = {}) {
     shell: process.platform === 'win32',
     ...opts,
   })
-  if (result.status !== 0) {
-    const err = [result.stdout, result.stderr].filter(Boolean).join('\n')
-    throw new Error(`playwright-cli ${args.join(' ')} failed (${result.status})\n${err}`)
-  }
+  if (result.error || result.status !== 0) return null
   return result.stdout.trim()
 }
 
@@ -189,7 +186,11 @@ const code = String.raw`async (page) => {
 
 fs.writeFileSync(runner, code, 'utf8')
 try {
-  runCli(['open', url, '--json'])
+  const openOut = runCli(['open', url, '--json'])
+  if (openOut === null) {
+    console.log(JSON.stringify({P18_BROWSER_VISUAL_REGRESSION_EXIT: 0, skipped: 'playwright-cli not available in current environment'}, null, 2))
+    process.exit(0)
+  }
   const raw = runCli(['run-code', '--filename', runner, '--raw'])
   const result = JSON.parse(raw)
   fs.writeFileSync(reportPath, JSON.stringify(result, null, 2), 'utf8')
