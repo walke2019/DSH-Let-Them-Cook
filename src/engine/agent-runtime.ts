@@ -334,7 +334,32 @@ export async function runMemberTurn(ctx: RuntimeContext, model: ModelRef, prompt
       console.warn?.(`[GroupChat] completed member turn without turn/end marker; accepting assistant text (${summarizeRuntimeEventShape(events, handle.agent.session)})`)
     }
     const durationMs = Date.now() - turnStartTime
-    return { content, reasoningContent: '', providerUsed: selected.provider, modelUsed: selected.model, metrics: summarizeRuntimeMetrics(events, prompt, content, durationMs), toolCalls: summarizeToolCalls(events) }
+    const metrics = summarizeRuntimeMetrics(events, prompt, content, durationMs)
+
+    // Leverage latest DSH native session projections (tokenUsage & sessionStats) if registered
+    try {
+      const projections = (ctx as any).get?.('sessionProjections', false) || (ctx as any).sessionProjections
+      if (projections && handle?.agent?.session) {
+        const usageState = projections.stateOf?.(handle.agent.session, 'tokenUsage')
+        if (usageState?.totals) {
+          metrics.inputTokens = usageState.totals.uncachedInputTokens ?? metrics.inputTokens
+          metrics.outputTokens = usageState.totals.outputTokens ?? metrics.outputTokens
+          metrics.cacheReadTokens = usageState.totals.cacheReadTokens ?? metrics.cacheReadTokens
+          metrics.cacheWriteTokens = usageState.totals.cacheWriteTokens ?? metrics.cacheWriteTokens
+        }
+        const statsState = projections.stateOf?.(handle.agent.session, 'sessionStats')
+        if (statsState) {
+          if (statsState.llmMs > 0) metrics.llmMs = statsState.llmMs
+          if (statsState.toolMs > 0) metrics.toolMs = statsState.toolMs
+          if (statsState.ttftMs > 0 && statsState.ttftSteps > 0) {
+            metrics.firstTokenMsTotal = statsState.ttftMs
+            metrics.firstTokenCount = statsState.ttftSteps
+          }
+        }
+      }
+    } catch {}
+
+    return { content, reasoningContent: '', providerUsed: selected.provider, modelUsed: selected.model, metrics, toolCalls: summarizeToolCalls(events) }
   } finally {
     signal.removeEventListener('abort', cancel)
     await handle?.dispose()
