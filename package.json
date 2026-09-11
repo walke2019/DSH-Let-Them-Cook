@@ -1,7 +1,16 @@
 {
-  "name": "@dsh-external/dsh-group-chat",
+  "name": "@dsh-external/dsh-let-them-cook",
+  "displayName": "DSH Let Them Cook (DSH 开整天团)",
   "version": "0.1.0",
   "description": "DSH Let Them Cook (DSH 开整天团) — 多 Agent 角色协同与闭环交付插件 (Multi-Agent Project Orchestration & Autonomous Delivery for DeepSeek Harness)",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/walke2019/DSH-Let-Them-Cook.git"
+  },
+  "bugs": {
+    "url": "https://github.com/walke2019/DSH-Let-Them-Cook/issues"
+  },
+  "homepage": "https://github.com/walke2019/DSH-Let-Them-Cook#readme",
   "private": true,
   "type": "module",
   "main": "./lib/index.js",

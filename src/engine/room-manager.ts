@@ -253,7 +253,7 @@ export class RoomManager {
 
     const defaultRoom: GroupChatRoom = {
       roomId: 'dev-team-alpha',
-      title: 'AI 小队工作台',
+      title: 'DSH 开整天团工作台',
       masterSessionId: 'default',
       dispatchMode: 'workflow_driven',
       moderatorAgentId: 'commander',
@@ -335,7 +335,7 @@ export class RoomManager {
     const workflow = WorkflowOrchestrator.createStandardDevWorkflow()
     const room: GroupChatRoom = {
       roomId,
-      title: 'AI 小队工作台',
+      title: 'DSH 开整天团工作台',
       masterSessionId,
       dispatchMode: 'workflow_driven',
       moderatorAgentId: 'commander',

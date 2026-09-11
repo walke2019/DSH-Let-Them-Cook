@@ -14,7 +14,7 @@
 
 ## 🌟 Overview
 
-`@dsh-external/dsh-group-chat` is a Cordis-powered extension designed for DeepSeek Harness (DSH). It preserves the official DSH chat tab while introducing a dedicated, collaborative **Agent Chat** workspace. 
+`@dsh-external/dsh-let-them-cook` (DSH 开整天团) is a Cordis-powered extension designed for DeepSeek Harness (DSH). It preserves the official DSH chat tab while introducing a dedicated, collaborative **Agent Chat** workspace. 
 
 In this space, users describe complex project goals in natural language. The system drafts a bespoke fleet of specialized AI roles and a tailored multi-stage workflow. Once approved by the user, the **Master Agent (`commander`)** orchestrates specialized **SubAgents** through research, backend engineering, frontend polish, adversarial QA testing, and technical documentation until the project loop is closed.
 
@@ -82,7 +82,7 @@ If using `dsh-super-injector`:
 dev_install_package --dir "/path/to/DSH-Let-Them-Cook"
 
 # Perform zero-downtime hot reload
-dev_reload_package --packageName "dsh-group-chat"
+dev_reload_package --packageName "dsh-let-them-cook"
 ```
 
 ### 3. Verify in Browser

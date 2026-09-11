@@ -49,7 +49,7 @@ export function GroupChatSideDock() {
   const roomId = useCurrentGroupChatRoomId()
   const selectedTheme = room?.activeTheme === 'meme_comedy' ? 'default' : (room?.activeTheme || 'default')
   const selectedMode = room?.dispatchMode === 'workflow_driven' ? 'default' : (room?.dispatchMode || 'default')
-  const displayRoomTitle = room?.title?.includes('特遣') ? tx(locale,'AI 小队工作台','AI squad workspace') : (room?.title || tx(locale,'群聊设置','Group chat settings'))
+  const displayRoomTitle = (room?.title?.includes('特遣') || room?.title?.includes('AI 小队')) ? tx(locale,'DSH 开整天团工作台','DSH Let Them Cook Workspace') : (room?.title || tx(locale,'DSH 开整天团','DSH Let Them Cook'))
   const [roomPickerOpen, setRoomPickerOpen] = useState(false)
   const [availableRooms, setAvailableRooms] = useState<any[]>([])
   const openRoomPicker = async () => {
