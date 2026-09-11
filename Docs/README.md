@@ -4,6 +4,12 @@
 
 `DSH Let Them Cook` (开整天团，包标识 `@dsh-external/dsh-let-them-cook`) 当前定位是 **DSH 工作区级多 Agent 协作与闭环交付编排扩展**：用户在中间 `Agent 群聊` 标签用一句话描述任务，扩展生成角色/工作流草案，用户确认后写入当前工作区；右侧 `群聊控制台 (HUD)` 只承担监控、配置、账本和状态修正，不重复聊天输入，不接管官方 `对话`。
 
+## 📚 项目三大核心文档定位
+
+1. **[项目产品业务与安装运行手册 (README.md)](../README.md)**：面向全体用户，涵盖产品核心价值、业务架构边界图、生命周期时序图与安装部署指南。
+2. **[AI Agent 编码、UI 标准与避坑开发指南 (AGENTS.md)](../AGENTS.md)**：面向 AI Coding Agent 与业务 Agent 的最高工程宪法，收录了 DSH 扩展插槽安全契约与 30 条避坑铁律。
+3. **[技术方案演进与回归测试中心 (Docs/README.md)](./README.md)**（本目录）：全量 P1~P88 技术阶段文档、单测覆盖与深度设计专著。
+
 ## 当前架构事实
 
 - Host：Cordis 插件，入口 `src/index.ts`，HTTP/SSE API 挂在 `/dsh-group-chat/api/*`。

@@ -6,6 +6,33 @@
 
 ---
 
+## 零、项目文档体系架构与引入导航 (Project Documentation Architecture)
+
+本项目遵循清晰严谨的三层文档体系，严格实行“根目录纯洁性”纪律，严禁在根目录下随意新建散落文档：
+
+| 文档路径 | 文档角色与定位 | 核心读者与用途 |
+| :--- | :--- | :--- |
+| **`README.md`** | **业务定位与产品说明书** | 面向全体用户与开发者：阐述项目核心价值、架构边界图、业务流转时序图及完整的扩展安装部署运行指南。 |
+| **`AGENTS.md`** (本文件) | **AI Agent 编码、UI 规范与避坑开发指南** | 面向 AI Coding Agent 及群聊业务 Agent：强制性工程铁律、DSH 扩展插槽契约、UI 零污染规则与避坑开发宪章。 |
+| **`Docs/README.md`** | **技术方案与演进索引中心** | 面向深度架构研究与回归维护：汇集 P1~P88 全阶段演进设计、单测报告、性能分析与避坑专著。 |
+
+### 核心规范与避坑专项文档映射表 (Norm-to-Docs Matrix)
+在维护或演进具体业务模块时，AI Agent 必须优先查阅对应的底层设计与避坑专著：
+- **微内核集成与原生工具路由**：参见 [Docs/execution-tool-routing-runtime/](./Docs/execution-tool-routing-runtime/)、[Docs/p88-official-tools-and-cache-metrics/README.md](./Docs/p88-official-tools-and-cache-metrics/README.md)
+- **安全中间对话视图与 prepare 契约**：参见 [Docs/p14-safe-middle-conversation-tab/README.md](./Docs/p14-safe-middle-conversation-tab/README.md)、[Docs/p44-source-dialog-prepare-diagnostic/README.md](./Docs/p44-source-dialog-prepare-diagnostic/README.md)
+- **HUD 布局避让与拖拽 Pointer Capture**：参见 [Docs/p8-hud-overlay-layout/README.md](./Docs/p8-hud-overlay-layout/README.md)、[Docs/p72-hud-message-margins/README.md](./Docs/p72-hud-message-margins/README.md)
+- **源版对话隔离与状态清理**：参见 [Docs/p38-official-source-dialog-guard/README.md](./Docs/p38-official-source-dialog-guard/README.md)、[Docs/p39-source-agent-tab-switch-regression/README.md](./Docs/p39-source-agent-tab-switch-regression/README.md)、[Docs/p40-refresh-state-cleanup-regression/README.md](./Docs/p40-refresh-state-cleanup-regression/README.md)
+- **双语运行时与角色全覆盖**：参见 [Docs/p47-bilingual-ui-and-tool-scope/README.md](./Docs/p47-bilingual-ui-and-tool-scope/README.md)、[Docs/p57-agent-runtime-prompt-i18n/README.md](./Docs/p57-agent-runtime-prompt-i18n/README.md)、[Docs/p85-bilingual-role-coverage/README.md](./Docs/p85-bilingual-role-coverage/README.md)
+- **状态持久化与异常恢复**：参见 [Docs/p53-message-ledger-persistence/README.md](./Docs/p53-message-ledger-persistence/README.md)、[Docs/p54-interrupted-assignment-recovery/README.md](./Docs/p54-interrupted-assignment-recovery/README.md)
+- **看门狗超时机制与自愈**：参见 [Docs/p62-runtime-agent-watchdog/README.md](./Docs/p62-runtime-agent-watchdog/README.md)、[Docs/p63-assignment-watchdog-timeout/README.md](./Docs/p63-assignment-watchdog-timeout/README.md)
+- **任务驾驶舱与路线图协议**：参见 [Docs/p65-captain-task-protocol/README.md](./Docs/p65-captain-task-protocol/README.md)、[Docs/p69-task-cockpit-productization/README.md](./Docs/p69-task-cockpit-productization/README.md)
+- **新会话入口与自点击防线**：参见 [Docs/p71-new-session-agent-entry/README.md](./Docs/p71-new-session-agent-entry/README.md)、[Docs/p83-hero-entry-self-click-guard/README.md](./Docs/p83-hero-entry-self-click-guard/README.md)
+- **会话隔离与房间绑定**：参见 [Docs/p74-session-scoped-room-binding/README.md](./Docs/p74-session-scoped-room-binding/README.md)
+- **对话连贯性与防死锁引擎**：参见 [Docs/p87-dialog-continuity-and-stall-prevention/README.md](./Docs/p87-dialog-continuity-and-stall-prevention/README.md)
+- **流式工具卡片与 Prompt Cache 计费**：参见 [Docs/p88-official-tools-and-cache-metrics/README.md](./Docs/p88-official-tools-and-cache-metrics/README.md)
+
+---
+
 ## 一、群聊成员智能体（Group Chat Participants）行为守则
 
 ### 1. 身份与职责边界（Role Boundaries）
