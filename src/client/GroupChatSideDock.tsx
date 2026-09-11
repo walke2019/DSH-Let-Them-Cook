@@ -9,7 +9,7 @@ import type {AssignmentEnvelope, AgentMailboxMessage, GroupMessageData, LedgerDa
 import type {AgentProfile} from './group-chat-view-types.js'
 import {detectGroupChatLocale, onGroupChatLocaleChange, setGroupChatLocale, tx, type GroupChatLocale} from './i18n.js'
 import {GroupChatHeroEntry} from './GroupChatHeroEntry.js'
-import {DEFAULT_GROUP_CHAT_ROOM_ID, useCurrentGroupChatRoomId} from './current-room.js'
+import {DEFAULT_GROUP_CHAT_ROOM_ID, setCurrentGroupChatRoomId, useCurrentGroupChatRoomId} from './current-room.js'
 
 const SIDEBAR_DEFAULT_WIDTH = 360
 const SIDEBAR_MIN_WIDTH = 300
@@ -50,6 +50,22 @@ export function GroupChatSideDock() {
   const selectedTheme = room?.activeTheme === 'meme_comedy' ? 'default' : (room?.activeTheme || 'default')
   const selectedMode = room?.dispatchMode === 'workflow_driven' ? 'default' : (room?.dispatchMode || 'default')
   const displayRoomTitle = room?.title?.includes('特遣') ? tx(locale,'AI 小队工作台','AI squad workspace') : (room?.title || tx(locale,'群聊设置','Group chat settings'))
+  const [roomPickerOpen, setRoomPickerOpen] = useState(false)
+  const [availableRooms, setAvailableRooms] = useState<any[]>([])
+  const openRoomPicker = async () => {
+    try {
+      const res = await fetch('/dsh-group-chat/api/rooms')
+      if (res.ok) {
+        const data = await res.json()
+        if (Array.isArray(data.rooms)) setAvailableRooms(data.rooms)
+      }
+    } catch {}
+    setRoomPickerOpen(prev => !prev)
+  }
+  const switchRoom = (targetId: string | null) => {
+    setCurrentGroupChatRoomId(targetId)
+    setRoomPickerOpen(false)
+  }
   const toggleLocale = () => setGroupChatLocale(locale === 'zh-CN' ? 'en-US' : 'zh-CN')
   useEffect(()=>onGroupChatLocaleChange(setLocale),[])
   useEffect(() => {
@@ -429,8 +445,14 @@ export function GroupChatSideDock() {
               <div className="dsh-gc-hud-title" title={tx(locale,'群聊控制台 (HUD)','Group chat console (HUD)')}>
                 {tx(locale,'群聊控制台 (HUD)','Group chat console (HUD)')}
               </div>
-              <div className="dsh-gc-hud-subtitle" title={displayRoomTitle}>
-                {displayRoomTitle}
+              <div
+                className="dsh-gc-hud-subtitle"
+                title={tx(locale, '点击切换作战室', 'Click to switch room') + ': ' + displayRoomTitle}
+                onClick={openRoomPicker}
+                style={{cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px', textDecoration: 'underline dotted'}}
+              >
+                <span>{displayRoomTitle}</span>
+                <span style={{fontSize: '10px', opacity: 0.7}}>▾</span>
               </div>
             </div>
           </div>
@@ -461,6 +483,69 @@ export function GroupChatSideDock() {
             </button>
           </div>
         </div>
+        {roomPickerOpen && (
+          <div
+            className="dsh-gc-room-picker"
+            style={{
+              position: 'absolute',
+              top: '46px',
+              left: '8px',
+              right: '8px',
+              background: 'var(--dsh-surface, #1e1e24)',
+              border: '1px solid var(--dsh-border, #3b3b44)',
+              borderRadius: '8px',
+              padding: '8px',
+              zIndex: 100,
+              boxShadow: '0 8px 24px rgba(0,0,0,0.5)',
+              maxHeight: '280px',
+              overflowY: 'auto'
+            }}
+          >
+            <div style={{fontSize:'12px', fontWeight:600, padding:'4px 6px', color:'var(--dsh-text-muted, #888)', display:'flex', justifyContent:'space-between', alignItems:'center'}}>
+              <span>{tx(locale, '切换作战室 / 找回任务', 'Switch Room / Recover Tasks')}</span>
+              <button type="button" onClick={() => setRoomPickerOpen(false)} style={{background:'none', border:'none', cursor:'pointer', color:'inherit', fontSize:'14px'}}>✕</button>
+            </div>
+            <div
+              onClick={() => switchRoom(null)}
+              style={{
+                padding: '6px 8px',
+                borderRadius: '6px',
+                cursor: 'pointer',
+                fontSize: '12px',
+                background: !localStorage.getItem('dsh-group-chat.selected-room-id') ? 'rgba(59,130,246,0.2)' : 'transparent',
+                marginTop: '4px'
+              }}
+            >
+              <div style={{fontWeight: 500}}>🔄 {tx(locale, '自动跟随当前会话', 'Auto: Follow Current Session')}</div>
+              <div style={{fontSize: '10px', color: 'var(--dsh-text-muted, #888)'}}>{tx(locale, '随 DSH 左栏会话切换而自动切换', 'Switches with DSH session selection')}</div>
+            </div>
+            {availableRooms.map((r: any) => {
+              const isCur = roomId === r.roomId
+              const taskCount = r.assignments?.length || 0
+              return (
+                <div
+                  key={r.roomId}
+                  onClick={() => switchRoom(r.roomId)}
+                  style={{
+                    padding: '6px 8px',
+                    borderRadius: '6px',
+                    cursor: 'pointer',
+                    fontSize: '12px',
+                    background: isCur ? 'rgba(59,130,246,0.2)' : 'transparent',
+                    marginTop: '4px',
+                    borderTop: '1px solid rgba(255,255,255,0.06)'
+                  }}
+                >
+                  <div style={{fontWeight: 500, display: 'flex', justifyContent: 'space-between'}}>
+                    <span>{r.roomId === 'dev-team-alpha' ? '🏠 默认小队 (dev-team-alpha)' : `💬 ${r.title || '作战室'} (${r.roomId.replace(/^dsh-session-/, '').slice(0, 8)}…)`}</span>
+                    {taskCount > 0 && <span style={{color: '#10b981', fontSize: '11px'}}>{taskCount} {tx(locale, '任务', 'tasks')}</span>}
+                  </div>
+                  {r.pinnedGoal && <div style={{fontSize: '11px', color: 'var(--dsh-text-muted, #888)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', marginTop: '2px'}}>{r.pinnedGoal}</div>}
+                </div>
+              )
+            })}
+          </div>
+        )}
 
         <GroupChatHudTopControls
           selectedTheme={selectedTheme}

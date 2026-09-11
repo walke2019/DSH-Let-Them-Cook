@@ -9,6 +9,8 @@ function sanitizeRoomId(value: string): string {
 export function resolveCurrentGroupChatRoomId(): string {
   if (typeof localStorage === 'undefined') return DEFAULT_GROUP_CHAT_ROOM_ID
   try {
+    const override = localStorage.getItem('dsh-group-chat.selected-room-id')
+    if (override && override !== 'auto') return override
     const current = JSON.parse(localStorage.getItem('dsh.sessions.current') || '{}')
     const sessionId = typeof current?.sessionId === 'string' ? current.sessionId : ''
     if (sessionId) return `dsh-${sanitizeRoomId(sessionId)}`
@@ -16,6 +18,16 @@ export function resolveCurrentGroupChatRoomId(): string {
     // Ignore malformed host storage and fall back to the workspace default room.
   }
   return DEFAULT_GROUP_CHAT_ROOM_ID
+}
+
+export function setCurrentGroupChatRoomId(roomId: string | null): void {
+  if (typeof localStorage === 'undefined') return
+  if (!roomId || roomId === 'auto') {
+    localStorage.removeItem('dsh-group-chat.selected-room-id')
+  } else {
+    localStorage.setItem('dsh-group-chat.selected-room-id', roomId)
+  }
+  window.dispatchEvent(new CustomEvent('dsh-group-chat:room-changed', {detail: {roomId}}))
 }
 
 export function useCurrentGroupChatRoomId(): string {
@@ -30,6 +42,7 @@ export function useCurrentGroupChatRoomId(): string {
     window.addEventListener('storage', refresh)
     window.addEventListener('popstate', refresh)
     window.addEventListener('hashchange', refresh)
+    window.addEventListener('dsh-group-chat:room-changed', refresh)
     return () => {
       window.clearInterval(timer)
       observer.disconnect()
@@ -37,6 +50,7 @@ export function useCurrentGroupChatRoomId(): string {
       window.removeEventListener('storage', refresh)
       window.removeEventListener('popstate', refresh)
       window.removeEventListener('hashchange', refresh)
+      window.removeEventListener('dsh-group-chat:room-changed', refresh)
     }
   }, [])
   return roomId
