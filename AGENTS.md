@@ -12,24 +12,45 @@
 
 | 文档路径 | 文档角色与定位 | 核心读者与用途 |
 | :--- | :--- | :--- |
-| **`README.md`** | **业务定位与产品说明书** | 面向全体用户与开发者：阐述项目核心价值、架构边界图、业务流转时序图及完整的扩展安装部署运行指南。 |
-| **`AGENTS.md`** (本文件) | **AI Agent 编码、UI 规范与避坑开发指南** | 面向 AI Coding Agent 及群聊业务 Agent：强制性工程铁律、DSH 扩展插槽契约、UI 零污染规则与避坑开发宪章。 |
+| **`README.md`** | **业务定位与产品说明书** | 面向全体用户与开发者：阐述项目核心价值、架构边界图、业务流转时序图及完整的扩展安装部署运行指南。**必须默认英文编写，顶部提供中文切换**。 |
+| **`AGENTS.md`** (本文件) | **AI Agent 编码、UI 规范与避坑开发宪章** | 面向 AI Coding Agent 及群聊业务 Agent：强制性工程铁律、DSH 扩展插槽契约、UI 零污染规则与避坑开发宪章。**采用规范索引+引用 Docs 专项文档机制**。 |
 | **`Docs/README.md`** | **技术方案与演进索引中心** | 面向深度架构研究与回归维护：汇集 P1~P88 全阶段演进设计、单测报告、性能分析与避坑专著。 |
 
-### 核心规范与避坑专项文档映射表 (Norm-to-Docs Matrix)
-在维护或演进具体业务模块时，AI Agent 必须优先查阅对应的底层设计与避坑专著：
-- **微内核集成与原生工具路由**：参见 [Docs/execution-tool-routing-runtime/](./Docs/execution-tool-routing-runtime/)、[Docs/p88-official-tools-and-cache-metrics/README.md](./Docs/p88-official-tools-and-cache-metrics/README.md)
+---
+
+## 🧭 核心规范与避坑专项文档分类映射表 (Norm-to-Docs Classification Matrix)
+
+为了防止 `AGENTS.md` 过于冗长，后续新增规则和踩坑记录必须**按分类引用 Docs 专项文档**，建立清晰的分类索引体系：
+
+### 1. 🖥️ UI 布局、插槽生命周期与交互规范 (UI & Lifecycle Seams)
 - **安全中间对话视图与 prepare 契约**：参见 [Docs/p14-safe-middle-conversation-tab/README.md](./Docs/p14-safe-middle-conversation-tab/README.md)、[Docs/p44-source-dialog-prepare-diagnostic/README.md](./Docs/p44-source-dialog-prepare-diagnostic/README.md)
-- **HUD 布局避让与拖拽 Pointer Capture**：参见 [Docs/p8-hud-overlay-layout/README.md](./Docs/p8-hud-overlay-layout/README.md)、[Docs/p72-hud-message-margins/README.md](./Docs/p72-hud-message-margins/README.md)
-- **源版对话隔离与状态清理**：参见 [Docs/p38-official-source-dialog-guard/README.md](./Docs/p38-official-source-dialog-guard/README.md)、[Docs/p39-source-agent-tab-switch-regression/README.md](./Docs/p39-source-agent-tab-switch-regression/README.md)、[Docs/p40-refresh-state-cleanup-regression/README.md](./Docs/p40-refresh-state-cleanup-regression/README.md)
-- **双语运行时与角色全覆盖**：参见 [Docs/p47-bilingual-ui-and-tool-scope/README.md](./Docs/p47-bilingual-ui-and-tool-scope/README.md)、[Docs/p57-agent-runtime-prompt-i18n/README.md](./Docs/p57-agent-runtime-prompt-i18n/README.md)、[Docs/p85-bilingual-role-coverage/README.md](./Docs/p85-bilingual-role-coverage/README.md)
-- **状态持久化与异常恢复**：参见 [Docs/p53-message-ledger-persistence/README.md](./Docs/p53-message-ledger-persistence/README.md)、[Docs/p54-interrupted-assignment-recovery/README.md](./Docs/p54-interrupted-assignment-recovery/README.md)
-- **看门狗超时机制与自愈**：参见 [Docs/p62-runtime-agent-watchdog/README.md](./Docs/p62-runtime-agent-watchdog/README.md)、[Docs/p63-assignment-watchdog-timeout/README.md](./Docs/p63-assignment-watchdog-timeout/README.md)
-- **任务驾驶舱与路线图协议**：参见 [Docs/p65-captain-task-protocol/README.md](./Docs/p65-captain-task-protocol/README.md)、[Docs/p69-task-cockpit-productization/README.md](./Docs/p69-task-cockpit-productization/README.md)
-- **新会话入口与自点击防线**：参见 [Docs/p71-new-session-agent-entry/README.md](./Docs/p71-new-session-agent-entry/README.md)、[Docs/p83-hero-entry-self-click-guard/README.md](./Docs/p83-hero-entry-self-click-guard/README.md)
-- **会话隔离与房间绑定**：参见 [Docs/p74-session-scoped-room-binding/README.md](./Docs/p74-session-scoped-room-binding/README.md)
-- **对话连贯性与防死锁引擎**：参见 [Docs/p87-dialog-continuity-and-stall-prevention/README.md](./Docs/p87-dialog-continuity-and-stall-prevention/README.md)
-- **流式工具卡片与 Prompt Cache 计费**：参见 [Docs/p88-official-tools-and-cache-metrics/README.md](./Docs/p88-official-tools-and-cache-metrics/README.md)
+- **HUD 布局避让、右侧安全缝与 Pointer Capture**：参见 [Docs/p8-hud-overlay-layout/README.md](./Docs/p8-hud-overlay-layout/README.md)、[Docs/p72-hud-message-margins/README.md](./Docs/p72-hud-message-margins/README.md)
+- **源版对话隔离与状态清理（零污染红线）**：参见 [Docs/p38-official-source-dialog-guard/README.md](./Docs/p38-official-source-dialog-guard/README.md)、[Docs/p39-source-agent-tab-switch-regression/README.md](./Docs/p39-source-agent-tab-switch-regression/README.md)、[Docs/p40-refresh-state-cleanup-regression/README.md](./Docs/p40-refresh-state-cleanup-regression/README.md)
+- **新会话 Blank Hero 入口与自点击防线**：参见 [Docs/p71-new-session-agent-entry/README.md](./Docs/p71-new-session-agent-entry/README.md)、[Docs/p73-hero-left-collapse-adaptation/README.md](./Docs/p73-hero-left-collapse-adaptation/README.md)、[Docs/p83-hero-entry-self-click-guard/README.md](./Docs/p83-hero-entry-self-click-guard/README.md)
+- **输入框常驻底部与视口高度自适应**：参见 [Docs/p64-chat-ui-composer-progression/README.md](./Docs/p64-chat-ui-composer-progression/README.md)、[Docs/p79-composer-outside-scroll/README.md](./Docs/p79-composer-outside-scroll/README.md)
+- **HUD 顶部语言切换按钮独立化**：参见 [Docs/p76-hud-locale-toggle-header/README.md](./Docs/p76-hud-locale-toggle-header/README.md)
+- **长消息渐进式遮罩与双层抽屉折叠**：参见 [Docs/p84-collapsible-message-body/README.md](./Docs/p84-collapsible-message-body/README.md)
+
+### 2. ⚡ 原生工具调用、流式状态机与计费审计 (Tools, Streaming & Ledger)
+- **DSH 底座原生工具白名单直通**：参见 [Docs/execution-tool-routing-runtime/README.md](./Docs/execution-tool-routing-runtime/README.md)、[Docs/p88-official-tools-and-cache-metrics/README.md](./Docs/p88-official-tools-and-cache-metrics/README.md)
+- **中央消息流 250ms 工具探针与行号 Diff (+add -del)**：参见 [Docs/p77-central-live-execution-status/README.md](./Docs/p77-central-live-execution-status/README.md)、[Docs/p82-official-like-central-execution/README.md](./Docs/p82-official-like-central-execution/README.md)、[Docs/p86-native-tool-row-adapter/README.md](./Docs/p86-native-tool-row-adapter/README.md)
+- **多网关 Prompt Cache 命中率解析与真实账本**：参见 [Docs/p88-official-tools-and-cache-metrics/README.md](./Docs/p88-official-tools-and-cache-metrics/README.md)
+- **结构化交付卡片与确认后执行事务**：参见 [Docs/p6-structured-agent-result/README.md](./Docs/p6-structured-agent-result/README.md)、[Docs/p67-approve-run-transaction-card/README.md](./Docs/p67-approve-run-transaction-card/README.md)
+- **团队协同工具箱 (Claim/Block/Handoff/Report/Close)**：参见 [Docs/p68-team-coordination-tools/README.md](./Docs/p68-team-coordination-tools/README.md)
+
+### 3. 🛡️ 调度编排、防死循环与自愈机制 (Orchestration & Anti-Stall)
+- **Universal Master Handoff（完工必回主控）**：参见 [Docs/p81-workflow-commander-delegation/README.md](./Docs/p81-workflow-commander-delegation/README.md)、[Docs/p87-dialog-continuity-and-stall-prevention/README.md](./Docs/p87-dialog-continuity-and-stall-prevention/README.md)
+- **阶段流转双语模糊识别（通过/批准/Approved/LGTM）**：参见 [Docs/p87-dialog-continuity-and-stall-prevention/README.md](./Docs/p87-dialog-continuity-and-stall-prevention/README.md)
+- **任务看门狗超时机制与报警信自愈**：参见 [Docs/p62-runtime-agent-watchdog/README.md](./Docs/p62-runtime-agent-watchdog/README.md)、[Docs/p63-assignment-watchdog-timeout/README.md](./Docs/p63-assignment-watchdog-timeout/README.md)
+- **Agent turn surface fallback 兼容降级**：参见 [Docs/p78-agent-turn-surface-fallback/README.md](./Docs/p78-agent-turn-surface-fallback/README.md)
+- **长任务动态 24 轮交互预算与快速任务分层**：参见 [Docs/p51-task-tier-progress/README.md](./Docs/p51-task-tier-progress/README.md)、[Docs/p87-dialog-continuity-and-stall-prevention/README.md](./Docs/p87-dialog-continuity-and-stall-prevention/README.md)
+- **DAG 阶段门禁与 verifyCommand 测试验收**：参见 [Docs/p2-workflow-task-dag-quality-gate/README.md](./Docs/p2-workflow-task-dag-quality-gate/README.md)
+
+### 4. 🌐 国际化、主题化与工作区隔离 (i18n, Personas & Workspaces)
+- **全栈中英双语运行时与角色全覆盖**：参见 [Docs/p47-bilingual-ui-and-tool-scope/README.md](./Docs/p47-bilingual-ui-and-tool-scope/README.md)、[Docs/p57-agent-runtime-prompt-i18n/README.md](./Docs/p57-agent-runtime-prompt-i18n/README.md)、[Docs/p61-english-source-bilingual-runtime/README.md](./Docs/p61-english-source-bilingual-runtime/README.md)、[Docs/p85-bilingual-role-coverage/README.md](./Docs/p85-bilingual-role-coverage/README.md)
+- **中央空态文案主题差异化**：参见 [Docs/p45-theme-aware-central-copy/README.md](./Docs/p45-theme-aware-central-copy/README.md)、[Docs/p75-distinct-theme-empty-copy/README.md](./Docs/p75-distinct-theme-empty-copy/README.md)
+- **科技传奇专属调性阵容**：参见 [Docs/p60-tech-legends-theme/README.md](./Docs/p60-tech-legends-theme/README.md)
+- **工作区会话隔离与房间持久化**：参见 [Docs/p53-message-ledger-persistence/README.md](./Docs/p53-message-ledger-persistence/README.md)、[Docs/p74-session-scoped-room-binding/README.md](./Docs/p74-session-scoped-room-binding/README.md)
 
 ---
 
@@ -62,21 +83,21 @@
 
 ---
 
-## 二、项目开发智能体（AI Developer / Coding Agent）守则
+## 二、项目开发智能体（AI Developer / Coding Agent）工程纪律
 
 当您作为 AI 开发者在此代码库中编写、重构或调试代码时，必须遵循以下工程纪律：
 
 ### 1. 文档组织与语言规范（强制约束与避坑铁律）
 - **根目录纯洁性**：项目根目录仅允许存放 `README.md` 与 `AGENTS.md` 两个文档，其余任何文档严禁存放在根目录。
 - **README 语言规范（国际化红线）**：
-  - 根目录 `README.md` **必须默认使用英文编写**（面向全球开源社区与 DSH 生态标准）；
-  - **必须支持中文**：在 `README.md` 顶部提供醒目的语言切换链接（如 `<b>English</b> | <a href="./Docs/README.md">简体中文</a>`）；
-  - **严禁将根目录 `README.md` 主体内容写成纯中文**！中文完整业务、技术与文档索引统一维护在 `Docs/README.md` 中。
+  - 根目录 `README.md` **必须默认使用生动、地道、有趣的英文编写**（面向全球开源社区与 DSH 生态标准）；
+  - **必须支持中文**：在 `README.md` 顶部提供醒目的语言切换链接（如 `<b>English</b> | <a href="./Docs/README.md">简体中文 (详细文档)</a>`）；
+  - **严禁将根目录 `README.md` 主体内容写成纯中文**！中文完整业务、技术与文档索引统一维护在 `Docs/README.md` 与 `/Docs` 目录下。
 - **所有后续文档归档**：一切技术设计、API 文档、方案调研、测试报告、会议纪要等，必须全部编写或记录到 `/Docs` 目录下（例如 `/Docs/xxx.md`）。严禁在根目录随意新建 `.md` 或文本文件。
-- **AGENTS.md 职责定位**：`AGENTS.md` 专门作为所有 AI Coding Agent 的开发编码、UI 规范标准与避坑指南，不仅记录硬性规则，也必须记录所有在开发演进中遇到的教训、避坑总结与最佳实践。类似 README 语言规范等高频翻车点，必须一律沉淀到本文件中。
+- **模块文档引用机制**：`AGENTS.md` 保持作为核心索引与纲领。后续新增具体模块或排查踩坑时，应优先在 `/Docs/xxx/README.md` 详述，并在 `AGENTS.md` 对应的分类映射表中补充链接索引。
 
 ### 2. DSH 微内核集成准则
-- **绝不破坏底座**：本插件作为 Cordis 扩展模块运行，所有逻辑通过 `ctx.effect()`、`ctx.on()`、`ctx.webServer`、`ctx.slots` 挂载，严禁修改 `@deepseek-ai/dsh` 核心源码。
+- **绝不破坏底座**：本插件作为 Cordis 扩展模块运行，所有逻辑通过 `ctx.effect()`、`ctx.on()`、`ctx.webServer`、`ctx.slots` 挂载，**严禁修改 `@deepseek-ai/dsh` 核心源码**。
 - **异构模型调用**：必须通过拦截 `'agent/request'` 瀑布流来重写 Provider 与 Model，严禁直接硬编码模型客户端发起未受 DSH 凭据托管的外部 HTTP 请求。
 - **状态响应式与清理**：所有挂载的定时器、WebSocket 监听器、事件订阅，必须挂载在 `ctx.effect()` 作用域内，确保插件热重载或卸载时能做到“即插即用、卸载即净”。
 - **官方对话兼容红线**：向 `conversation.view` 注入中间视图时必须提供稳定 `id`、`label`、`prepare()` 和组件适配层；禁止在 client entry 直接挂载会接管全局 body 的面板，避免再次触发 `Cannot read properties of undefined (reading 'prepare')` 或影响官方“对话”。
@@ -94,247 +115,113 @@
 - **当前工作区优先**：角色、工作流、最近模型、回退模型、黑板、任务信封、mailbox 等默认都必须写入 `.pm-workflow/dsh-group-chat/` 的工作区作用域；不得无提示写入全局配置，避免换工作区串配置。
 - **人话与趣味性**：所有面向用户的新增标签、状态、空态、确认文案优先使用“群聊、开整、草案、确认、取消、谁在干活”等人话；主题人格要服务于任务推进，允许轻微幽默，但禁止水字数和过度角色扮演。
 
+---
 
-### 4. 右侧 HUD 细节踩坑（2026-09-09 追加）
-- **官方 seam 结论**：左侧官方栏是导航壳，不要伪装或强改；中间只用 `conversation.view` 新增 `Agent 群聊`；右侧只用 `shell.overlay` 做 `群聊控制台 (HUD)`。
-- **HUD 不等于 AppFrame 分栏**：HUD 默认覆盖停靠，不参与 DSH 官方 grid，不改 centerCol / details / AppFrame。官方 `对话` 必须保持源版行为。
-- **插件自身避让**：HUD 停靠展开时，只给 `.gc-conversation` 加右侧避让；composer 和消息区左右 padding 必须对称，右侧与 HUD 保留约 7-8px 安全缝。
-- **右栏缩放稳定性**：左边线缩放必须使用 `PointerEvent` + `setPointerCapture()`；拖动期间设置 `body/html cursor: col-resize` 与 `user-select:none`，在 `pointerup/pointercancel/blur` 清理。
-- **拖动视觉对齐官方**：缩放热区保持透明，宽度 12px，cursor 使用 `col-resize`，可复用官方左栏 handle 类名但不得依赖哈希类长期稳定。
-- **文本防溢出**：HUD 内所有容器默认 `box-sizing:border-box; min-width:0; max-width:100%`；长模型 ID、任务标题、summary/details、按钮组必须省略或换行，不得撑破 300px 最小宽度。
-- **文档同步**：涉及架构、UI seam、工作区作用域、踩坑修复的改动，必须同步 `Docs/README.md`、`Docs/TODO.md` 和对应 P 阶段文档。
-### 5. 源版对话 / Agent 群聊切换守则（P39/P40 追加）
-- **源版对话零污染**：进入 `新会话` 或官方 `对话` 标签时，DOM 中不得存在 `.dsh-gc-sidebar-host`、`.gc-conversation-tab`，body 不得残留 `data-dsh-group-chat-tab-active` 或 `data-dsh-group-chat-hud-docked-open`。
-- **Agent 群聊按需激活**：只有 `Agent 群聊` 标签激活时才允许渲染中间群聊视图和 `群聊控制台 (HUD)`；离开标签后 HUD 必须主动卸载，而不是仅隐藏到屏幕外。
-- **刷新状态清理**：页面刷新、任务切换、工作区切换后，扩展状态必须由当前激活标签重新推导，禁止让历史本地状态把 HUD、布局变量或 composer 处理逻辑带回源版页面。
-- **回归测试要求**：凡涉及 `conversation.view`、HUD 生命周期、body 标记、侧栏布局、composer、任务/标签切换的 Web UI 改动，必须执行 `npm run test:ui:switch` 与 `npm run test:ui:refresh`；大改还需执行 `npm run test:ui:visual` 和 `npm run test:matrix`。
-- **历史错误防线**：不得再次引入 `Cannot read properties of undefined (reading 'prepare')`、`agent-presets: refusing to compose an unscoped context`、源版 `对话` 不可输入、HUD 在源版页面残留等回归。
+## 三、32 条核心工程铁律与踩坑规约 (Mandatory Engineering Guardrails)
 
+以下 32 条为本项目发布预检（Preflight）与集成测试矩阵（Test Matrix）强制扫描的不可逾越红线，违者构建与流水线立即报错拦截：
+
+### 1. 根目录纯洁性与文档归档红线
+- 根目录下除 `README.md` 与 `AGENTS.md` 外不得新增任何根目录文件；技术设计全量存放于 `/Docs` 目录。
+- 详见：[Docs/README.md](./Docs/README.md)。
+
+### 2. DSH 底座源码保护红线
+- 严禁修改 `@deepseek-ai/dsh` 核心源码。所有能力通过插件注册与拦截器扩展。
+
+### 3. 源版对话 / Agent 群聊切换守则
+- 进入 `新会话` 或官方 `对话` 标签时，DOM 中不得存在 `.dsh-gc-sidebar-host`、`.gc-conversation-tab`，body 不得残留 `data-dsh-group-chat-tab-active` 或 `data-dsh-group-chat-hud-docked-open`。
+- 回归命令：`npm run test:ui:switch` 与 `npm run test:ui:refresh`。详见：[Docs/p39-source-agent-tab-switch-regression/README.md](./Docs/p39-source-agent-tab-switch-regression/README.md)、[Docs/p40-refresh-state-cleanup-regression/README.md](./Docs/p40-refresh-state-cleanup-regression/README.md)。
 
 ### 4. 工具调度器 prepare 报错排查守则
-- 遇到 `Cannot read properties of undefined (reading 'prepare')` 时，必须先区分前端 `conversation.view.prepare` 与后端 `ctx.tools[TOOL_RUNTIME_SCHEDULER].prepare(call.exec)` 两类问题。
-- 本插件的中间视图必须始终保留 `GroupChatConversationView.prepare = () => ({})`，且不得接管官方「对话」视图。
-- 若源版「对话」在工具调用阶段报 `prepare`，优先检查全局 DSH 是否加载了多份 `@deepseek-ai/dsh-tools`；该包导出的 Symbol 不一致会导致工具调度器在 `ctx.tools` 中读取为 `undefined`。
-- 修复此类后端运行时问题时，只能使用插件兼容层、preload singleton 或运行环境 A/B 验证，严禁直接修改 `@deepseek-ai/dsh` 核心源码。
-
+- 遇到 `Cannot read properties of undefined (reading 'prepare')` 时，必须区分前端 `conversation.view.prepare` 与后端 `ctx.tools[TOOL_RUNTIME_SCHEDULER].prepare`。
+- 中间视图必须始终保留 `GroupChatConversationView.prepare = () => ({})`。全局 DSH 加载多份 `@deepseek-ai/dsh-tools` 会导致 Symbol 不一致。详见：[Docs/p44-source-dialog-prepare-diagnostic/README.md](./Docs/p44-source-dialog-prepare-diagnostic/README.md)。
 
 ### 5. 主题化人话文案守则
-- 中间 `Agent 群聊` 对话区的空状态、三步引导、快捷模板、Agent 状态和自动建队/建工作流系统消息必须跟随当前 `room.activeTheme`。
-- 新增角色主题时，必须同步补充主题名号、`theme-voice` 文案、中央对话区模板和回归测试，避免只换头像名字、不换说话调性。
-- 默认主题保持 `meme_comedy` / 沙雕整活，但用户切换到三国、原神、现代等主题后，中央内容要立刻变成对应世界观的人话表达。
-
+- 中间 `Agent 群聊` 对话区空态、引导与快捷模板必须跟随当前 `room.activeTheme`，保留沙雕、现代、科技传奇等独立世界观调性。详见：[Docs/p45-theme-aware-central-copy/README.md](./Docs/p45-theme-aware-central-copy/README.md)。
 
 ### 6. 自动草案命名质量守则
-- 自动创建角色/工作流时，角色名前缀不得直接硬截用户指令开头，必须先过滤“请把、帮我、这个、扩展、插件、功能、业务、生成、草案”等噪声词。
-- 对 i18n、中英文、zh-CN、en-US、双语任务优先使用 `双语` 等业务语义前缀，避免出现“请把这个总控官”这类不自然名称。
-- 群聊面板实测必须同时检查草案是否出现、确认前是否不写入、HUD 是否正常、是否有横向溢出和历史 prepare 错误。
+- 过滤“请把、帮我、这个、扩展”等噪声词；语义化提取“双语”、“Redis”等业务前缀。详见：[Docs/p15-auto-plan-confirm-flow.md](./Docs/p15-auto-plan-confirm-flow.md)。
 
-### 8. 中英文业务文案与工具白名单避坑（P47）
-- 中央 `Agent 群聊` 与右侧 HUD 新增业务文案必须走 `src/client/i18n.ts` 的 `tx(locale, zh, en)` 或后续统一字典，不得只写单语言硬编码。
-- 语言选择保存在 `localStorage['dsh-group-chat.locale']`，默认跟随浏览器语言；中央面板与 HUD 通过 `dsh-group-chat:locale-changed` 同步。
-- 工作区旧状态里可能残留 `workflow_advance_stage` / `workflow_reject_stage`，必须通过 `normalizeToolNames()` 映射到 `group_chat_workflow_advance` / `group_chat_workflow_reject`，避免 `tools.restrict()` 因旧白名单阻断真实 Agent turn。
-- Chrome 实测时若出现模型 30 秒超时，要优先区分模型可用性问题与插件生命周期问题；`tools.restrict() names unknown global tools` 消失才代表本插件白名单兼容修复生效。
+### 7. 中英文业务文案与工具白名单避坑
+- 统一走 `src/client/i18n.ts` 的 `tx(locale, zh, en)`。旧白名单工具名须通过 `normalizeToolNames()` 规整，杜绝 `tools.restrict()` 阻断调用。详见：[Docs/p47-bilingual-ui-and-tool-scope/README.md](./Docs/p47-bilingual-ui-and-tool-scope/README.md)。
 
-## 四、P48 多 Agent 闭环质量维护守则
-- 判断 Agent 完成质量时，不能只看是否触发了模型；必须同时核对 assignment、workflow task、mailbox 和 ledger。
-- 主 Agent 负责创建或收口任务；SubAgent 完成任务后必须通过 mailbox 上报给主 Agent，HUD/账本需要可查。
-- 真实模型超时、候选模型全部失败、工具白名单失败都必须标为未完成，不得伪装为闭环通过。
-- 回归命令：npm run test:agent-loop-quality；完整发布前仍需 npm run test:matrix 与 npm run preflight。
+### 8. 多 Agent 闭环质量维护守则
+- 评估完成质量不能仅看模型触发，必须同时核对 assignment、workflow task、mailbox 和 ledger。超时或异常必须显式标记为失败。命令：`npm run test:agent-loop-quality`。详见：[Docs/p48-real-agent-loop-quality/README.md](./Docs/p48-real-agent-loop-quality/README.md)。
 
+### 9. 模型超时诊断守则
+- 官方源版对话正常时，优先排查群聊 turn 超时、上下文膨胀或 whenIdle 等待。按 latencyPreference 保底兜底。详见：[Docs/p49-agent-timeout-diagnostic/README.md](./Docs/p49-agent-timeout-diagnostic/README.md)。
 
-## 五、P49 模型超时诊断守则
-- 官方源版对话能正常调用同一模型时，不得直接判定模型不可用；优先检查群聊插件的独立 Agent turn 超时、上下文体积、工具收口和 whenIdle 等待。
-- 角色模型策略里的 30 秒只作为用户配置值；执行时按 latencyPreference 保底：fast 45s、normal 90s、patient 120s，用户配置更大值则保留更大值。
-- 分析失败时必须查看错误里的总耗时、尝试次数、候选链和最后错误，再决定是换模型、调超时还是精简上下文。
+### 10. 真实多人链路验收守则
+- 真实环境下跑通 moderator_led：用户 -> commander -> researcher -> commander。必须核对真实的 message、assignment、mailbox 三项数据。详见：[Docs/p50-real-moderator-led-loop/README.md](./Docs/p50-real-moderator-led-loop/README.md)。
 
+### 11. 快速/长任务分层守则
+- 快速任务走 quick：少 Agent、短链路、低 token；长流程才进入 workflow_driven 的阶段并发。详见：[Docs/p51-task-tier-progress/README.md](./Docs/p51-task-tier-progress/README.md)。
 
-## 六、P50 真实多人链路验收记录
-- 已在真实 DSH web 中跑通 moderator_led：用户 -> commander -> researcher -> commander。
-- 判断主从链路时必须核对真实 message、assignment、mailbox 三类记录；单测只作为机制保障。
-- 当前性能事实：真实多人链路约 240 秒，后续优化应围绕快速任务减少角色数、缩短上下文、明确进度，而不是误判模型不可用。
+### 12. 自动建群与真实派发边界
+- 消息以 `@角色` 开头或包含“进入开发流程/测试/验收”等执行意图时，直接交由调度器派发，禁止再生成建群草案。详见：[Docs/p52-autosetup-dispatch-guard/README.md](./Docs/p52-autosetup-dispatch-guard/README.md)。
 
+### 13. 群聊消息与账本持久化守则
+- 保存工作区群聊状态时必须同时保存 `room/messages/ledger` 快照，统一走 `persistRoomState(roomId)`，保留最近 200 条。详见：[Docs/p53-message-ledger-persistence/README.md](./Docs/p53-message-ledger-persistence/README.md)。
 
-## 七、P51 快速/长任务分层守则
-- 默认任务应走 quick：少 Agent、短链路、低 token；有 @ 只唤醒被点名角色，没 @ 只唤醒主 Agent。
-- 用户选择 long 或任务明显需要完整工程流程时，才进入 workflow_driven 的多 Agent 阶段并发。
-- 进度展示必须区分已耗时与预计耗时，避免用户把长链路误认为卡死。
+### 14. 重启中断任务恢复守则
+- DSH 重启或热重载后，非终态 assignment 标记为 `failed/runtime-interrupted` 并提示用户重新派发，杜绝假死。详见：[Docs/p54-interrupted-assignment-recovery/README.md](./Docs/p54-interrupted-assignment-recovery/README.md)。
 
+### 15. 双语导出守则
+- 导出摘要、纪要与系统提示必须按 `locale`（`zh-CN/en-US`）纯正输出，杜绝中文硬编码。详见：[Docs/p55-bilingual-export-summary/README.md](./Docs/p55-bilingual-export-summary/README.md)。
 
-### 3. 自动建群与真实派发边界（P52 踩坑）
-- 自动建群只处理“生成/配置一套角色与工作流”的入口；一旦用户消息以 `@角色` 开头，或包含“进入真实开发流程、当前工作流、启动第一阶段、检查、补齐、修复、测试、验收、派发”等执行语境，必须交给群聊调度器，不得再生成草案。
-- 长任务的首个 `@角色` 是初始接单人，尤其 `@commander` 表示主 Agent 先理解与分派；SubAgent 应由主 Agent 在后续发言中显式唤醒，避免 workflow 当前阶段直接 fan-out 造成用户困惑。
-- 创建 assignment 时，真实用户消息或上游 Agent 分派内容必须排在前面；工作流阶段任务只能作为附加上下文，不能覆盖真实任务，否则 SubAgent 会泛化回复。
-- 当前已知后续项：热重载后可能出现 `assignments` 保留但 `messages` 为空，影响刷新后的群聊复盘；需补消息持久化。
+### 16. 运行态自动创建双语守则
+- 自动角色/工作流草案、确认/取消按钮均支持双语，服务端准确识别。详见：[Docs/p56-runtime-autosetup-i18n/README.md](./Docs/p56-runtime-autosetup-i18n/README.md)。
 
-### 4. 群聊消息与账本持久化守则（P53）
-- 保存工作区群聊状态时必须同时保存 `room/messages/ledger` 快照，不得只保存 `room`，否则热重载后会出现任务信封仍在、消息流和账本丢失的复盘断层。
-- 运行期统一走 `persistRoomState(roomId)`；新增 API 分支或工具分支如果产生消息、任务、邮箱或账本变化，必须调用该快照保存入口。
-- 每个房间消息历史默认保留最近 200 条，避免工作区状态文件无限膨胀。
+### 17. Agent 运行提示双语守则（P57）
+- Agent 真实轮次的 System Prompt 与 `ContextProjection` 继承用户语言，杜绝英文对话被中文系统提示带回中文。详见：[Docs/p57-agent-runtime-prompt-i18n/README.md](./Docs/p57-agent-runtime-prompt-i18n/README.md)。
 
-### 5. 重启中断任务恢复守则（P54）
-- DSH web 重启、插件卸载或热重载会丢失运行期 timer / agent loop；恢复工作区状态时不得继续展示旧 `queued/running` assignment 为仍在执行。
-- 插件启动加载持久化房间后，必须将遗留非终态 assignment 标记为 `failed/runtime-interrupted` 并提示用户重新派发。
-- 新增持久化字段或恢复逻辑时，必须验证“发送消息→重启→刷新 UI/API”链路。
+### 18. 工具与工作流 API 双语守则（P58）
+- 面向工具调用与 HUD API 的说明性文案按 `locale` 输出。详见：[Docs/p58-tool-workflow-api-i18n/README.md](./Docs/p58-tool-workflow-api-i18n/README.md)。
 
-### 6. 双语导出守则（P55）
-- 新增导出、摘要、账本、系统提示等用户可见文本时，必须考虑 `zh-CN/en-US` 两套语义；API 可通过 `locale` 参数选择。
-- `group_chat_export_summary` 等 Agent 工具暴露给角色使用时，也必须支持 locale，避免英文界面导出中文硬编码报告。
-- 默认保持 `zh-CN` 向后兼容，英文模式使用明确英文标题和字段名。
+### 19. 主题角色与工作流内容双语守则（P59）
+- 生成的角色 title、口头禅、systemPrompt 与 stage description 全面双语化。详见：[Docs/p59-theme-workflow-content-i18n/README.md](./Docs/p59-theme-workflow-content-i18n/README.md)。
 
-### 13. 运行态双语守则（P56）
-- 中央 Agent 群聊发送消息必须携带当前 locale，并写入消息 metadata，方便系统回执、错误提示和后续导出沿用用户语言。
-- 自动角色/工作流创建链路必须支持 zh-CN/en-US：草案、确认、取消、追问、应用完成提示均不得只写死中文。
-- 英文界面下确认按钮发送 `Confirm setup`，取消按钮发送 `Cancel setup`；服务端必须识别中英文确认/取消/修改词。
+### 20. 科技传奇主题守则（P60）
+- `legends` 定位“科技巨头来打工”：乔布斯、马斯克、黄仁勋、雷布斯、比尔·盖茨、张小龙。切换时同步 systemPrompt。详见：[Docs/p60-tech-legends-theme/README.md](./Docs/p60-tech-legends-theme/README.md)。
 
-### 14. Agent 运行提示双语守则（P57）
-- Agent 真实轮次的 System Prompt 必须从源用户消息 `metadata.locale` 继承语言；没有 locale 时默认 zh-CN。
-- `ContextProjection`、Tool Scope、followup 指令必须按 locale 输出，避免英文任务被中文系统提示拉回中文。
-- 运行时仍需保留 master/subagent、工具归口、NO_REPLY、防死循环和 DSH workflow 阶段并发策略。
+### 21. English source / bilingual runtime guard（P61）
+- 代码内部注释与文档标头保持纯英文；用户可见文案按环境语言提供。详见：[Docs/p61-english-source-bilingual-runtime/README.md](./Docs/p61-english-source-bilingual-runtime/README.md)。
 
-### 15. 工具与工作流 API 双语守则（P58）
-- 面向 DSH 工具调用与 HUD 管理 API 的结果文本必须支持可选 `locale`，默认 `zh-CN` 保持兼容。
-- `/workflow/task`、`/workflow/task-action`、`/workflow/action` 必须把 locale 传入 `WorkflowOrchestrator`，避免英文界面收到中文任务结果。
-- 工具输出可以保留工具名/角色 ID/状态枚举，但人类说明性文案必须按 locale 输出。
+### 22. Runtime Agent Watchdog
+- 成员带 `cwd`、`origin: 'subagent'`；使用 abort-aware wait helper，超时写入报警信并标记失败。详见：[Docs/p62-runtime-agent-watchdog/README.md](./Docs/p62-runtime-agent-watchdog/README.md)、[Docs/p63-assignment-watchdog-timeout/README.md](./Docs/p63-assignment-watchdog-timeout/README.md)。
 
-### 16. 主题角色与工作流内容双语守则（P59）
-- 自动创建角色/工作流时，不仅 UI 与回执要双语，生成出来的角色名、title、口头禅、systemPrompt、workflow title、stage name、description 也必须跟随 locale。
-- HUD 造人/造工作流工具箱、`/auto-plan`、`/theme/draft`、`/theme/apply-draft` 必须传递 locale 到 theme/workflow factory。
-- 中文默认继续保持“沙雕但靠谱”的趣味调性；英文默认保持 playful but deliverable 的语气。
+### 23. 官方默认启动与认证避坑
+- 必须兼容官方启动 `npx @deepseek-ai/dsh web`，识别终端打印的带 `?token=...` 认证链接（`dsh web authentication required`）。详见：[Docs/p72-hud-message-margins/README.md](./Docs/p72-hud-message-margins/README.md)。
 
-### 17. 科技传奇主题守则（P60）
-- `legends` 在产品文案上显示为“科技传奇 / Tech legends”，定位是“科技界巨头来给用户打工”，不得再退回泛名人拼盘。
-- 科技传奇默认阵容：commander=乔布斯、researcher=马斯克、backend=黄仁勋、frontend=雷布斯、qa=比尔·盖茨、writer=张小龙；新增变更必须保持职责和人格匹配。
-- 主题改动必须同步 HUD 下拉、工具输出、@ 别名、中央文案与回归测试，避免只换名称不换体验。切换科技传奇时必须同步更新 systemPrompt，不能出现“外壳是科技巨头、内核仍是旧主题”的割裂。
+### 24. HUD 消息边距与右侧避让铁律
+- HUD 停靠展开时，`.gc-chat-messages` 与 `.gc-composer` 左右 padding 保持 24px 对称，右侧留 8px 安全缝，绝不修改全局 AppFrame。执行：`npm run test:hud-message-margins`。详见：[Docs/p72-hud-message-margins/README.md](./Docs/p72-hud-message-margins/README.md)。
 
-### 18. English source / bilingual runtime guard（P61）
-- Source comments and internal engineering notes in `src/**/*.ts(x)` must be written in English for open-source maintainability.
-- User-facing runtime copy must remain locale-aware: keep zh-CN/en-US branches, `tx(locale, zh, en)`, Chinese mention aliases, and built-in localized persona names when they are product behavior.
-- Do not “English-only” runtime UX by deleting Chinese strings; separate source readability from bilingual product output.
-- New theme/workflow copy must update locale-aware tests before release.
+### 25. 新会话入口左栏收起自适应铁律
+- blank hero 临时面板跟随中间列实际 DOM 几何，展开对齐 ~280px，收起对齐 ~56px。执行：`npm run test:hero-left-collapse`。详见：[Docs/p73-hero-left-collapse-adaptation/README.md](./Docs/p73-hero-left-collapse-adaptation/README.md)。
 
-### 3. Runtime Agent Watchdog（P62）
-- 群聊成员 Agent 必须带工作区级 session meta：`cwd: process.cwd()`、`origin: 'subagent'`、`delegationDepth: 1`，避免无作用域子 Agent 在 DSH 上下文组合或恢复时失去工作区归属。
-- 群聊成员执行时严禁直接 `await agent.whenIdle()` 后才检查 abort；必须使用 abort-aware wait helper，让模型超时、回退链、HUD 状态和 assignment ledger 能收敛到 completed/failed。
-- 真实 DSH 长任务压测若出现 assignment 超过 expectedMs 仍 running，应优先检查 `runMemberTurn()` 的 abort 传播、fallback 是否进入下一模型、以及 `.pm-workflow/dsh-group-chat/rooms.json` 中 `resultMessageId` 是否落盘。
-- Assignment 创建后必须有用户可见的超时收敛路径：超过 `expectedMs + grace` 仍为 queued/running 时，写入 `assignment-watchdog-timeout` 系统消息、标记 assignment failed、同步 workflow task failed，并广播 HUD error。
+### 26. 新会话与房间绑定铁律
+- 从官方 session 推导 roomId，切换会话清空历史数据重新拉取，杜绝跨 session 串台。执行：`npm run test:session-room-binding`。详见：[Docs/p74-session-scoped-room-binding/README.md](./Docs/p74-session-scoped-room-binding/README.md)。
 
-### 4. Chat UI composer/progression guard（P64）
-- The middle `Agent 群聊` tab remains the single chat entry point. HUD panels must not mount or duplicate `GroupChatPanel`.
-- User input must be tested through the real browser textarea for bilingual content; API probes with Chinese must send UTF-8 bytes to avoid false mojibake diagnostics.
-- When the docked HUD is open, center avoidance must be capped by the middle tab width (`100%`), not `100vw`; narrow viewports must keep the message log and composer usable through a slim HUD reveal strip.
-- A valid UI smoke check confirms: draft typed -> send button enabled -> send clicked -> user bubble appended -> composer cleared -> no permanent source dialog pollution.
+### 27. 中央起始文案主题差异铁律
+- 每个主题空态标题、副标题、三步指引独一无二。执行：`npm run test:distinct-theme-copy`。详见：[Docs/p75-distinct-theme-empty-copy/README.md](./Docs/p75-distinct-theme-empty-copy/README.md)。
 
+### 28. HUD 语言切换入口铁律
+- 语言开关放在 HUD 标题栏操作区，使用 `中 / EN`，保证 300px 侧栏整洁。执行：`npm run test:hud-locale-toggle-header`。详见：[Docs/p76-hud-locale-toggle-header/README.md](./Docs/p76-hud-locale-toggle-header/README.md)。
 
-## 八、P65-P69 对标迭代守则
-- 每条中央 Agent 群聊任务必须形成 `captainTaskProtocol` 路线图：主 Agent 判断路线，SubAgent 按职责执行，依赖和最新上报可在 HUD 查看。
-- SubAgent 不只“说一句话”，必须可用 `group_chat_task_claim/block/handoff/report/close` 记录协同事件；阻塞要显式进入 `blocked`，不要伪装完成。
-- 写入类、配置类和项目变更类任务优先创建 `ApprovalTransaction`，展示 willChange 与 rollbackPlan，用户/主 Agent 批准后再推进。
-- HUD 的默认层级必须像任务驾驶舱：当前谁在干活、路线图进度、待确认卡和闭环质量优先；完整流水只放在高级详情/账本。
-- 对标 `dsh-agent-teams` 时，保持本项目差异化：工作区作用域、DSH seam 零污染、主题化人话、官方 workflow 并发保留、主 Agent + SubAgent 可审计闭环。
+### 29. 中央执行状态可见铁律
+- 执行中 assignment 在中央消息流以实时气泡展现，兼容解析 events 数组。执行：`npm run test:central-live-status`。详见：[Docs/p77-central-live-execution-status/README.md](./Docs/p77-central-live-execution-status/README.md)。
 
+### 30. Agent turn surface fallback 铁律
+- 缺失 `turn/end` 时从 `session.deriveMessages()` 提取 assistant 文本作为降级兜底。执行：`npm run test:agent-turn-surface-fallback`。详见：[Docs/p78-agent-turn-surface-fallback/README.md](./Docs/p78-agent-turn-surface-fallback/README.md)。
 
-### 19. 模型可用性与对话中换模型守则（P70）
-- 最近模型只能代表“用过”，不得等同于“当前可用”；运行时必须记录工作区级模型 health（成功/失败次数、lastStatus、lastError）。
-- 角色在对话中切换主模型或回退模型后，后续 assignment 必须读取最新 room member 配置，不得复用旧执行快照。
-- 模型失败时优先走用户配置的 fallback chain；全部失败后必须把候选链和最后错误写入 assignment/ledger，并让用户能按 health 选择已验证模型。
-- 若 DSH 当前 tools service 只暴露全局上下文导致 `tools.restrict() requires a scoped context`，插件必须降级为 Prompt 工具权限约束并继续模型调用，不得把工具白名单兼容问题误报为模型不可用。
+### 31. 输入框常驻底部与自点击守卫
+- `.gc-chat-bottom` 作为独立 flex 子节点置于滚动区外；hero 入口自点击排除自身。执行：`npm run test:composer-outside-scroll`、`npm run test:hero-entry-self-click-guard`。详见：[Docs/p79-composer-outside-scroll/README.md](./Docs/p79-composer-outside-scroll/README.md)、[Docs/p83-hero-entry-self-click-guard/README.md](./Docs/p83-hero-entry-self-click-guard/README.md)。
 
-
-### 20. 新会话入口守则（P71）
-- 新开的官方 DSH 对话处于 blank hero 状态时，`conversation.view` 标签可能尚不可见；插件入口必须采用 demand-driven 方案：默认只露轻量入口，不遮挡普通对话。
-- 严禁注册 `conversation.hero.agentPreset`；这是官方单槽位，会与源版 agent preset 入口冲突并导致插件启动失败。
-- 入口点击后必须优先切到真实 `Agent 群聊` 标签；若标签尚不可见，才打开 `#dsh-group-chat-hero-main` 临时中间工作面，并直接渲染 `GroupChatPanel`，确保底部群聊输入框可见可用。
-- 新会话入口不得接管 `conversation.body`、不得替换官方 header、不得默认隐藏官方 composer；不得从入口写入 `data-dsh-group-chat-tab-active`，该标记只属于真实 `Agent 群聊` 标签。
-- 临时工作面只允许写入 `data-dsh-group-chat-hero-open`，关闭/卸载后必须清理；HUD 仍只在真实 `Agent 群聊` 标签激活时挂载。
-- 入口文案必须支持 zh-CN/en-US，优先使用“进入 Agent 群聊 / Open Agent group chat”这类低理解成本标签。
-
-### 21. 官方默认启动与认证避坑（P72/P73 调试沉淀）
-- 官方默认启动命令必须保持可用：`npx @deepseek-ai/dsh web` / `npx -y @deepseek-ai/dsh web --no-open`。本扩展不得要求用户通过 preload、NODE_OPTIONS 或修改 `@deepseek-ai/dsh` 核心源码才能正常进入。
-- DSH web 打印带 `?token=...` 的一次性认证入口时，浏览器裸开 `http://127.0.0.1:3080/` 可能返回 `dsh web authentication required; reopen the URL printed by dsh web.`；验证 UI/E2E 时必须使用当前启动日志里的完整 token URL，并写入 `DSH_GC_URL`。
-- 遇到 `agent-presets: refusing to compose an unscoped context` 时，先检查官方 DSH 版本和 profile 依赖是否把 `@deepseek-ai/dsh-scope` 拉成多份；优先升级/收敛官方包版本，不要把插件兼容层变成官方启动前置条件。
-- 第三方 profile 插件若阻断官方启动（例如导入已不存在的 DSH settings export），只禁用具体问题 loader id，不得禁用或污染官方源版对话能力。
-- 本扩展接入 profile 时使用插件 loader entry 加 `link:C:/项目/dsh-group-chat` 依赖；不得把普通插件误塞进 `dsh.profile.bundles`，否则会触发 `declares no dsh.bundle` 类启动错误。
-
-### 22. HUD 消息边距与右侧避让铁律（P72）
-- HUD 停靠展开时，`.gc-chat-messages` 与 `.gc-composer` 左右 padding 必须保持对称；当前验收值为 24px / 24px，避免消息区左贴边、右侧被 HUD 视觉挤压。
-- 中间 `.gc-conversation` 只在 `body[data-dsh-group-chat-tab-active="true"]` 或 `body[data-dsh-group-chat-hero-open="true"]` 且 HUD 停靠展开时避让右栏；避让宽度使用 HUD 实测宽度 + 8px 安全缝，并仍需受中间面板宽度上限约束。
-- 不得通过修改官方 AppFrame、centerCol、details 栅格或 documentElement 全局宽度变量来解决 HUD 间距；只允许插件根节点与插件 body data 标记作用域内的样式。
-- 涉及 HUD 间距、消息区、composer、右侧 seam 的改动，至少执行 `npm run test:hud-message-margins`、`npm run test:ui:entry`、`npm run test:ui:switch`、`npm run test:ui:refresh`，发布前执行 `npm run test:matrix`。
-
-### 23. 新会话入口左栏收起自适应铁律（P73）
-- 新会话 blank hero 场景的临时 `#dsh-group-chat-hero-main` 不得固定 `left:280px`；必须跟随官方中间列当前 left，左栏展开对齐约 280px，左栏收起对齐约 56px。
-- 临时入口只能写入 `--dsh-group-chat-hero-left` 和 `data-dsh-group-chat-hero-open` 这类插件作用域状态；关闭/卸载时必须清理，避免污染源版官方对话。
-- 计算左边界时优先读取官方中间层实际 DOM 几何，找不到时才使用左侧 collapsed rail 兜底；不得依赖 DSH 哈希 class 名作为唯一判断条件。
-- 左栏收起、窗口 resize、官方 shell DOM reflow 后必须重新计算临时面板左边界；避免用户看到左侧大空洞或中间层被旧 sidebar 宽度卡住。
-- 涉及新会话入口、临时中间工作面、左栏收起/展开的改动，必须执行 `npm run test:hero-left-collapse` 并用真实浏览器测量 `hero.left === centerLeft`。
-
-### 24. 新会话与房间绑定铁律（P74）
-- 中央 `Agent 群聊` 与右侧 HUD 不得长期硬编码读取 `dev-team-alpha`；在官方 DSH 对话内运行时，必须从当前官方 session 推导工作区内的群聊 roomId。
-- 用户从左栏开启或切换官方新会话后，插件必须切到对应 session-scoped room；新 session 首次打开时展示空群聊引导，不得复用上一会话任务的 messages、ledger、assignments。
-- roomId 切换时中央消息列表、Agent 状态和 HUD 数据必须立即清空并重新拉取；SSE 事件必须按当前 roomId 过滤，避免旧会话后台事件串屏。
-- `/dsh-group-chat/api/room?id=...&ensure=1` 只允许创建当前 session 对应的空房间与默认队伍，不得拷贝旧房间消息记录。
-- 涉及官方会话切换、roomId 推导、HUD 数据源和消息持久化的改动，必须执行 `npm run test:session-room-binding`、`npm run test:ui:switch`、`npm run test:ui:refresh` 和 `npm run test:matrix`。
-
-### 25. 中央起始文案主题差异铁律（P75）
-- 每个内置主题（沙雕整活、现代精英、科技传奇、三国风云、原神提瓦特）的中央空态标题、副标题、三步引导和快捷模板必须有独立口吻；不得让 modern / legends 静默回退到 meme/default 文案。
-- 新增主题时必须同步 `src/engine/theme-voice.ts`、`src/client/GroupChatPanel.tsx` 的 onboarding 与 quick templates，并覆盖 zh-CN/en-US。
-- 科技传奇必须体现“科技界巨头来给用户打工”的产品感；现代精英必须体现专业交付/约束/验收；沙雕整活必须保留有梗但靠谱的开整感。
-- 涉及中央起始显示文案、主题切换、空态引导和模板按钮的改动，必须执行 `npm run test:distinct-theme-copy`、`npm run test:theme-copy`、`npm run test:tech-legends-theme` 和 `npm run test:matrix`。
-
-### 26. HUD 语言切换入口铁律（P76）
-- HUD 顶部配置区只放“角色主题 / 调度模式 / QA”，不得再把语言 select 塞进同一个紧凑 grid，避免 300px 右栏产生第二行拥挤。
-- zh-CN/en-US 语言切换应放在 HUD 标题栏右侧操作区、浮动/停靠按钮左侧，使用短标签 `中 / EN` 与 `EN / 中`。
-- 语言开关必须继续调用统一 `setGroupChatLocale()`，让中央区、HUD、composer 和后续消息 metadata 同步语言状态。
-- 涉及 HUD 顶部配置、语言切换、浮动按钮排序的改动，必须执行 `npm run test:hud-locale-toggle-header`、`npm run test:ui:entry` 和 `npm run test:matrix`。
-
-### 27. 中央执行状态可见铁律（P77）
-- 用户在中央 `Agent 群聊` 发送任务后，queued/running assignment 必须在中央消息流里以官方同款 Agent 回复气泡直接可见，不能只依赖右侧 HUD、独立卡片或悬浮 Agent 状态面板。
-- 中央状态必须从实时 `assignment:updated` 事件更新，并在刷新后从 `room.assignments` 恢复，直到 assignment 收敛为 completed/failed/blocked/cancelled。
-- DSH session events 可能缺失或不是数组；运行时不得直接调用 `events.findLast()`，必须先做数组规整和兼容反向查找，避免模型结果阶段被兼容错误覆盖。
-- 涉及中央任务推进、assignment 可见性、agent runtime 事件读取的改动，必须执行 `npm run test:central-live-status`、`npm run test:ui:entry` 和 `npm run test:matrix`。
-
-
-### 28. Agent turn surface fallback 铁律（P78）
-- 群聊成员运行时不得把缺少 `turn/end` 单独判定为模型失败；必须先从 `assistant/message` events 和 `session.deriveMessages()` surface 提取可见 assistant 文本。
-- 只有 event log 与 derived surface 都没有 assistant text 时，才允许失败，并且错误必须包含 event 类型计数与 surface 角色列表，避免再次出现不可诊断的 `missing turn/end`。
-- 如果存在非 completed 的 `turn/end`，仍按真实失败处理，不得把失败 turn 的残留文本伪装成功。
-- 涉及 `runMemberTurn()`、session events、surface fallback、模型失败诊断的改动，必须执行 `npm run test:agent-turn-surface-fallback`、`npm run test:central-live-status` 和 `npm run test:matrix`。
-
-
-### 28. 输入框常驻底部铁律（P79）
-- 中央 `Agent 群聊` 的底部输入框必须像官方“对话”一样常驻可见，不得被长回复、执行中气泡或消息滚动区域挤出视口。
-- `.gc-chat-bottom` 必须作为 `.gc-conversation` 的直接 flex 底部子节点渲染在 `.gc-chat-scroll` 外侧；消息区只负责滚动，输入区不参与滚动内容高度；`.gc-conversation` 必须按自身实际 top 计算可用视口高度，防止官方容器按内容高度把 composer 顶出屏幕。
-- 继续用 `--gc-bottom-height` 给 `.gc-chat-messages` 留出底部 padding，避免自动滚到底部时最新消息被 composer 遮挡。
-- 涉及中央消息流、执行中气泡、composer、HUD 避让或新会话入口布局的改动，必须执行 `npm run test:composer-outside-scroll`、`npm run test:chat-ui-composer-progression`、`npm run test:ui:entry` 和 `npm run test:matrix`。
-
-### 28. 新会话入口自点击守卫（P83）
-- 官方 blank hero 中的 Agent 群聊 小入口不得被 clickVisibleGroupChatTab() 当成真实会话 tab；真实 tab 查找必须排除插件自身入口、临时 hero 面板和 HUD。
-- 没有真实 Agent 群聊 顶部标签时，入口点击必须打开 #dsh-group-chat-hero-main，不得提前返回导致中央对话区消失或无响应。
-- 涉及新会话入口点击、临时中央群聊面板、顶部标签切换的改动，必须执行 
-pm run test:hero-entry-self-click-guard、
-pm run test:new-session-agent-entry、
-pm run test:hero-left-collapse 和 
-pm run test:ui:entry。
-
-### 29. 对话连贯性与工作流防中断铁律（P87）
-- 任何 SubAgent 执行产出后，调度器默认回传给主控（commander），严禁因阶段未设 requiresApproval 或无显式 @ 而直接返回 isTerminal: true 导致死锁停摆。
-- 指挥官推进工作流必须支持中英文及模糊语义识别（通过/批准/推进/合格/approved/proceed/lgtm 等）。
-- 长任务（workflow_driven）交互预算必须支持动态扩容至 20~24 轮以上，杜绝被基础短任务熔断规则腰斩。
-- SubAgent 执行异常或看门狗超时时，自动向 commander 发送报警信，唤醒 commander 接管并向人类负责人汇报，杜绝无声冻结。
-
-### 30. 原生工具白名单与流式展现铁律（P88）
-- 严禁使用虚拟抽象工具名（如 tool_fs、tool_jobs）作为最终下发给模型的唯一标识；必须严格映射并赋予真实的 DSH 底座工具（read, write, edit, glob, grep, bash, web_search, web_fetch 等）。
-- 成员执行异步任务时，必须建立流式事件探针（250ms），实时将 tool/call 和 tool/result 注入正在执行的气泡卡片并广播 assignment:updated，让用户在中央对话中实时可见工具跃动。
-- 前端必须严格对齐官方 DSH 工具卡样式：edit 显示 +add -del 行号差异，bash 显示命令任务描述，失败显示红底 失败 标签。
-- 严禁粗暴计算并向用户展示虚假的“缓存命中 0%”：严格对齐官方 DSH TurnUsage 口径，解析各网关多源缓存字段（prompt_tokens_details.cached_tokens, prompt_cache_hit_tokens, cache_read_input_tokens），在无缓存数据时不误报 0%，真实命中时准确展示百分比。
-- 主 Agent（总指挥官）在关键里程碑（调研完成、架构确定、红队通过、最终验收）必须主动 @人类负责人 进行简明汇报并征求确认，严禁脱离人类监管单方面自闭环。
-
-### 31. README 国际化规范与双语维护铁律（README Default English Guard）
-- **默认英文红线**：根目录 `README.md` **必须默认使用生动、诙谐、有趣的英文编写**（面向全球开源生态与 DSH 官方规范），严禁将根目录 `README.md` 主体内容写成中文。
-- **支持中文**：必须在 `README.md` 顶部提供醒目的语言切换链接（如 `<b>English</b> | <a href="./Docs/README.md">简体中文 (详细文档)</a>`）。
-- **中文完整归档**：中文全量业务说明、技术架构与各阶段设计专著统一维护在 `Docs/README.md` 与 `/Docs` 目录下。
-
-### 32. 经验沉淀与失误记录铁律（Continuous Reflection & Constitution Update）
-- **永久沉淀原则**：凡是由人类负责人（Director）指出的文档规范偏离、代码质量问题、架构边界越界或高频踩坑点，AI Coding Agent **严禁仅在单次对话中口头认错**，必须第一时间将对应的工程教训、规范标准和避坑方案**正式追加写入 `AGENTS.md`**。
-- **宪章优先权**：`AGENTS.md` 是所有后续任务执行时的不可逾越红线，后续每一轮重构或功能迭代必须主动遵守其中沉淀的全部铁律，防止同一坑点在未来会话中二次翻车。
-
+### 32. 对话防死锁、流式工具展现与经验沉淀铁律
+- **Universal Master Handoff**：专员交付完毕默认回传总指挥官收口；工作流推进支持模糊语义识别；长任务配额动态扩容至 24 轮；
+- **原生工具白名单直通**：严禁虚拟假工具，赋予真实 DSH 底座工具（read/edit/bash/grep/glob 等）；
+- **250ms 流式探针与 Diff 卡片**：实时广播工具进度，edit 提取 `+add -del` 行号差异，bash 提取任务意图，失败标红；
+- **真实 Prompt Cache 计费**：跨网关解析 cached_tokens，拒绝误报 0%；
+- **README 默认英文**：根目录 `README.md` 默认英文，顶部提供中文切换链接；
+- **持续反思与经验沉淀**：人类负责人指出的问题必须第一时间永久沉淀写入 `AGENTS.md`，并在 `/Docs` 维护对应设计专著。
+- 执行：`npm run test:matrix` 与 `npm run preflight`。详见：[Docs/p87-dialog-continuity-and-stall-prevention/README.md](./Docs/p87-dialog-continuity-and-stall-prevention/README.md)、[Docs/p88-official-tools-and-cache-metrics/README.md](./Docs/p88-official-tools-and-cache-metrics/README.md)。
