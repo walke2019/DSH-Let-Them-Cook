@@ -1,0 +1,72 @@
+CHANGE BRANCH/FIELD:
+- Branch: plugin-only ledger metrics, official-summary-style display, per-Agent/per-model collapse.
+- Fields changed: src/types.ts, src/index.ts, src/engine/room-manager.ts, src/engine/agent-runtime.ts, src/client/GroupChatSideDock.tsx, built lib files.
+
+ARTIFACTS:
+C:/项目/dsh-group-chat/docs/ledger-official-metrics/MODIFIED_FILE.zip
+C:/项目/dsh-group-chat/docs/ledger-official-metrics/DIFF_FILE.patch
+C:/项目/dsh-group-chat/docs/ledger-official-metrics/VERIFICATION.txt
+C:/项目/dsh-group-chat/docs/ledger-official-metrics/ROLLBACK.sh
+
+BASELINE command: node docs/ledger-official-metrics/check.cjs docs/ledger-official-metrics/original
+Input: original src/lib snapshot captured before this turn.
+Literal output: {"tokenUsageMapped":false,"firstTokenTiming":false,"ledgerMetricsType":false,"roomAggregates":false,"messageCarriesMetrics":false,"officialSummaryUi":false,"perAgentCollapse":false}
+BASELINE_EXIT:1
+Restored behavior/status: old roster only showed total calls and total tokens; no official-style summary line, first-token/cache/tok-s metrics, or per-Agent/per-model collapsed breakdown.
+
+MODIFIED command: node docs/ledger-official-metrics/check.cjs
+Input: modified plugin source tree.
+Literal output: {"tokenUsageMapped":true,"firstTokenTiming":true,"ledgerMetricsType":true,"roomAggregates":true,"messageCarriesMetrics":true,"officialSummaryUi":true,"perAgentCollapse":true}
+MODIFIED_EXIT:0
+
+MODIFIED command: node node_modules/typescript/bin/tsc --noEmit --jsx react-jsx --target ES2023 --module NodeNext --moduleResolution NodeNext --esModuleInterop --skipLibCheck src/client/native-primitives.d.ts src/client/GroupChatSideDock.tsx src/types.ts src/index.ts src/engine/room-manager.ts src/engine/agent-runtime.ts
+Input: modified TS/TSX files.
+Literal output: empty.
+Exit status: 0.
+
+MODIFIED command: npm run build:all
+Input: plugin source.
+Literal output/result: host tsc succeeded; client tsdown succeeded; lib/client.js 114.30 kB, lib/client.js.map 148.84 kB; Build complete.
+Exit status: 0.
+
+MODIFIED command: node docs/ledger-official-metrics/ledger-test.mjs
+Input: synthetic room ledger with two commander calls across cpa/gpt-x and win/gpt-y.
+Literal output: JSON ledger with totalCalls 2, totalTokens 300, metrics stepCount 3, llmMs 10000, toolMs 3000, firstTokenMsTotal 1500, inputTokens 150, outputTokens 120, cacheReadTokens 20, cacheWriteTokens 10, and model keys ["cpa/gpt-x","win/gpt-y"].
+EXIT:0
+
+LIVE inject command: POST http://127.0.0.1:3080/super-injector/api/inject with UTF-8 body {"dir":"C:/项目/dsh-group-chat"}
+Input: current plugin directory.
+Literal output: {"ok":true,"result":"OK: @dsh-external/dsh-group-chat 已注入（junction=C:\\Users\\Administrator\\.dsh\\profiles\\web\\node_modules\\@dsh-external\\dsh-group-chat）\n- host ✓\n- client ✓ (lib/client.js)"}
+Exit status: 0.
+
+LIVE API command: Invoke-WebRequest http://127.0.0.1:3080/dsh-group-chat/api/room?id=dev-team-alpha
+Input: live plugin API after injection.
+Literal output: {"roomId":"dev-team-alpha","totalCalls":0,"totalTokens":0,"metrics":{"turnCount":0,"stepCount":0,"llmMs":0,"toolMs":0,"firstTokenMsTotal":0,"firstTokenCount":0,"inputTokens":0,"outputTokens":0,"cacheReadTokens":0,"cacheWriteTokens":0},"agentStats":{}}
+Exit status: 0.
+
+Browser UI command: node docs/ledger-official-metrics/eval.cjs docs/ledger-official-metrics/ui-ledger.js
+Input: refreshed browser at http://127.0.0.1:3080/, side dock opened, 角色与账本 tab selected.
+Literal output: Script ran on page and returned:
+{"hasOverall":true,"official":true,"line":"0 轮 · 0 步  LLM 0s · 工具调用 0s  首 token 平均 — · 0 tok/s  缓存命中 0%  输入 0 tok · 输出 0 tok","hasDetails":true,"summary":"按 Agent / 模型展开","containsMetrics":true}
+Exit status: 0.
+Restored behavior/status: default display is overall summary; per-Agent/per-model details are behind a collapsed details panel.
+
+ROLLBACK command: C:/Program Files/Git/bin/bash.exe -c "chmod +x docs/ledger-official-metrics/ROLLBACK.sh; docs/ledger-official-metrics/ROLLBACK.sh docs/ledger-official-metrics/rollback-test-current"
+Input: separate modified copy at C:/项目/dsh-group-chat/docs/ledger-official-metrics/rollback-test-current.
+Literal output:
+ROLLBACK PASS: ledger official metrics changes restored
+ROLLBACK_EXIT:0
+Exit status: 0.
+
+ROLLBACK behavior command: node docs/ledger-official-metrics/check.cjs docs/ledger-official-metrics/rollback-test-current
+Input: rolled-back copy.
+Literal output: {"tokenUsageMapped":false,"firstTokenTiming":false,"ledgerMetricsType":false,"roomAggregates":false,"messageCarriesMetrics":false,"officialSummaryUi":false,"perAgentCollapse":false}
+ROLLBACK_CHECK_EXIT:1
+Exit status: 1, expected because the rollback copy returned to pre-turn behavior.
+Real src/lib remain modified.
+
+Reopen evidence:
+- MODIFIED_FILE.zip reopened with zipfile.testzip; 21 entries match current plugin files.
+- DIFF_FILE.patch reopened and non-empty: 238520 bytes.
+- VERIFICATION.txt reopened and non-empty.
+- ROLLBACK.sh reopened and non-empty: 593 bytes.

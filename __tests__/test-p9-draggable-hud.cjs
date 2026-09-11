@@ -1,0 +1,16 @@
+const fs = require('node:fs')
+const path = require('node:path')
+const root = path.resolve(__dirname, '..')
+const dock = fs.readFileSync(path.join(root, 'src/client/GroupChatSideDock.tsx'), 'utf8')
+const layout = fs.readFileSync(path.join(root, 'src/client/layout-push.ts'), 'utf8')
+function assert(cond,msg){if(!cond){console.error('[P9] '+msg);process.exit(1)}}
+assert(dock.includes('useRef'), 'drag ref imported')
+assert(dock.includes('dockFloating'), 'floating state exists')
+assert(dock.includes('dragRef'), 'drag state exists')
+assert(dock.includes('startDockDrag'), 'drag start handler exists')
+assert(dock.includes('resetDockPosition'), 'reset dock handler exists')
+assert(dock.includes("data-floating={dockFloating}"), 'floating data attribute wired')
+assert(dock.includes("dockFloating ? tx(locale,'停靠','Dock') : tx(locale,'浮动','Float')") || dock.includes("{dockFloating ? '停靠' : '浮动'}"), 'floating toggle button rendered')
+assert(layout.includes('.dsh-gc-sidebar-host[data-floating="true"]'), 'floating CSS exists')
+console.log('P9_DRAGGABLE_HUD_EXIT:0')
+

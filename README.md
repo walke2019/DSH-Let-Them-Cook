@@ -9,7 +9,7 @@
 </p>
 
 <p align="center">
-  <b>English</b> | <a href="./Docs/README.md">简体中文 (详细文档)</a>
+  <b>English</b> | <a href="./docs/README.md">简体中文 (详细文档)</a>
 </p>
 
 <p align="center">
@@ -311,7 +311,7 @@ This repository maintains a strict three-tier documentation structure:
 - **[`AGENTS.md`](./AGENTS.md)**: **The Engineering Constitution for all AI Coding Agents and Participant Agents**!
   - 30+ mandatory rules including zero DSH host hijacking, native tool streaming, prompt cache multi-vendor parsing, and anti-stall arbiters;
   - Includes the **Norm-to-Docs Matrix** to quickly reference deep-dive design specs;
-- **[`/Docs`](./Docs/README.md)**: Comprehensive technical designs and P1~P88 evolutionary specs (Chinese detailed docs).
+- **[`/docs`](./docs/README.md)**: Comprehensive technical designs, categorized Agent norms, task roadmaps, and P1~P88 evolutionary specs (Chinese detailed docs).
 
 ---
 

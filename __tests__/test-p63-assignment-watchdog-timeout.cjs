@@ -1,0 +1,13 @@
+const assert = require('node:assert/strict')
+const fs = require('node:fs')
+const path = require('node:path')
+
+const root = path.resolve(__dirname, '..')
+const index = fs.readFileSync(path.join(root, 'src/index.ts'), 'utf8')
+assert.match(index, /assignment-watchdog-timeout/, 'watchdog system notice is recorded')
+assert.match(index, /expectedMs \+ \(taskTier === 'quick' \? 30000 : 60000\)/, 'watchdog timeout budget is tier-aware')
+assert.match(index, /live\.status !== 'queued' && live\.status !== 'running'/, 'watchdog ignores completed assignments')
+assert.match(index, /roomManager\.completeAssignment\(roomId, assignment\.assignmentId, timeoutMessage\.messageId, message\)/, 'watchdog fails stale assignment')
+assert.match(index, /verificationExitCode: 124/, 'workflow timeout uses conventional timeout exit code')
+assert.match(index, /roomManager\.broadcast\(\{ type: 'agent:status'/, 'watchdog broadcasts HUD error status')
+console.log(JSON.stringify({P63_ASSIGNMENT_WATCHDOG_TIMEOUT_EXIT:0, timeout:'expectedMs + tier grace'}, null, 2))

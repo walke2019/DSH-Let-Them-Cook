@@ -1,0 +1,22 @@
+const fs = require('node:fs')
+const path = require('node:path')
+const root = path.resolve(__dirname, '..')
+const panel = fs.readFileSync(path.join(root, 'src/client/GroupChatPanel.tsx'), 'utf8')
+const errors = []
+const scrollStart = panel.indexOf('<div ref={scroll} className="gc-chat-scroll"')
+const bottomStart = panel.indexOf('<div className="gc-chat-bottom" ref={bottom}>')
+if (scrollStart === -1) errors.push('missing gc-chat-scroll region')
+if (bottomStart === -1) errors.push('missing gc-chat-bottom region')
+if (scrollStart !== -1 && bottomStart !== -1 && !(scrollStart < bottomStart)) errors.push('composer must render after the message scroll region')
+if (!/\/div>\s*<div className="gc-chat-bottom" ref=\{bottom\}>/s.test(panel.slice(Math.max(0, bottomStart - 80), bottomStart + 80))) errors.push('gc-chat-bottom must be a sibling outside gc-chat-scroll, not nested inside gc-scroll-content')
+if (!panel.includes('.gc-chat-bottom{position:relative;flex:0 0 auto;')) errors.push('composer must be a non-scrolling flex child')
+if (!panel.includes('height:var(--gc-available-height,100%);max-height:var(--gc-available-height,100%)')) errors.push('chat surface must clamp itself to the visible viewport height')
+if (!panel.includes("el.style.setProperty('--gc-available-height'")) errors.push('chat surface must measure available viewport height from its actual top')
+if (panel.includes('.gc-chat-bottom{position:sticky')) errors.push('composer must not rely on sticky inside the scroll container')
+if (!panel.includes('calc(var(--gc-bottom-height,150px) + 24px)')) errors.push('message list must keep bottom padding based on measured composer height')
+if (!panel.includes('observer.observe(bottom.current)')) errors.push('composer height must remain observed for bottom padding sync')
+if (errors.length) {
+  console.error(JSON.stringify({P79_COMPOSER_OUTSIDE_SCROLL_EXIT:1, errors}, null, 2))
+  process.exit(1)
+}
+console.log(JSON.stringify({P79_COMPOSER_OUTSIDE_SCROLL_EXIT:0, composerOutsideScroll:true}, null, 2))

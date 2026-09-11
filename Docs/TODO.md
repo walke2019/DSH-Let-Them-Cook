@@ -83,8 +83,8 @@
 
 - [x] AGENTS.md 更新最近踩坑：prepare、官方对话兼容、HUD 覆盖、插件作用域避让、Pointer Capture、文本防溢出、工作区作用域。
 - [x] 顶层文档重写为匹配当前项目状态。
-- [x] 新增 `Docs/README.md` 文档索引。
-- [x] `Docs/p8-hud-overlay-layout/README.md` 连续记录布局/拖拽/溢出回归修复。
+- [x] 新增 `docs/README.md` 文档索引。
+- [x] `docs/tasks/phases/p8-hud-overlay-layout/README.md` 连续记录布局/拖拽/溢出回归修复。
 - [x] 增加浏览器端自动化视觉回归：左栏展开 + HUD 展开 + 输入框间距 + HUD 溢出扫描。
 - [x] 将 HUD 顶部配置区抽成独立组件，减少 inline style 和重复布局风险。
 
@@ -277,7 +277,7 @@
 
 ## P44 追加：dsh-tools singleton 运行时修复验证
 
-- [x] 备份 `Docs/scope-repair/scope-singleton.mjs`。
+- [x] 备份 `docs/scope-repair/scope-singleton.mjs`。
 - [x] 将 `@deepseek-ai/dsh-tools` 及常用子路径加入 preload singleton，避免工具调度器 Symbol 多副本。
 - [x] 重启 `dsh web --no-open` 并验证 `/dsh-group-chat/api/compat` 为 200。
 - [x] 重新注入本插件并确认 super-injector 返回 host/client ✓、active=true。
