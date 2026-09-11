@@ -74,7 +74,7 @@ export class RoomManager {
           level: 'admin',
           canWriteScratchpad: true,
           canApproveWorkflow: true,
-          allowedTools: ['group_chat_workflow_advance', 'group_chat_workflow_reject', 'group_chat_update_scratchpad', 'group_chat_export_summary', 'group_chat_room_status', 'group_chat_set_mode', 'group_chat_task_claim', 'group_chat_task_report', 'group_chat_task_close', 'group_chat_task_handoff', 'group_chat_transaction_create', 'group_chat_transaction_action'],
+          allowedTools: ['read', 'glob', 'grep', 'group_chat_workflow_advance', 'group_chat_workflow_reject', 'group_chat_update_scratchpad', 'group_chat_export_summary', 'group_chat_room_status', 'group_chat_set_mode', 'group_chat_task_claim', 'group_chat_task_report', 'group_chat_task_close', 'group_chat_task_handoff', 'group_chat_transaction_create', 'group_chat_transaction_action'],
         },
         groupChatRules: {
           mentionKeywords: ['@commander', '@指挥官', '@总指挥', `@${mappings.commander.name}`],
@@ -106,7 +106,7 @@ export class RoomManager {
           level: 'read_write',
           canWriteScratchpad: false,
           canApproveWorkflow: false,
-          allowedTools: ['web_search', 'stealth_read_page', 'stealth_navigate', 'stealth_extract', 'group_chat_room_status', 'group_chat_export_summary', 'group_chat_task_claim', 'group_chat_task_report', 'group_chat_task_block', 'group_chat_task_handoff'],
+          allowedTools: ['web_search', 'web_fetch', 'stealth_read_page', 'read', 'glob', 'grep', 'group_chat_room_status', 'group_chat_export_summary', 'group_chat_task_claim', 'group_chat_task_report', 'group_chat_task_block', 'group_chat_task_handoff'],
         },
         groupChatRules: {
           mentionKeywords: ['@researcher', '@调研', '@搜索', `@${mappings.researcher.name}`],
@@ -138,7 +138,7 @@ export class RoomManager {
           level: 'read_write',
           canWriteScratchpad: false,
           canApproveWorkflow: false,
-          allowedTools: ['tool_fs', 'tool_jobs', 'group_chat_room_status', 'group_chat_task_claim', 'group_chat_task_report', 'group_chat_task_block', 'group_chat_task_handoff'],
+          allowedTools: ['read', 'write', 'edit', 'glob', 'grep', 'bash', 'group_chat_room_status', 'group_chat_task_claim', 'group_chat_task_report', 'group_chat_task_block', 'group_chat_task_handoff'],
         },
         groupChatRules: {
           mentionKeywords: ['@backend', '@后端', '@架构', `@${mappings.backend.name}`],
@@ -170,7 +170,7 @@ export class RoomManager {
           level: 'read_write',
           canWriteScratchpad: false,
           canApproveWorkflow: false,
-          allowedTools: ['tool_fs', 'modlens_read_image', 'group_chat_room_status', 'group_chat_task_claim', 'group_chat_task_report', 'group_chat_task_block', 'group_chat_task_handoff'],
+          allowedTools: ['read', 'write', 'edit', 'glob', 'grep', 'bash', 'read_image', 'group_chat_room_status', 'group_chat_task_claim', 'group_chat_task_report', 'group_chat_task_block', 'group_chat_task_handoff'],
         },
         groupChatRules: {
           mentionKeywords: ['@frontend', '@前端', '@UI', `@${mappings.frontend.name}`],
@@ -202,7 +202,7 @@ export class RoomManager {
           level: 'audit_only',
           canWriteScratchpad: false,
           canApproveWorkflow: false,
-          allowedTools: ['group_chat_room_status', 'group_chat_export_summary', 'group_chat_task_claim', 'group_chat_task_report', 'group_chat_task_block'],
+          allowedTools: ['read', 'glob', 'grep', 'bash', 'group_chat_room_status', 'group_chat_export_summary', 'group_chat_task_claim', 'group_chat_task_report', 'group_chat_task_block'],
         },
         groupChatRules: {
           mentionKeywords: ['@qa', '@测试', '@安全', '@审计', `@${mappings.qa.name}`],
@@ -234,7 +234,7 @@ export class RoomManager {
           level: 'read_write',
           canWriteScratchpad: true,
           canApproveWorkflow: false,
-          allowedTools: ['group_chat_update_scratchpad', 'group_chat_export_summary', 'group_chat_room_status', 'group_chat_task_claim', 'group_chat_task_report', 'group_chat_task_close'],
+          allowedTools: ['read', 'write', 'edit', 'glob', 'grep', 'group_chat_update_scratchpad', 'group_chat_export_summary', 'group_chat_room_status', 'group_chat_task_claim', 'group_chat_task_report', 'group_chat_task_close'],
         },
         groupChatRules: {
           mentionKeywords: ['@writer', '@文档', '@写手', '@纪要', `@${mappings.writer.name}`],

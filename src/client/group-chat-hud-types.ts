@@ -27,6 +27,7 @@ export interface AssignmentEnvelope {
   error?: string
   createdAt: number
   updatedAt: number
+  toolCalls?: any[]
 }
 
 export interface AgentMailboxMessage {

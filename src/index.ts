@@ -226,7 +226,22 @@ export function apply(ctx: AppContext, config: Config): void {
         ...member, llmConfig: { ...getCurrentModel(ctx), temperature: member.llmConfig.temperature },
       }
       const execution = await resilience.executeWithFallback(profile, (modelRef, signal) =>
-        runMemberTurn(ctx, modelRef, systemPrompt, signal, { roleId: member.id, allowedTools: member.permissions.allowedTools, locale }), lifetime.signal)
+        runMemberTurn(ctx, modelRef, systemPrompt, signal, {
+          roleId: member.id,
+          allowedTools: member.permissions.allowedTools, locale,
+          onProgress: (liveToolCalls) => {
+            toolCalls = liveToolCalls
+            if (assignmentId) {
+              const currentRoom = roomManager.getRoom(roomId)
+              const assignment = currentRoom?.assignments?.find(a => a.assignmentId === assignmentId)
+              if (assignment) {
+                assignment.toolCalls = liveToolCalls
+                assignment.updatedAt = Date.now()
+                roomManager.broadcast({ type: 'assignment:updated', roomId, payload: assignment, timestamp: Date.now() })
+              }
+            }
+          },
+        }), lifetime.signal)
       replyContent = execution.result.content
       modelUsed = execution.result.modelUsed
       providerUsed = execution.result.providerUsed

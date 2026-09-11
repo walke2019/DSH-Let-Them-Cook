@@ -136,17 +136,53 @@ const TOOL_REGISTRY: Record<string, ToolDefinition> = {
   },
 }
 
-function resolveToolTarget(tool: ToolCallRecord): string | undefined {
-  if (tool.readWritePath) return tool.readWritePath
-  if (!tool.arguments) return undefined
-  try {
-    const parsed = typeof tool.arguments === 'string' ? JSON.parse(tool.arguments) : tool.arguments
-    if (parsed && typeof parsed === 'object') {
-      const candidate = parsed.file_path || parsed.path || parsed.dir || parsed.pattern || parsed.query || parsed.command || parsed.url
-      if (candidate) return String(candidate)
+function resolveToolTarget(tool: ToolCallRecord): { target?: string; diffStat?: { add: number; del: number } } {
+  let target = tool.readWritePath
+  let diffStat: { add: number; del: number } | undefined
+
+  if (target && target.includes('  +')) {
+    const parts = target.split('  +')
+    target = parts[0]
+    const match = parts[1].match(/^(\d+)\s+-(\d+)$/)
+    if (match) {
+      diffStat = { add: Number(match[1]), del: Number(match[2]) }
     }
-  } catch {}
-  return undefined
+  }
+
+  if ((!target || !diffStat) && tool.arguments) {
+    try {
+      const parsed = typeof tool.arguments === 'string' ? JSON.parse(tool.arguments) : tool.arguments
+      if (parsed && typeof parsed === 'object') {
+        if (!target) {
+          if (tool.name === 'bash') {
+            target = parsed.description || parsed.command
+          } else if (tool.name === 'edit' || tool.name === 'read' || tool.name === 'write') {
+            target = parsed.file_path || parsed.path
+          } else if (tool.name === 'grep' || tool.name === 'glob') {
+            target = parsed.pattern || parsed.query
+          } else if (tool.name === 'web_search') {
+            target = parsed.query || (Array.isArray(parsed.queries) ? parsed.queries[0] : undefined)
+          } else if (tool.name === 'web_fetch') {
+            target = parsed.url
+          } else {
+            target = parsed.file_path || parsed.path || parsed.description || parsed.command || parsed.dir || parsed.pattern || parsed.query
+          }
+        }
+        if (tool.name === 'edit' && !diffStat) {
+          const oldStr = typeof parsed.old_string === 'string' ? parsed.old_string : ''
+          const newStr = typeof parsed.new_string === 'string' ? parsed.new_string : ''
+          if (oldStr || newStr) {
+            diffStat = {
+              add: newStr ? newStr.split('\n').length : 0,
+              del: oldStr ? oldStr.split('\n').length : 0,
+            }
+          }
+        }
+      }
+    } catch {}
+  }
+
+  return { target: target ? String(target) : undefined, diffStat }
 }
 
 export function GroupChatToolRow({ tool, locale = 'zh-CN' }: Props) {
@@ -157,7 +193,7 @@ export function GroupChatToolRow({ tool, locale = 'zh-CN' }: Props) {
     icon: size => <IconToolDefault size={size} />,
   }
   const title = locale === 'en-US' ? def.titleEn : def.titleZh
-  const target = useMemo(() => resolveToolTarget(tool), [tool])
+  const { target, diffStat } = useMemo(() => resolveToolTarget(tool), [tool])
   const isRunning = tool.status === 'running' || tool.status === 'pending'
   const isError = tool.status === 'error'
 
@@ -189,15 +225,25 @@ export function GroupChatToolRow({ tool, locale = 'zh-CN' }: Props) {
           {def.icon(14)}
         </span>
 
+        {isError && (
+          <span className="gc-tool-tag-error" title={tx(locale, '执行失败', 'Execution failed')}>
+            {tx(locale, '失败', 'Failed')}
+          </span>
+        )}
+
         <span className="gc-tool-title">{title}</span>
 
         {target && (
-          <>
-            <span className="gc-tool-sep" aria-hidden="true">/</span>
-            <code className="gc-tool-target" title={target}>
-              {target}
-            </code>
-          </>
+          <code className="gc-tool-target" title={target}>
+            {target}
+          </code>
+        )}
+
+        {diffStat && (
+          <span className="gc-tool-diff" aria-label={`+${diffStat.add} -${diffStat.del}`}>
+            <span className="gc-tool-diff-add">+{diffStat.add}</span>
+            <span className="gc-tool-diff-del">-{diffStat.del}</span>
+          </span>
         )}
 
         <div className="gc-tool-trailing">
@@ -205,12 +251,6 @@ export function GroupChatToolRow({ tool, locale = 'zh-CN' }: Props) {
             <span className="gc-tool-status gc-tool-status-running">
               <span className="gc-tool-spin" aria-hidden="true" />
               {tx(locale, '运行中…', 'Running…')}
-            </span>
-          )}
-
-          {isError && (
-            <span className="gc-tool-status gc-tool-status-error">
-              {tx(locale, '执行失败', 'Failed')}
             </span>
           )}
 

@@ -81,33 +81,48 @@ function extractToolName(data: any): string {
   return String(data?.name || data?.toolName || data?.call?.name || data?.message?.source?.name || data?.message?.name || 'tool')
 }
 
-function extractToolTarget(rawArgs: any): string | undefined {
+function extractToolTarget(rawArgs: any, toolName?: string): string | undefined {
   if (!rawArgs) return undefined
   let parsed = rawArgs
   if (typeof rawArgs === 'string') {
     try { parsed = JSON.parse(rawArgs) } catch {}
   }
   if (typeof parsed === 'object' && parsed !== null) {
-    const candidate = parsed.file_path || parsed.path || parsed.dir || parsed.pattern || parsed.query || parsed.command || parsed.url
+    if (toolName === 'bash') {
+      return parsed.description ? String(parsed.description) : (parsed.command ? String(parsed.command) : undefined)
+    }
+    if (toolName === 'edit') {
+      const path = parsed.file_path || parsed.path
+      const oldStr = typeof parsed.old_string === 'string' ? parsed.old_string : ''
+      const newStr = typeof parsed.new_string === 'string' ? parsed.new_string : ''
+      if (oldStr || newStr) {
+        const delLines = oldStr ? oldStr.split('\n').length : 0
+        const addLines = newStr ? newStr.split('\n').length : 0
+        return path ? `${path}  +${addLines} -${delLines}` : `+${addLines} -${delLines}`
+      }
+      return path ? String(path) : undefined
+    }
+    const candidate = parsed.description || parsed.file_path || parsed.path || parsed.pattern || parsed.query || (Array.isArray(parsed.queries) ? parsed.queries[0] : undefined) || parsed.command || parsed.dir || parsed.url
     if (candidate) return String(candidate)
   }
   return undefined
 }
 
-function summarizeToolCalls(events: readonly any[]): ToolCallRecord[] {
+export function summarizeToolCalls(events: readonly any[]): ToolCallRecord[] {
   const calls = new Map<string, ToolCallRecord & { startedAt?: number }>()
   for (const event of events) {
     const data = event.data || {}
     if (event.type === 'tool/call') {
       const id = String(data.callId || data.id || data.call?.id || calls.size + 1)
       const rawPayload = data.arguments || data.args || data.call?.arguments || data.input
+      const name = extractToolName(data)
       calls.set(id, {
         id,
-        name: extractToolName(data),
+        name,
         arguments: stringifyToolPayload(rawPayload),
         status: 'running',
         startedAt: typeof event.time === 'number' ? event.time : undefined,
-        readWritePath: extractToolTarget(rawPayload),
+        readWritePath: extractToolTarget(rawPayload, name),
       })
     }
     if (event.type === 'tool/result') {
@@ -115,19 +130,22 @@ function summarizeToolCalls(events: readonly any[]): ToolCallRecord[] {
       const prev = calls.get(id)
       const startedAt = prev?.startedAt
       const rawPayload = data.arguments || data.args || data.input
-      const target = prev?.readWritePath || extractToolTarget(rawPayload)
+      const name = prev?.name || extractToolName(data)
+      const target = prev?.readWritePath || extractToolTarget(rawPayload, name)
+      const resultText = stringifyToolPayload(data.result || data.output || data.message?.content || data.error)
+      const isErr = !!data.error || (resultText.includes('[exit code:') && !resultText.includes('[exit code: 0]'))
       calls.set(id, {
         id,
-        name: prev?.name || extractToolName(data),
+        name,
         arguments: prev?.arguments || stringifyToolPayload(rawPayload),
-        result: stringifyToolPayload(data.result || data.output || data.message?.content || data.error),
-        status: data.error ? 'error' : 'success',
+        result: resultText,
+        status: isErr ? 'error' : 'success',
         durationMs: typeof startedAt === 'number' && typeof event.time === 'number' ? Math.max(0, event.time - startedAt) : undefined,
         readWritePath: target,
       })
     }
   }
-  return [...calls.values()].map(({startedAt, ...call}) => call).slice(-12)
+  return [...calls.values()].map(({startedAt, ...call}) => call).slice(-20)
 }
 
 function summarizeRuntimeMetrics(events: readonly any[], promptText = '', replyContent = '', durationMs = 0): AgentRuntimeMetrics {
@@ -191,6 +209,7 @@ export interface MemberTurnRuntimeOptions {
   roleId?: string
   allowedTools?: readonly string[]
   locale?: GroupChatLocale
+  onProgress?: (toolCalls: ToolCallRecord[]) => void
 }
 
 function normalizeAllowedTools(allowedTools?: readonly string[]): string[] {
@@ -247,7 +266,30 @@ export async function runMemberTurn(ctx: RuntimeContext, model: ModelRef, prompt
       id: randomUUID(), role: 'user', source: { kind: 'plugin', plugin: '@dsh-external/dsh-group-chat' },
       content: [{ type: 'text', text: options.locale === 'en-US' ? 'Respond to the group-chat topic only as your assigned role; do not claim tools or research you did not actually perform.' : '请基于群聊议题，仅代表你的角色发言；不要声称执行了未执行的工具或调研。' }],
     } as UserMessage)
-    await waitForMemberIdle(handle.agent, signal)
+
+    let progressTimer: NodeJS.Timeout | undefined
+    if (options.onProgress) {
+      let lastReported = ''
+      progressTimer = setInterval(() => {
+        try {
+          const events = asRuntimeEvents(handle?.agent.session?.events)
+          const currentCalls = summarizeToolCalls(events)
+          if (currentCalls.length > 0) {
+            const key = JSON.stringify(currentCalls.map(c => ({ id: c.id, s: c.status, p: c.readWritePath })))
+            if (key !== lastReported) {
+              lastReported = key
+              options.onProgress?.(currentCalls)
+            }
+          }
+        } catch {}
+      }, 250)
+    }
+
+    try {
+      await waitForMemberIdle(handle.agent, signal)
+    } finally {
+      if (progressTimer) clearInterval(progressTimer)
+    }
     signal.throwIfAborted()
     const events = asRuntimeEvents(handle.agent.session?.events)
     const end = findLastRuntimeEvent(events, e => e.type === 'turn/end')

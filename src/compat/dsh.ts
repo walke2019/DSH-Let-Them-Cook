@@ -31,12 +31,19 @@ const LEGACY_TOOL_ALIASES: Record<string, string> = {
 
 const SEMANTIC_TOOL_ALIASES: Record<string, string[]> = {
   web_search: ['web_search', 'browser_search', 'search', 'agent_reach_search'],
-  stealth_read_page: ['stealth_read_page', 'browser_read_page', 'read_page', 'fetch_url'],
+  web_fetch: ['web_fetch', 'fetch_url', 'stealth_read_page', 'read_page'],
+  stealth_read_page: ['web_fetch', 'stealth_read_page', 'browser_read_page', 'read_page', 'fetch_url'],
   stealth_navigate: ['stealth_navigate', 'browser_navigate', 'navigate_page'],
   stealth_extract: ['stealth_extract', 'browser_extract', 'extract_page'],
-  tool_fs: ['tool_fs', 'read_file', 'write_file', 'edit_file', 'apply_patch'],
-  tool_jobs: ['tool_jobs', 'run_command', 'shell', 'terminal'],
-  modlens_read_image: ['modlens_read_image', 'view_image', 'read_image'],
+  tool_fs: ['read', 'write', 'edit', 'glob', 'grep', 'tool_fs', 'read_file', 'write_file', 'edit_file', 'apply_patch'],
+  tool_jobs: ['bash', 'job_output', 'job_list', 'job_kill', 'tool_jobs', 'run_command', 'shell', 'terminal'],
+  modlens_read_image: ['read_image', 'modlens_read_image', 'view_image'],
+  read: ['read', 'read_file'],
+  write: ['write', 'write_file'],
+  edit: ['edit', 'edit_file'],
+  bash: ['bash', 'shell', 'terminal', 'run_command'],
+  grep: ['grep'],
+  glob: ['glob'],
 }
 
 export function detectDshCompat(ctx: any): DshCompatReport {
@@ -117,9 +124,12 @@ export function resolveToolScope(tools: any, requested: readonly string[]): Tool
       resolved.push(name)
       continue
     }
-    const alias = (SEMANTIC_TOOL_ALIASES[name] || []).find(item => knownSet.has(item))
-    if (alias) resolved.push(alias)
-    else missing.push(name)
+    const aliases = (SEMANTIC_TOOL_ALIASES[name] || []).filter(item => knownSet.has(item))
+    if (aliases.length > 0) {
+      resolved.push(...aliases)
+    } else {
+      missing.push(name)
+    }
   }
   return { requested: cleaned, resolved: Array.from(new Set(resolved)).sort(), missing, knownTools: known }
 }

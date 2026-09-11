@@ -388,6 +388,7 @@ export interface AssignmentEnvelope {
   updatedAt: number
   startedAt?: number
   finishedAt?: number
+  toolCalls?: ToolCallRecord[]
 }
 
 export interface AgentMailboxMessage {

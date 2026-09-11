@@ -467,6 +467,10 @@ export function GroupChatPanel({mode='full'}:GroupChatPanelProps) {
       .gc-tool-title{font-weight:600;color:var(--dsw-alias-label-primary,#f8fafc);flex-shrink:0;}
       .gc-tool-sep{color:var(--dsw-alias-label-tertiary,#71717a);font-size:11px;user-select:none;}
       .gc-tool-target{font-family:var(--dsw-font-mono,ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace);font-size:11px;color:var(--dsw-alias-state-business-primary,#60a5fa);background:rgba(255,255,255,0.06);padding:1px 6px;border-radius:4px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:320px;border:1px solid rgba(255,255,255,0.06);}
+      .gc-tool-tag-error{font-size:10px;font-weight:700;padding:1px 6px;border-radius:4px;color:#f87171;background:rgba(248,113,113,0.14);border:1px solid rgba(248,113,113,0.28);flex-shrink:0;}
+      .gc-tool-diff{display:inline-flex;gap:4px;font-family:var(--dsw-font-mono,monospace);font-size:11px;font-weight:600;margin-left:2px;}
+      .gc-tool-diff-add{color:#34d399;}
+      .gc-tool-diff-del{color:#f87171;}
       .gc-tool-trailing{margin-left:auto;display:flex;align-items:center;gap:8px;font-size:11px;color:var(--dsw-alias-label-tertiary,#71717a);flex-shrink:0;}
       .gc-tool-duration{font-size:11px;color:var(--dsw-alias-label-tertiary,#71717a);}
       .gc-tool-status{display:inline-flex;align-items:center;gap:4px;font-size:11px;padding:1px 6px;border-radius:4px;}
@@ -586,6 +590,13 @@ export function GroupChatPanel({mode='full'}:GroupChatPanelProps) {
           <div className="gc-message-body" aria-live="polite">
             <div className="gc-live-line"><span className="gc-live-pulse" />{assignmentLiveTitle(assignment)} <span className="gc-live-dots" aria-hidden="true"><span/><span/><span/></span></div>
             <div className="gc-live-subtitle">{assignmentLiveSubtitle(assignment)}</div>
+            {assignment.toolCalls && assignment.toolCalls.length > 0 && (
+              <div className="gc-message-tools gc-message-tool-calls" style={{margin:'8px 0 6px'}} aria-label={tx(locale, '实时工具调用', 'Live tool calls')}>
+                {assignment.toolCalls.map((tool: any) => (
+                  <GroupChatToolRow key={tool.id} tool={tool} locale={locale} />
+                ))}
+              </div>
+            )}
             <details className="gc-live-details">
               <summary>{tx(locale,'展开执行详情','Show execution details')}</summary>
               <div className="gc-live-detail-grid">
