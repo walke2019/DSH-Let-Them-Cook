@@ -16,7 +16,7 @@ import { WorkflowOrchestrator } from './engine/workflow-orchestrator.js'
 import { runMemberTurn, type RuntimeContext } from './engine/agent-runtime.js'
 import { registerGroupChatTools } from './tools/index.js'
 import { createThemeDraft, createWorkflowDraft } from './engine/theme-factory.js'
-import { buildAutoSetupDraft, classifyAutoSetupIntent, formatAutoSetupApplied, formatAutoSetupCancelled, formatAutoSetupDraft } from './engine/auto-setup.js'
+import { buildAutoSetupDraft, classifyAutoSetupIntent, formatAutoSetupApplied, formatAutoSetupCancelled, formatAutoSetupDraft, DEFAULT_ROLE_MODEL_HINTS } from './engine/auto-setup.js'
 import { recommendModelsForRoles } from './engine/model-recommender.js'
 import { detectDshCompat, getCurrentModel, safeListModelCatalog } from './compat/dsh.js'
 import { inferAgentTaskStatus, parseStructuredAgentResult, stripStructuredAgentResult } from './engine/structured-result.js'
@@ -96,7 +96,7 @@ export function apply(ctx: AppContext, config: Config): void {
       if (agentId === 'researcher' || agentId === 'backend') return Math.max(180000, Math.min(300000, policyTimeout + 60000))
       return Math.max(120000, Math.min(240000, policyTimeout + 30000))
     }
-    return Math.max(240000, Math.min(480000, policyTimeout + 120000))
+    return Math.max(360000, Math.min(720000, policyTimeout + 180000))
   }
   const createTurnAssignment = (roomId: string, targetAgentId: string, brief: string, sourceMessageId?: string, createdByRoleId?: string, stageId?: string, taskTier?: GroupTaskTier) => {
     const current = roomManager.getRoom(roomId)
@@ -112,42 +112,57 @@ export function apply(ctx: AppContext, config: Config): void {
       roomManager.broadcast({ type: 'room:updated', roomId, payload: current, timestamp: Date.now() })
     }
     if (assignment) {
-      schedule(() => {
-        const latest = roomManager.getRoom(roomId)
-        const live = latest?.assignments?.find(item => item.assignmentId === assignment.assignmentId)
-        if (!latest || !live || (live.status !== 'queued' && live.status !== 'running')) return
-        const locale = normalizeApiLocale(roomManager.getMessages(roomId).find(item => item.messageId === sourceMessageId)?.metadata?.locale)
-        const message = taskTier === 'quick'
-          ? (locale === 'en-US' ? 'Quick task exceeded its expected runtime and was stopped by the assignment watchdog.' : '快速任务超过预期执行时间，已由任务看门狗停止。')
-          : (locale === 'en-US' ? 'Long task exceeded its expected runtime and needs retry or user review.' : '长任务超过预期执行时间，需要重试或用户复核。')
-        const timeoutMessage = roomManager.addMessage(roomId, {
-          roomId,
-          sender: groupSystemSender(locale),
-          content: message,
-          mentions: [],
-          metadata: { systemNotice: 'assignment-watchdog-timeout', assignmentId: assignment.assignmentId, taskTier },
-        })
-        const failed = roomManager.completeAssignment(roomId, assignment.assignmentId, timeoutMessage.messageId, message)
-        if (failed?.stageId && failed.workflowTaskId) {
-          WorkflowOrchestrator.updateTaskStatus(latest, failed.stageId, failed.workflowTaskId, 'failed', { assignmentId: failed.assignmentId, verificationOutput: message, verificationExitCode: 124 })
-          roomManager.saveRoom(latest)
-        }
-        roomManager.broadcast({ type: 'agent:status', roomId, payload: { agentId: targetAgentId, name: targetAgentId, avatar: '⚠️', status: 'error', assignmentId: assignment.assignmentId, message }, timestamp: Date.now() })
-        persistRoomState(roomId)
+      const scheduleWatchdogCheck = (delayMs: number) => {
+        schedule(() => {
+          const latest = roomManager.getRoom(roomId)
+          const live = latest?.assignments?.find(item => item.assignmentId === assignment.assignmentId)
+          if (!latest || !live || (live.status !== 'queued' && live.status !== 'running')) return
 
-        const masterId = latest.orchestration?.masterAgentId || latest.moderatorAgentId || 'commander'
-        if (targetAgentId !== masterId) {
-          roomManager.addMailboxMessage(roomId, {
-            fromRoleId: targetAgentId,
-            toRoleId: masterId,
-            assignmentId: assignment.assignmentId,
-            content: locale === 'en-US' ? `[Task Interrupted] Watchdog stopped task after exceeding runtime limit.` : `[任务中断] 任务执行耗时超出限额，已由看门狗停止，请指挥官介入统筹。`,
+          const now = Date.now()
+          const lastActivityAt = Math.max(live.updatedAt || 0, live.startedAt || 0, live.createdAt || 0)
+          const idleElapsed = now - lastActivityAt
+          const totalElapsed = now - (live.startedAt || live.createdAt || now)
+          const maxHardCeiling = expectedMs * 3
+
+          if (live.status === 'running' && idleElapsed < 90000 && totalElapsed < maxHardCeiling) {
+            scheduleWatchdogCheck(Math.max(45000, 90000 - idleElapsed))
+            return
+          }
+
+          const locale = normalizeApiLocale(roomManager.getMessages(roomId).find(item => item.messageId === sourceMessageId)?.metadata?.locale)
+          const message = (effectiveTier === 'quick' || taskTier === 'quick')
+            ? (locale === 'en-US' ? 'Quick task exceeded its expected runtime and was stopped by the assignment watchdog.' : '快速任务超过预期执行时间，已由任务看门狗停止。')
+            : (locale === 'en-US' ? 'Long task exceeded its expected runtime and needs retry or user review.' : '长任务超过预期执行时间，需要重试或用户复核。')
+          const timeoutMessage = roomManager.addMessage(roomId, {
+            roomId,
+            sender: groupSystemSender(locale),
+            content: message,
+            mentions: [],
+            metadata: { systemNotice: 'assignment-watchdog-timeout', assignmentId: assignment.assignmentId, taskTier: effectiveTier },
           })
-          schedule(() => {
-            void triggerAgentTurn(roomId, masterId).catch(console.error)
-          }, 1500)
-        }
-      }, expectedMs + (taskTier === 'quick' ? 30000 : 60000))
+          const failed = roomManager.completeAssignment(roomId, assignment.assignmentId, timeoutMessage.messageId, message)
+          if (failed?.stageId && failed.workflowTaskId) {
+            WorkflowOrchestrator.updateTaskStatus(latest, failed.stageId, failed.workflowTaskId, 'failed', { assignmentId: failed.assignmentId, verificationOutput: message, verificationExitCode: 124 })
+            roomManager.saveRoom(latest)
+          }
+          roomManager.broadcast({ type: 'agent:status', roomId, payload: { agentId: targetAgentId, name: targetAgentId, avatar: '⚠️', status: 'error', assignmentId: assignment.assignmentId, message }, timestamp: Date.now() })
+          persistRoomState(roomId)
+
+          const masterId = latest.orchestration?.masterAgentId || latest.moderatorAgentId || 'commander'
+          if (targetAgentId !== masterId) {
+            roomManager.addMailboxMessage(roomId, {
+              fromRoleId: targetAgentId,
+              toRoleId: masterId,
+              assignmentId: assignment.assignmentId,
+              content: locale === 'en-US' ? `[Task Interrupted] Watchdog stopped task after exceeding runtime limit.` : `[任务中断] 任务执行耗时超出限额，已由看门狗停止，请指挥官介入统筹。`,
+            })
+            schedule(() => {
+              void triggerAgentTurn(roomId, masterId).catch(console.error)
+            }, 1500)
+          }
+        }, delayMs)
+      }
+      scheduleWatchdogCheck(expectedMs + (taskTier === 'quick' ? 30000 : 60000))
     }
     persistRoomState(roomId)
     return assignment
@@ -197,6 +212,10 @@ export function apply(ctx: AppContext, config: Config): void {
     const currentRound = roomManager.incrementInteractionRound(roomId)
     if (currentRound > effectiveMaxTurns) {
       logger.info?.(`[GroupChat] Room ${roomId} reached max turns (${effectiveMaxTurns}), circuit tripped.`)
+      if (assignmentId) {
+        roomManager.completeAssignment(roomId, assignmentId, 'circuit-breaker-tripped', locale === 'en-US' ? 'Circuit breaker tripped' : '触发最大轮次硬性熔断')
+        persistRoomState(roomId)
+      }
       roomManager.broadcast({
         type: 'circuit_breaker:tripped',
         roomId,
@@ -222,8 +241,9 @@ export function apply(ctx: AppContext, config: Config): void {
     let toolCalls: import('./types.js').ToolCallRecord[] = []
 
     try {
-      const profile = member.llmConfig.provider && member.llmConfig.model ? member : {
-        ...member, llmConfig: { ...getCurrentModel(ctx), temperature: member.llmConfig.temperature },
+      const modelHint = member.modelHint || room.orchestration?.modelHints?.[member.id] || DEFAULT_ROLE_MODEL_HINTS[member.id]
+      const profile = member.llmConfig.provider && member.llmConfig.model ? { ...member, modelHint } : {
+        ...member, modelHint, llmConfig: { ...getCurrentModel(ctx), temperature: member.llmConfig.temperature },
       }
       const execution = await resilience.executeWithFallback(profile, (modelRef, signal) =>
         runMemberTurn(ctx, modelRef, systemPrompt, signal, {
@@ -299,6 +319,10 @@ export function apply(ctx: AppContext, config: Config): void {
     // Host plugin entry: REST API, message dispatch, workflow actions, and lifecycle-safe registration.
     if (DispatchArbiter.isSilenceToken(replyContent, room.safetyPolicy.silenceToken)) {
       logger.info?.(`[GroupChat] Agent ${member.name} (${member.id}) emitted NO_REPLY, silenced.`)
+      if (assignmentId) {
+        roomManager.completeAssignment(roomId, assignmentId, 'silence-token')
+        persistRoomState(roomId)
+      }
       return
     }
 

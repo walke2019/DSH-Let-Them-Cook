@@ -82,8 +82,8 @@ export function GroupChatHudWorkflowPanel({room, messages, onApproveStage, onUpd
   const activeAgentName = focusMember ? txRoleName(focusMember, locale) : (focusAssignment?.ownerRoleId || room?.orchestration?.masterAgentId || 'commander')
   const statusLabel = focusAssignment
     ? (locale === 'en-US'
-        ? `${activeAgentName} is ${focusAssignment.status === 'running' ? 'working' : 'queued'}`
-        : `${activeAgentName} 在${focusAssignment.status === 'running' ? '开整' : '排队'}`)
+        ? `${activeAgentName} ${focusAssignment.status === 'running' ? 'is working' : focusAssignment.status === 'queued' ? 'is queued' : focusAssignment.status === 'failed' ? 'needs retry' : 'completed'}`
+        : `${activeAgentName} ${focusAssignment.status === 'running' ? '在开整' : focusAssignment.status === 'queued' ? '在排队' : focusAssignment.status === 'failed' ? '执行受阻待复核' : '完工待命'}`)
     : (locale === 'en-US'
         ? `${activeAgentName} standing by`
         : `${activeAgentName} 待命控场`)
