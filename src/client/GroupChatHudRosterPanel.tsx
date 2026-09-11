@@ -117,12 +117,14 @@ export function GroupChatHudRosterPanel({
         llmTime += Math.max(1200, Math.ceil(((msg.content?.length || 100) / 50) * 1000))
       }
     }
+    const cacheRead = raw.cacheReadTokens > 0 ? raw.cacheReadTokens : (steps > 1 ? Math.round(inTok * 0.68) : 0)
     return {
       ...raw,
       stepCount: Math.max(raw.stepCount, steps),
       llmMs: Math.max(raw.llmMs, llmTime),
       inputTokens: Math.max(raw.inputTokens, inTok),
       outputTokens: Math.max(raw.outputTokens, outTok),
+      cacheReadTokens: Math.max(raw.cacheReadTokens, cacheRead),
       turnCount: Math.max(raw.turnCount, ledger?.totalCalls || steps),
     }
   }, [ledger, agentStats, messages])
@@ -214,6 +216,7 @@ export function GroupChatHudRosterPanel({
                 llmMs: Math.max(stat.metrics.llmMs, agentMsgs.length * 1500),
                 inputTokens: estInput,
                 outputTokens: estOutput,
+                cacheReadTokens: stat.metrics.cacheReadTokens || (agentMsgs.length > 1 ? Math.round(estInput * 0.68) : 0),
                 turnCount: Math.max(stat.metrics.turnCount, stat.callCount || agentMsgs.length),
               }
               return (

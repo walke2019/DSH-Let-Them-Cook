@@ -169,10 +169,12 @@ function summarizeRuntimeMetrics(events: readonly any[], promptText = '', replyC
       if (start !== undefined) metrics.llmMs += Math.max(0, event.time - start)
       const usage = data.usage || data.message?.usage || data.metadata?.usage
       if (usage) {
-        metrics.inputTokens += usage.inputTokens || usage.prompt_tokens || 0
+        metrics.inputTokens += usage.inputTokens || usage.prompt_tokens || usage.uncachedInputTokens || 0
         metrics.outputTokens += usage.outputTokens || usage.completion_tokens || 0
-        metrics.cacheReadTokens += usage.cacheReadTokens || 0
-        metrics.cacheWriteTokens += usage.cacheWriteTokens || 0
+        const cacheRead = usage.cacheReadTokens ?? usage.prompt_tokens_details?.cached_tokens ?? usage.prompt_cache_hit_tokens ?? usage.cache_read_input_tokens ?? usage.cached_tokens ?? 0
+        const cacheWrite = usage.cacheWriteTokens ?? usage.prompt_cache_miss_tokens ?? usage.cache_creation_input_tokens ?? 0
+        metrics.cacheReadTokens += cacheRead
+        metrics.cacheWriteTokens += cacheWrite
       }
     }
     if (event.type === 'tool/call') toolStarts.set(String(data.callId), event.time)
