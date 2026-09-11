@@ -1,7 +1,7 @@
 {
   "name": "@dsh-external/dsh-group-chat",
   "version": "0.1.0",
-  "description": "DSH 多 Agent 角色协同与群聊插件 (Multi-Agent Group Chat for DeepSeek Harness)",
+  "description": "DSH Let Them Cook (DSH 开整天团) — 多 Agent 角色协同与闭环交付插件 (Multi-Agent Project Orchestration & Autonomous Delivery for DeepSeek Harness)",
   "private": true,
   "type": "module",
   "main": "./lib/index.js",

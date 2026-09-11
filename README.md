@@ -1,11 +1,13 @@
-# DSH Group Chat (DeepSeek Harness Multi-Agent Orchestration)
+# DSH Let Them Cook (DSH 开整天团)
 
 <p align="center">
   <b>English</b> | <a href="./Docs/README.md">简体中文</a>
 </p>
 
 <p align="center">
-  A workspace-scoped multi-Agent group-chat orchestration plugin built natively for <b>DeepSeek Harness (DSH)</b>.
+  <b>Toss in the work, let them cook.</b><br/>
+  <i>把活儿丢进群，放手让他们开整！</i><br/>
+  A workspace-scoped multi-Agent autonomous orchestration & delivery plugin built natively for <b>DeepSeek Harness (DSH)</b>.
 </p>
 
 ---
@@ -77,7 +79,7 @@ npm run build:all
 If using `dsh-super-injector`:
 ```bash
 # Inject or update the package into DSH web profile
-dev_install_package --dir "/path/to/Dsh-group-chat"
+dev_install_package --dir "/path/to/DSH-Let-Them-Cook"
 
 # Perform zero-downtime hot reload
 dev_reload_package --packageName "dsh-group-chat"
@@ -109,7 +111,7 @@ npm run test:tech-legends-theme        # Verify Tech Legends persona bindings
 ## 📂 Project Structure
 
 ```text
-dsh-group-chat/
+DSH-Let-Them-Cook/
 ├── README.md                      # English documentation (with Chinese switcher)
 ├── AGENTS.md                      # Cross-agent collaboration contracts & coding rules
 ├── Docs/                          # Comprehensive technical design & phase docs

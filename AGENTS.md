@@ -1,6 +1,6 @@
-# AGENTS.md — 群聊多 Agent 协同守则与跨角色交互契约
+# AGENTS.md — DSH Let Them Cook (开整天团) 群聊多 Agent 协同守则与跨角色交互契约
 
-本文件定义了在 `dsh-group-chat` 环境中运行的所有智能体（无论是作为群聊成员的业务 Agent，还是协助开发该项目的代码 Agent）必须严格遵循的操作公约与行为底线。
+本文件定义了在 `dsh-group-chat` (DSH Let Them Cook / 开整天团) 环境中运行的所有智能体（无论是作为群聊成员的业务 Agent，还是协助开发该项目的代码 Agent）必须严格遵循的操作公约与行为底线。
 
 ---
 

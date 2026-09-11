@@ -218,7 +218,7 @@ export function GroupChatPanel({mode='full'}:GroupChatPanelProps) {
         if (!active || controller.signal.aborted) return
         setMembers(data.room.members)
         setActiveTheme(data.room.activeTheme || 'meme_comedy')
-        setLiveAssignments(Object.fromEntries((data.room.assignments || []).map((assignment: AssignmentEnvelope) => [assignment.assignmentId, assignment])))
+        setLiveAssignments(Object.fromEntries((data.room.assignments||[]).map((assignment: AssignmentEnvelope) => [assignment.assignmentId, assignment])))
         upsert(data.messages || [])
         setError('')
       } catch (e) {
@@ -230,7 +230,7 @@ export function GroupChatPanel({mode='full'}:GroupChatPanelProps) {
         const message = timedOut ? tx(locale, '群聊数据加载超时，正在自动重试；也可点重试或重新打开 dsh web 打印的认证链接。', 'Group chat data load timed out and will auto-retry. You can also click retry or reopen the authenticated URL printed by dsh web.') : e instanceof Error ? e.message : String(e)
         setError(message)
       } finally {
-        if (active) setLoading(false)
+        window.clearTimeout(timeout);if(active)setLoading(false)
       }
     }
     void fetchWithRetry()
