@@ -103,6 +103,7 @@
     "test:hero-entry-self-click-guard": "node Docs/p83-hero-entry-self-click-guard/test-p83-hero-entry-self-click-guard.cjs",
     "test:collapsible-message-body": "node Docs/p84-collapsible-message-body/test-p84-collapsible-message-body.cjs",
     "test:bilingual-role-coverage": "node Docs/p85-bilingual-role-coverage/test-p85-bilingual-role-coverage.cjs",
-    "test:native-tool-row-adapter": "node Docs/p86-native-tool-row-adapter/test-p86-native-tool-row-adapter.cjs"
+    "test:native-tool-row-adapter": "node Docs/p86-native-tool-row-adapter/test-p86-native-tool-row-adapter.cjs",
+    "test:dialog-continuity": "node Docs/p87-dialog-continuity-and-stall-prevention/test-p87-dialog-continuity.cjs"
   }
 }

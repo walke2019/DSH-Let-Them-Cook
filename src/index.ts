@@ -96,15 +96,13 @@ export function apply(ctx: AppContext, config: Config): void {
       if (agentId === 'researcher') return Math.max(120000, Math.min(240000, policyTimeout + 60000))
       return Math.max(60000, Math.min(180000, policyTimeout + 30000))
     }
-    return Math.max(agentId === 'commander' || agentId === 'qa' || agentId === 'researcher' ? 180000 : 120000, Math.min(300000, policyTimeout + 60000))
+    return Math.max(180000, Math.min(360000, policyTimeout + 90000))
   }
   const createTurnAssignment = (roomId: string, targetAgentId: string, brief: string, sourceMessageId?: string, createdByRoleId?: string, stageId?: string, taskTier?: GroupTaskTier) => {
     const current = roomManager.getRoom(roomId)
     const stage = stageId ? current?.workflow?.stages.find(item => item.id === stageId) : current?.workflow?.stages[current.workflow.currentStageIndex]
     const task = stage ? WorkflowOrchestrator.getReadyTasks(stage, targetAgentId)[0] : undefined
-    const assignmentBrief = task ? `${brief}
-
-工作流阶段任务：${task.title}：${task.description}` : brief
+    const assignmentBrief = task ? `${brief}\n\n工作流阶段任务：${task.title}：${task.description}` : brief
     const expectedMs = expectedMsForTier(taskTier, targetAgentId, roomId)
     const assignment = roomManager.createAssignment(roomId, targetAgentId, assignmentBrief, { sourceMessageId, createdByRoleId, stageId: stage?.id || stageId, workflowTaskId: task?.taskId, taskTier, expectedMs })
     if (current && stage && task && assignment) {
@@ -134,6 +132,19 @@ export function apply(ctx: AppContext, config: Config): void {
         }
         roomManager.broadcast({ type: 'agent:status', roomId, payload: { agentId: targetAgentId, name: targetAgentId, avatar: '⚠️', status: 'error', assignmentId: assignment.assignmentId, message }, timestamp: Date.now() })
         persistRoomState(roomId)
+
+        const masterId = latest.orchestration?.masterAgentId || latest.moderatorAgentId || 'commander'
+        if (targetAgentId !== masterId) {
+          roomManager.addMailboxMessage(roomId, {
+            fromRoleId: targetAgentId,
+            toRoleId: masterId,
+            assignmentId: assignment.assignmentId,
+            content: locale === 'en-US' ? `[Task Interrupted] Watchdog stopped task after exceeding runtime limit.` : `[任务中断] 任务执行耗时超出限额，已由看门狗停止，请指挥官介入统筹。`,
+          })
+          schedule(() => {
+            void triggerAgentTurn(roomId, masterId).catch(console.error)
+          }, 1500)
+        }
       }, expectedMs + (taskTier === 'quick' ? 30000 : 60000))
     }
     persistRoomState(roomId)
@@ -178,15 +189,18 @@ export function apply(ctx: AppContext, config: Config): void {
     roomManager.broadcast({type:'agent:status',roomId,payload:{agentId:member.id,name:member.name,avatar:member.avatar,title:member.title,status:'running',assignmentId,taskTier:room.assignments?.find(a=>a.assignmentId===assignmentId)?.taskTier,expectedMs:room.assignments?.find(a=>a.assignmentId===assignmentId)?.expectedMs,startedAt:Date.now()},timestamp:Date.now()})
 
     // Host plugin entry: REST API, message dispatch, workflow actions, and lifecycle-safe registration.
+    const effectiveMaxTurns = (room.dispatchMode === 'workflow_driven' || room.assignments?.some(a => a.taskTier === 'long'))
+      ? Math.max(room.safetyPolicy.maxTurnsPerPrompt || 6, 24)
+      : (room.safetyPolicy.maxTurnsPerPrompt || 6)
     const currentRound = roomManager.incrementInteractionRound(roomId)
-    if (currentRound > room.safetyPolicy.maxTurnsPerPrompt) {
-      logger.info?.(`[GroupChat] Room ${roomId} reached max turns (${room.safetyPolicy.maxTurnsPerPrompt}), circuit tripped.`)
+    if (currentRound > effectiveMaxTurns) {
+      logger.info?.(`[GroupChat] Room ${roomId} reached max turns (${effectiveMaxTurns}), circuit tripped.`)
       roomManager.broadcast({
         type: 'circuit_breaker:tripped',
         roomId,
         payload: {
           round: currentRound,
-          max: room.safetyPolicy.maxTurnsPerPrompt,
+          max: effectiveMaxTurns,
           reason: locale === 'en-US' ? 'Reached the maximum autonomous collaboration turns for this instruction; circuit breaker tripped.' : '已达到单次指令最大自主协作轮次限制，触发硬性熔断。',
         },
         timestamp: Date.now(),
@@ -247,6 +261,19 @@ export function apply(ctx: AppContext, config: Config): void {
         }
       }
       persistRoomState(roomId)
+
+      const masterId = room.orchestration?.masterAgentId || room.moderatorAgentId || 'commander'
+      if (member.id !== masterId) {
+        roomManager.addMailboxMessage(roomId, {
+          fromRoleId: member.id,
+          toRoleId: masterId,
+          assignmentId,
+          content: locale === 'en-US' ? `[Task Error] ${member.name} encountered error: ${message}` : `[任务执行受阻] ${member.name} 执行出错：${message}`,
+        })
+        schedule(() => {
+          void triggerAgentTurn(roomId, masterId).catch(console.error)
+        }, 1500)
+      }
       return
     }
     if (lifetime.signal.aborted) return
@@ -544,6 +571,10 @@ export function apply(ctx: AppContext, config: Config): void {
           } else if (leadingMention) {
             decision.nextSpeakerIds = [leadingMention.id]
             decision.reason = locale === 'en-US' ? `${decision.reason}; long task with leading @${leadingMention.id}: hand off to the mentioned role first, then let it delegate SubAgents.` : `${decision.reason}；长任务首个 @${leadingMention.id}：先交给被点名角色承接，再由其分派 SubAgent。`
+            decision.isTerminal = false
+          } else if (targetAgentIds.length > 0) {
+            decision.nextSpeakerIds = targetAgentIds
+            decision.reason = locale === 'en-US' ? `${decision.reason}; long task with @${targetAgentIds.join(', ')}: hand off to mentioned role(s).` : `${decision.reason}；长任务点名：交给 [${targetAgentIds.join(', ')}] 承接执行。`
             decision.isTerminal = false
           }
 

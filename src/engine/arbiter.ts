@@ -129,11 +129,15 @@ export class DispatchArbiter {
   ): DispatchDecision {
     const { dispatchMode, safetyPolicy, members, interactionRound, moderatorAgentId, workflow } = room
 
+    const effectiveMaxTurns = (dispatchMode === 'workflow_driven' || room.assignments?.some(a => a.taskTier === 'long'))
+      ? Math.max(safetyPolicy.maxTurnsPerPrompt || 6, 24)
+      : (safetyPolicy.maxTurnsPerPrompt || 6)
+
     // Dispatch arbiter, anti-loop rules, mention extraction, workflow routing, and silence-token handling.
-    if (interactionRound >= safetyPolicy.maxTurnsPerPrompt) {
+    if (interactionRound >= effectiveMaxTurns) {
       return {
         nextSpeakerIds: [],
-        reason: `已达到单次会话最大协作轮次上限 (${safetyPolicy.maxTurnsPerPrompt} 轮)，硬性熔断触发，等待人类进一步输入。`,
+        reason: `已达到单次会话最大协作轮次上限 (${effectiveMaxTurns} 轮)，硬性熔断触发，等待人类进一步输入。`,
         mode: dispatchMode,
         isTerminal: true,
       }
@@ -174,47 +178,97 @@ export class DispatchArbiter {
       }
 
       if (latestMessage.sender.kind === 'user') {
+        const { targetAgentIds } = this.extractMentions(latestMessage.content, members)
+        const commanderId = moderatorAgentId || 'commander'
+        if (targetAgentIds.length > 0) {
+          return {
+            nextSpeakerIds: targetAgentIds,
+            reason: `工作流进行中：响应人类指令唤醒责任人 [${targetAgentIds.join(', ')}]`,
+            mode: 'workflow_driven',
+            isTerminal: false,
+          }
+        }
         // Dispatch arbiter, anti-loop rules, mention extraction, workflow routing, and silence-token handling.
         return {
-          nextSpeakerIds: currentStage.assignedRoleIds,
-          reason: `工作流 [${workflow.title}] 进行中: 激活当前 [${currentStage.name}] 的指派人员 [${currentStage.assignedRoleIds.join(', ')}]`,
+          nextSpeakerIds: currentStage.assignedRoleIds.length ? currentStage.assignedRoleIds : [commanderId],
+          reason: `工作流 [${workflow.title}] 进行中: 激活当前 [${currentStage.name}] 的指派人员 [${(currentStage.assignedRoleIds.length ? currentStage.assignedRoleIds : [commanderId]).join(', ')}]`,
           mode: 'workflow_driven',
           isTerminal: false,
         }
       }
 
-      // Dispatch arbiter, anti-loop rules, mention extraction, workflow routing, and silence-token handling.
-      if (currentStage.assignedRoleIds.includes(latestMessage.sender.id) && latestMessage.sender.id !== 'commander') {
-        if (currentStage.requiresApproval) {
+      // If sender is SubAgent (not commander), report back to commander or mentioned specialist
+      if (latestMessage.sender.id !== (moderatorAgentId || 'commander')) {
+        const commanderId = moderatorAgentId || 'commander'
+        const { targetAgentIds } = this.extractMentions(latestMessage.content, members)
+        const validOtherTargets = targetAgentIds.filter(id => id !== latestMessage.sender.id && id !== commanderId)
+        if (validOtherTargets.length > 0) {
           return {
-            nextSpeakerIds: ['commander'],
-            reason: `阶段 [${currentStage.name}] 产物已输出，按流程进入指挥官审核把控环节。`,
+            nextSpeakerIds: validOtherTargets,
+            reason: `专家 [${latestMessage.sender.id}] 建议协同：唤醒 [${validOtherTargets.join(', ')}] 继续推进。`,
             mode: 'workflow_driven',
             isTerminal: false,
           }
         }
-      }
 
-      // Dispatch arbiter, anti-loop rules, mention extraction, workflow routing, and silence-token handling.
-      if (latestMessage.sender.id === 'commander' && (latestMessage.content.includes('通过') || latestMessage.content.includes('批准') || latestMessage.content.includes('下一阶段'))) {
         // Dispatch arbiter, anti-loop rules, mention extraction, workflow routing, and silence-token handling.
-        currentStage.status = 'completed'
-        const nextIndex = workflow.currentStageIndex + 1
-        if (nextIndex < workflow.stages.length) {
-          workflow.currentStageIndex = nextIndex
-          const nextStage = workflow.stages[nextIndex]
-          nextStage.status = 'in_progress'
-          return {
-            nextSpeakerIds: nextStage.assignedRoleIds,
-            reason: `总指挥官审核批准！流程推进至 [${nextStage.name}]，唤醒责任人 [${nextStage.assignedRoleIds.join(', ')}]`,
-            mode: 'workflow_driven',
-            isTerminal: false,
-          }
+        return {
+          nextSpeakerIds: ['commander'],
+          reason: `阶段 [${currentStage.name}] 产物已输出，按流程进入指挥官审核把控环节。`,
+          mode: 'workflow_driven',
+          isTerminal: false,
         }
       }
 
+      // If sender is commander:
       if (latestMessage.sender.id === (moderatorAgentId || 'commander')) {
         const commanderId = moderatorAgentId || 'commander'
+        const isAdvance = latestMessage.content.includes('通过') ||
+          latestMessage.content.includes('批准') ||
+          latestMessage.content.includes('下一阶段') ||
+          latestMessage.content.includes('准予') ||
+          latestMessage.content.includes('合格') ||
+          latestMessage.content.includes('推进') ||
+          /approve|approved|proceed|next stage|pass|lgtm/i.test(latestMessage.content)
+
+        // Dispatch arbiter, anti-loop rules, mention extraction, workflow routing, and silence-token handling.
+        if (isAdvance) {
+          // Dispatch arbiter, anti-loop rules, mention extraction, workflow routing, and silence-token handling.
+          currentStage.status = 'completed'
+          const nextIndex = workflow.currentStageIndex + 1
+          if (nextIndex < workflow.stages.length) {
+            workflow.currentStageIndex = nextIndex
+            const nextStage = workflow.stages[nextIndex]
+            nextStage.status = 'in_progress'
+
+            const { targetAgentIds } = this.extractMentions(latestMessage.content, members)
+            const validTargets = [...new Set(targetAgentIds.filter(id => id !== commanderId))]
+            if (validTargets.length > 0) {
+              return {
+                nextSpeakerIds: validTargets,
+                reason: `总指挥官审核批准！流程推进至 [${nextStage.name}]，分派指定责任人 [${validTargets.join(', ')}]`,
+                mode: 'workflow_driven',
+                isTerminal: false,
+              }
+            }
+
+            const stageTargets = nextStage.assignedRoleIds.filter(id => id !== commanderId)
+            return {
+              nextSpeakerIds: stageTargets.length > 0 ? stageTargets : nextStage.assignedRoleIds,
+              reason: `总指挥官审核批准！流程推进至 [${nextStage.name}]，唤醒责任人 [${(stageTargets.length > 0 ? stageTargets : nextStage.assignedRoleIds).join(', ')}]`,
+              mode: 'workflow_driven',
+              isTerminal: false,
+            }
+          } else {
+            return {
+              nextSpeakerIds: [],
+              reason: '工作流全部阶段已顺利通过总指挥官最终验收与结题收口。',
+              mode: 'workflow_driven',
+              isTerminal: true,
+            }
+          }
+        }
+
         const { targetAgentIds } = this.extractMentions(latestMessage.content, members)
         const validTargets = [...new Set(targetAgentIds.filter(id => id !== commanderId))]
         if (validTargets.length > 0) {
@@ -224,6 +278,13 @@ export class DispatchArbiter {
             mode: 'workflow_driven',
             isTerminal: false,
           }
+        }
+
+        return {
+          nextSpeakerIds: [],
+          reason: '当前阶段流转收敛，等待总指挥官或下一阶段指令。',
+          mode: 'workflow_driven',
+          isTerminal: true,
         }
       }
 
@@ -262,6 +323,16 @@ export class DispatchArbiter {
         // Dispatch arbiter, anti-loop rules, mention extraction, workflow routing, and silence-token handling.
         const commanderId = moderatorAgentId || 'commander'
         if (latestMessage.sender.kind === 'user') {
+          const { targetAgentIds } = this.extractMentions(latestMessage.content, members)
+          const validTargets = targetAgentIds.filter(id => id !== commanderId)
+          if (validTargets.length > 0) {
+            return {
+              nextSpeakerIds: validTargets,
+              reason: `总指挥官编排模式：优先唤醒点名专家 [${validTargets.join(', ')}] 承接执行。`,
+              mode: 'moderator_led',
+              isTerminal: false,
+            }
+          }
           return {
             nextSpeakerIds: [commanderId],
             reason: `总指挥官编排模式：人类消息优先交由总指挥官 (${commanderId}) 拆解与全盘统筹。`,
@@ -273,8 +344,8 @@ export class DispatchArbiter {
           const validTargets = targetAgentIds.filter(id => id !== commanderId)
           if (validTargets.length > 0) {
             return {
-              nextSpeakerIds: [validTargets[0]],
-              reason: `总指挥官指派下一名执行专家: ${validTargets[0]}`,
+              nextSpeakerIds: validTargets,
+              reason: `总指挥官指派下一名执行专家: ${validTargets.join(', ')}`,
               mode: 'moderator_led',
               isTerminal: false,
             }
