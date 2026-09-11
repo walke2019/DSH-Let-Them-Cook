@@ -195,47 +195,50 @@ export function GroupChatHudRosterPanel({
       {isLedgerPanel && <div style={{
         ...hudCardStyle,
         display: 'grid',
-        gap: '8px',
+        gap: '10px',
       }}>
         <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', gap:8 }}>
-          <div style={{ fontSize: '11px', color: 'var(--dsw-alias-label-secondary, #94a3b8)', fontWeight: 600 }}>{tx(locale,'总体运行统计','Overall runtime stats')}</div>
+          <div style={{ fontSize: '12px', color: hudTokens.labelPrimary, fontWeight: 700 }}>{tx(locale,'总体运行统计','Overall runtime stats')}</div>
           <div style={{ fontSize: '10px', color: 'var(--dsw-alias-label-caption, #64748b)' }}>{tx(locale,'官方摘要风格','Official summary style')}</div>
         </div>
-        <div style={{ fontSize:'11px', lineHeight:1.55, color:hudTokens.labelPrimary, whiteSpace:'normal' }}>
+        <div style={{ fontSize:'11px', lineHeight:1.55, color:hudTokens.labelPrimary, whiteSpace:'normal', background:hudTokens.bgLayer1, padding:'8px 10px', borderRadius:8, border:`1px solid ${hudTokens.borderL1}` }}>
           {metricLine(ledger?.totalCalls || computedMetrics.turnCount || 0, computedMetrics)}
         </div>
-        <details style={{borderTop:'1px solid var(--dsw-alias-border-l1, rgba(255,255,255,0.06))',paddingTop:8}}>
-          <summary style={{cursor:'pointer',fontSize:11,color:hudTokens.labelSecondary,userSelect:'none'}}>{tx(locale,'按 Agent / 模型展开','Expand by Agent / model')}</summary>
-          <div style={{display:'grid',gap:8,marginTop:8}}>
-            {Object.entries(agentStats).map(([agentId,stat])=>{
-              const agentMsgs = (messages || []).filter(m => m.sender?.id === agentId)
-              const estInput = agentMsgs.reduce((sum, m) => sum + (m.metadata?.tokensConsumed?.promptTokens || Math.max(120, Math.ceil((m.content?.length || 100) * 2.2))), 0)
-              const estOutput = agentMsgs.reduce((sum, m) => sum + (m.metadata?.tokensConsumed?.completionTokens || Math.max(35, Math.ceil((m.content?.length || 100) * 0.75))), 0)
-              const estTotal = stat.totalTokens > 0 ? stat.totalTokens : (estInput + estOutput)
-              const statMetrics = (stat.metrics.inputTokens > 0 || stat.metrics.outputTokens > 0) ? stat.metrics : {
-                ...stat.metrics,
-                stepCount: Math.max(stat.metrics.stepCount, agentMsgs.length),
-                llmMs: Math.max(stat.metrics.llmMs, agentMsgs.length * 1500),
-                inputTokens: estInput,
-                outputTokens: estOutput,
-                cacheReadTokens: stat.metrics.cacheReadTokens || 0,
-                turnCount: Math.max(stat.metrics.turnCount, stat.callCount || agentMsgs.length),
-              }
-              return (
-              <div key={agentId} style={{padding:'8px 9px',borderRadius:8,background:hudTokens.bgLayer1,border:`1px solid ${hudTokens.borderL1}`}}>
-                <div style={{display:'flex',justifyContent:'space-between',gap:8,fontSize:11,fontWeight:700,color:hudTokens.labelPrimary}}><span>{stat.agentName}</span><span>{formatTokens(estTotal)} tok</span></div>
-                <div style={{fontSize:10,color:hudTokens.labelTertiary,marginTop:4}}>{metricLine(stat.callCount || agentMsgs.length || 0, statMetrics)}</div>
-                {Object.values(stat.modelStats || {}).map(ms=>(
-                  <div key={`${ms.provider}/${ms.model}`} style={{marginTop:6,paddingTop:6,borderTop:'1px dashed var(--dsw-alias-border-l1, rgba(255,255,255,0.08))',fontSize:10,color:hudTokens.labelSecondary}}>
-                    <div style={{fontWeight:600,color:hudTokens.labelPrimary,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{ms.provider} / {ms.model}</div>
-                    <div style={{marginTop:2,color:hudTokens.labelTertiary}}>{metricLine(ms.callCount || 0, ms.metrics.inputTokens > 0 ? ms.metrics : statMetrics)}</div>
-                  </div>
-                ))}
-              </div>
-            )})}
-            {Object.keys(agentStats).length===0 && <div style={{fontSize:11,color:hudTokens.labelTertiary}}>{tx(locale,'暂无 Agent 调用记录；首次角色发言后会显示分项。','No Agent call records yet. Per-agent details appear after the first role response.')}</div>}
-          </div>
-        </details>
+
+        <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',gap:8,marginTop:4}}>
+          <div style={{fontSize:11,fontWeight:700,color:hudTokens.labelPrimary}}>{tx(locale,'按 Agent / 模型展开','Expand by Agent / model')}</div>
+          <div style={{fontSize:10,color:hudTokens.labelTertiary}}>{Object.keys(agentStats).length} {tx(locale,'位成员记录','agents recorded')}</div>
+        </div>
+
+        <div style={{display:'grid',gap:8}}>
+          {Object.entries(agentStats).map(([agentId,stat])=>{
+            const agentMsgs = (messages || []).filter(m => m.sender?.id === agentId)
+            const estInput = agentMsgs.reduce((sum, m) => sum + (m.metadata?.tokensConsumed?.promptTokens || Math.max(120, Math.ceil((m.content?.length || 100) * 2.2))), 0)
+            const estOutput = agentMsgs.reduce((sum, m) => sum + (m.metadata?.tokensConsumed?.completionTokens || Math.max(35, Math.ceil((m.content?.length || 100) * 0.75))), 0)
+            const estTotal = stat.totalTokens > 0 ? stat.totalTokens : (estInput + estOutput)
+            const statMetrics = (stat.metrics.inputTokens > 0 || stat.metrics.outputTokens > 0) ? stat.metrics : {
+              ...stat.metrics,
+              stepCount: Math.max(stat.metrics.stepCount, agentMsgs.length),
+              llmMs: Math.max(stat.metrics.llmMs, agentMsgs.length * 1500),
+              inputTokens: estInput,
+              outputTokens: estOutput,
+              cacheReadTokens: stat.metrics.cacheReadTokens || 0,
+              turnCount: Math.max(stat.metrics.turnCount, stat.callCount || agentMsgs.length),
+            }
+            return (
+            <div key={agentId} style={{padding:'8px 9px',borderRadius:8,background:hudTokens.bgLayer1,border:`1px solid ${hudTokens.borderL1}`}}>
+              <div style={{display:'flex',justifyContent:'space-between',gap:8,fontSize:11,fontWeight:700,color:hudTokens.labelPrimary}}><span>{stat.agentName}</span><span>{formatTokens(estTotal)} tok</span></div>
+              <div style={{fontSize:10,color:hudTokens.labelTertiary,marginTop:4}}>{metricLine(stat.callCount || agentMsgs.length || 0, statMetrics)}</div>
+              {Object.values(stat.modelStats || {}).map(ms=>(
+                <div key={`${ms.provider}/${ms.model}`} style={{marginTop:6,paddingTop:6,borderTop:'1px dashed var(--dsw-alias-border-l1, rgba(255,255,255,0.08))',fontSize:10,color:hudTokens.labelSecondary}}>
+                  <div style={{fontWeight:600,color:hudTokens.labelPrimary,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{ms.provider} / {ms.model}</div>
+                  <div style={{marginTop:2,color:hudTokens.labelTertiary}}>{metricLine(ms.callCount || 0, ms.metrics.inputTokens > 0 ? ms.metrics : statMetrics)}</div>
+                </div>
+              ))}
+            </div>
+          )})}
+          {Object.keys(agentStats).length===0 && <div style={{fontSize:11,color:hudTokens.labelTertiary,padding:'8px 0'}}>{tx(locale,'暂无 Agent 调用记录；首次角色发言后会显示分项。','No Agent call records yet. Per-agent details appear after the first role response.')}</div>}
+        </div>
       </div>}
 
 
@@ -267,10 +270,13 @@ export function GroupChatHudRosterPanel({
 
       {isTeamPanel && filteredMembers.length===0 && <div style={{...hudCardStyle,fontSize:11,color:hudTokens.labelTertiary}}>{tx(locale,'没有匹配的团队成员。','No matching team members.')}</div>}
 
-      {isLedgerPanel && <div style={{...hudCardStyle,display:'grid',gap:8}} data-dsh-gc-ledger-records>
-        <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',gap:8,flexWrap:'wrap'}}>
-          <div style={{fontSize:11,fontWeight:700,color:hudTokens.labelPrimary}}>{tx(locale,'完整流水','Full ledger')}</div>
-          <div style={{fontSize:10,color:hudTokens.labelTertiary}}>{tx(locale,'分派','Assignments')} {assignmentRecords.length} · {tx(locale,'邮箱','Mailbox')} {mailboxRecords.length} · {tx(locale,'未读','Unread')} {unreadMailboxCount}</div>
+      {isLedgerPanel && <details style={{...hudCardStyle,display:'grid',gap:8}} data-dsh-gc-ledger-records>
+        <summary style={{cursor:'pointer',userSelect:'none',display:'flex',justifyContent:'space-between',alignItems:'center',gap:8,flexWrap:'wrap'}}>
+          <div style={{fontSize:11,fontWeight:700,color:hudTokens.labelPrimary}}>📁 {tx(locale,'协同流转留痕 (任务分派 & 邮箱通讯审计)','Collaboration Audit Logs (Assignments & Mailbox)')}</div>
+          <div style={{fontSize:10,color:hudTokens.labelTertiary}}>{tx(locale,'完整流水','Full ledger')} · {tx(locale,'分派','Assignments')} {assignmentRecords.length} · {tx(locale,'邮箱','Mailbox')} {mailboxRecords.length}</div>
+        </summary>
+        <div style={{fontSize:10,color:hudTokens.labelTertiary,marginTop:4}}>
+          {tx(locale,'注：此部分为后台事件调度留痕，各 Agent 模型数据消耗请以上方“角色与模型消耗流水”为准。','Note: This section logs background event routing; refer to the ledger above for token & model metrics.')}
         </div>
         <input
           value={ledgerSearch}
@@ -294,7 +300,7 @@ export function GroupChatHudRosterPanel({
           <summary style={{cursor:'pointer',fontSize:11,fontWeight:700,color:hudTokens.labelPrimary,userSelect:'none'}}>{tx(locale,'主 Agent 邮箱','Master Agent mailbox')} / Mailbox（{filteredMailbox.length}/{mailboxRecords.length}）</summary>
           <div style={{display:'grid',gap:6,marginTop:8}}>{filteredMailbox.map(({to,message:msg})=><div key={msg.mailboxMessageId} style={{fontSize:10,lineHeight:1.45,color:hudTokens.labelSecondary,border:'1px solid rgba(77,107,254,0.20)',background:msg.readAt?'rgba(255,255,255,0.035)':'rgba(77,107,254,0.08)',borderRadius:8,padding:'6px 7px',overflow:'hidden'}}><div style={{display:'flex',alignItems:'center',justifyContent:'space-between',gap:6}}><b style={{color:hudTokens.labelPrimary}}>@{msg.fromRoleId} → @{to}</b><span style={{fontSize:9,color:msg.readAt?'var(--dsw-alias-label-tertiary,#94a3b8)':'#60a5fa'}}>{msg.readAt?'已读':'未读'}</span></div>{msg.assignmentId ? <div style={{color:hudTokens.labelTertiary}}>{shortId(msg.assignmentId)}</div> : null}<span>{msg.content}</span>{!msg.readAt && <button onClick={()=>onMarkMailboxRead(msg.mailboxMessageId)} style={{...hudGhostButtonStyle,marginTop:5,justifySelf:'start',fontSize:10,padding:'2px 7px'}}>{tx(locale,'标记已读','Mark read')}</button>}</div>)}{filteredMailbox.length===0&&<div style={{fontSize:10,color:hudTokens.labelTertiary}}>没有匹配的邮箱记录。</div>}</div>
         </details>
-      </div>}
+      </details>}
     </div>
   )
 }
