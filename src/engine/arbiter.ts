@@ -7,7 +7,9 @@ import type {
   GroupMessageEnvelope,
   DispatchDecision,
   AgentProfile,
+  WorkflowTask,
 } from '../types.js'
+import { WorkflowOrchestrator } from './workflow-orchestrator.js'
 
 export class DispatchArbiter {
   /**
@@ -197,9 +199,10 @@ export class DispatchArbiter {
         }
       }
 
-      // If sender is SubAgent (not commander), report back to commander or mentioned specialist
+      // If sender is SubAgent (not commander):
       if (latestMessage.sender.id !== (moderatorAgentId || 'commander')) {
         const commanderId = moderatorAgentId || 'commander'
+
         const { targetAgentIds } = this.extractMentions(latestMessage.content, members)
         const validOtherTargets = targetAgentIds.filter(id => id !== latestMessage.sender.id && id !== commanderId)
         if (validOtherTargets.length > 0) {
@@ -211,7 +214,7 @@ export class DispatchArbiter {
           }
         }
 
-        // Dispatch arbiter, anti-loop rules, mention extraction, workflow routing, and silence-token handling.
+        // SubAgent always reports back to commander for review & coordination
         return {
           nextSpeakerIds: ['commander'],
           reason: `阶段 [${currentStage.name}] 产物已输出，按流程进入指挥官审核把控环节。`,
@@ -223,13 +226,30 @@ export class DispatchArbiter {
       // If sender is commander:
       if (latestMessage.sender.id === (moderatorAgentId || 'commander')) {
         const commanderId = moderatorAgentId || 'commander'
-        const isAdvance = latestMessage.content.includes('通过') ||
+        const isReject = latestMessage.content.includes('驳回') ||
+          latestMessage.content.includes('重做') ||
+          latestMessage.content.includes('整改') ||
+          latestMessage.content.includes('未通过') ||
+          latestMessage.content.includes('不合格') ||
+          /reject|rejected|redo/i.test(latestMessage.content)
+
+        const allTasksPassed = currentStage.tasks && currentStage.tasks.length > 0 && currentStage.tasks.every(t => t.status === 'passed')
+
+        const isAdvance = (!isReject && allTasksPassed) ||
+          latestMessage.content.includes('通过') ||
           latestMessage.content.includes('批准') ||
           latestMessage.content.includes('下一阶段') ||
           latestMessage.content.includes('准予') ||
           latestMessage.content.includes('合格') ||
           latestMessage.content.includes('推进') ||
-          /approve|approved|proceed|next stage|pass|lgtm/i.test(latestMessage.content)
+          latestMessage.content.includes('验收') ||
+          latestMessage.content.includes('总装') ||
+          latestMessage.content.includes('交付') ||
+          latestMessage.content.includes('放行') ||
+          latestMessage.content.includes('封箱') ||
+          latestMessage.content.includes('完成') ||
+          latestMessage.content.includes('交卷') ||
+          /approve|approved|proceed|next stage|pass|lgtm|accepted|accept|finish|finished|done|ready/i.test(latestMessage.content)
 
         // Dispatch arbiter, anti-loop rules, mention extraction, workflow routing, and silence-token handling.
         if (isAdvance) {
@@ -252,10 +272,14 @@ export class DispatchArbiter {
               }
             }
 
-            const stageTargets = nextStage.assignedRoleIds.filter(id => id !== commanderId)
+            const readyTasks = WorkflowOrchestrator.getReadyTasks(nextStage)
+            const readyRoles = readyTasks.length > 0
+              ? [...new Set(readyTasks.map((t: WorkflowTask) => t.ownerRoleId))] as string[]
+              : nextStage.assignedRoleIds.filter(id => id !== commanderId)
+            const stageTargets = readyRoles.length > 0 ? readyRoles : (nextStage.assignedRoleIds.filter(id => id !== commanderId).length ? nextStage.assignedRoleIds.filter(id => id !== commanderId) : nextStage.assignedRoleIds)
             return {
-              nextSpeakerIds: stageTargets.length > 0 ? stageTargets : nextStage.assignedRoleIds,
-              reason: `总指挥官审核批准！流程推进至 [${nextStage.name}]，唤醒责任人 [${(stageTargets.length > 0 ? stageTargets : nextStage.assignedRoleIds).join(', ')}]`,
+              nextSpeakerIds: stageTargets,
+              reason: `总指挥官审核批准！流程推进至 [${nextStage.name}]，唤醒责任人 [${stageTargets.join(', ')}]`,
               mode: 'workflow_driven',
               isTerminal: false,
             }
@@ -275,6 +299,27 @@ export class DispatchArbiter {
           return {
             nextSpeakerIds: validTargets,
             reason: `工作流主 Agent 明确 @ 分派 SubAgent：[${validTargets.join(', ')}]`,
+            mode: 'workflow_driven',
+            isTerminal: false,
+          }
+        }
+
+        const isQuickTask = room.assignments?.some(a => a.taskTier === 'quick') && !room.assignments?.some(a => a.taskTier === 'long')
+        if (isQuickTask) {
+          return {
+            nextSpeakerIds: [],
+            reason: '快速任务由主 Agent 直接独立回答完毕，正常完结。',
+            mode: 'workflow_driven',
+            isTerminal: true,
+          }
+        }
+
+        const currentReadyTasks = WorkflowOrchestrator.getReadyTasks(currentStage)
+        if (currentReadyTasks.length > 0) {
+          const readyRoleIds = [...new Set(currentReadyTasks.map((t: WorkflowTask) => t.ownerRoleId))] as string[]
+          return {
+            nextSpeakerIds: readyRoleIds,
+            reason: `阶段 [${currentStage.name}] 仍有就绪任务未完成，指派责任人 [${readyRoleIds.join(', ')}] 继续执行。`,
             mode: 'workflow_driven',
             isTerminal: false,
           }

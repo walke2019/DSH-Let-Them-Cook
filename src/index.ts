@@ -103,11 +103,13 @@ export function apply(ctx: AppContext, config: Config): void {
     const stage = stageId ? current?.workflow?.stages.find(item => item.id === stageId) : current?.workflow?.stages[current.workflow.currentStageIndex]
     const task = stage ? WorkflowOrchestrator.getReadyTasks(stage, targetAgentId)[0] : undefined
     const assignmentBrief = task ? `${brief}\n\n工作流阶段任务：${task.title}：${task.description}` : brief
-    const expectedMs = expectedMsForTier(taskTier, targetAgentId, roomId)
-    const assignment = roomManager.createAssignment(roomId, targetAgentId, assignmentBrief, { sourceMessageId, createdByRoleId, stageId: stage?.id || stageId, workflowTaskId: task?.taskId, taskTier, expectedMs })
+    const effectiveTier: GroupTaskTier = (stage || current?.dispatchMode === 'workflow_driven' || taskTier === 'long') ? 'long' : (taskTier || 'quick')
+    const expectedMs = expectedMsForTier(effectiveTier, targetAgentId, roomId)
+    const assignment = roomManager.createAssignment(roomId, targetAgentId, assignmentBrief, { sourceMessageId, createdByRoleId, stageId: stage?.id || stageId, workflowTaskId: task?.taskId, taskTier: effectiveTier, expectedMs })
     if (current && stage && task && assignment) {
       WorkflowOrchestrator.updateTaskStatus(current, stage.id, task.taskId, 'running', { assignmentId: assignment.assignmentId })
       roomManager.saveRoom(current)
+      roomManager.broadcast({ type: 'room:updated', roomId, payload: current, timestamp: Date.now() })
     }
     if (assignment) {
       schedule(() => {
@@ -326,6 +328,8 @@ export function apply(ctx: AppContext, config: Config): void {
         const taskStatus = inferAgentTaskStatus(replyContent)
         WorkflowOrchestrator.updateTaskStatus(current, completedAssignment.stageId, completedAssignment.workflowTaskId, taskStatus, { assignmentId: completedAssignment.assignmentId, verificationOutput: structuredResult?.summary, verifiedByRoleId: member.id })
         roomManager.saveRoom(current)
+        persistRoomState(roomId)
+        roomManager.broadcast({ type: 'room:updated', roomId, payload: current, timestamp: Date.now() })
       }
     }
 
@@ -817,8 +821,13 @@ export function apply(ctx: AppContext, config: Config): void {
             const result = WorkflowOrchestrator.advanceStage(room, body.approverRoleId || 'commander', body.summary, locale)
             roomManager.saveRoom(room)
             persistRoomState(roomId)
+            roomManager.broadcast({ type: 'room:updated', roomId, payload: room, timestamp: Date.now() })
             if (result.stage) {
-              for (const nextRole of result.stage.assignedRoleIds) {
+              const readyTasks = WorkflowOrchestrator.getReadyTasks(result.stage)
+              const readyRoles = readyTasks.length > 0
+                ? [...new Set(readyTasks.map(t => t.ownerRoleId))]
+                : (result.stage.assignedRoleIds.filter(id => id !== 'commander').length ? result.stage.assignedRoleIds.filter(id => id !== 'commander') : result.stage.assignedRoleIds)
+              for (const nextRole of readyRoles) {
                 const assignment = createTurnAssignment(roomId, nextRole, locale === 'en-US' ? `Workflow advanced: ${result.message}` : `工作流推进：${result.message}`, undefined, body.approverRoleId || 'commander', result.stage?.id, 'long')
                 schedule(() => {
                   void triggerAgentTurn(roomId, nextRole, assignment?.assignmentId).catch(console.error)
@@ -832,6 +841,7 @@ export function apply(ctx: AppContext, config: Config): void {
             const result = WorkflowOrchestrator.rejectStage(room, 'commander', body.reason || (locale === 'en-US' ? 'Acceptance not met; revise and retry.' : '未达标要求重新修改'), locale)
             roomManager.saveRoom(room)
             persistRoomState(roomId)
+            roomManager.broadcast({ type: 'room:updated', roomId, payload: room, timestamp: Date.now() })
             res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' })
             res.end(JSON.stringify(result))
             return

@@ -103,6 +103,8 @@ export function GroupChatSideDock() {
   useEffect(() => {
     fetchRoomData()
 
+    const pollTimer = window.setInterval(fetchRoomData, 2500)
+
     const unsubscribe=subscribeGroupChat(e=>{
         try {
           const data = JSON.parse(e.data)
@@ -116,7 +118,10 @@ export function GroupChatSideDock() {
           }
         } catch {}
     })
-    return unsubscribe
+    return () => {
+      window.clearInterval(pollTimer)
+      unsubscribe()
+    }
   }, [roomId])
 
   // Companion HUD: status, configuration, scratchpad, team, workflow, and ledger without duplicating the central chat input.
