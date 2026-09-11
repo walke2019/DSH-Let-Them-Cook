@@ -93,10 +93,10 @@ export function apply(ctx: AppContext, config: Config): void {
     const member = roomId ? roomManager.getRoom(roomId)?.members.find(item => item.id === agentId) : undefined
     const policyTimeout = member?.resiliencePolicy?.timeoutMs || 0
     if (tier === 'quick') {
-      if (agentId === 'researcher') return Math.max(120000, Math.min(240000, policyTimeout + 60000))
-      return Math.max(60000, Math.min(180000, policyTimeout + 30000))
+      if (agentId === 'researcher' || agentId === 'backend') return Math.max(180000, Math.min(300000, policyTimeout + 60000))
+      return Math.max(120000, Math.min(240000, policyTimeout + 30000))
     }
-    return Math.max(180000, Math.min(360000, policyTimeout + 90000))
+    return Math.max(240000, Math.min(480000, policyTimeout + 120000))
   }
   const createTurnAssignment = (roomId: string, targetAgentId: string, brief: string, sourceMessageId?: string, createdByRoleId?: string, stageId?: string, taskTier?: GroupTaskTier) => {
     const current = roomManager.getRoom(roomId)

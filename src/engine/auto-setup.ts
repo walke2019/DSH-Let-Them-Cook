@@ -40,8 +40,8 @@ export const DEFAULT_TOOL_ROUTING_POLICY: ToolRoutingPolicy = {
 
 export const DEFAULT_ROLE_MODEL_HINTS: Record<string, RoleModelHint> = {
   commander: {requiredCapabilities:['reasoning','long_context'], preferredCapabilities:['qa_audit','tool_use'], costPreference:'quality_first', latencyPreference:'patient', fallbackStrategy:'same_capability_cheaper'},
-  researcher: {requiredCapabilities:['web_research','tool_use','data_extraction'], preferredCapabilities:['long_context','reasoning'], costPreference:'balanced', latencyPreference:'normal', fallbackStrategy:'same_capability_cheaper'},
-  backend: {requiredCapabilities:['coding','reasoning','tool_use'], preferredCapabilities:['long_context'], costPreference:'quality_first', latencyPreference:'normal', fallbackStrategy:'same_capability_cheaper'},
+  researcher: {requiredCapabilities:['web_research','tool_use','data_extraction'], preferredCapabilities:['long_context','reasoning'], costPreference:'balanced', latencyPreference:'patient', fallbackStrategy:'same_capability_cheaper'},
+  backend: {requiredCapabilities:['coding','reasoning','tool_use'], preferredCapabilities:['long_context'], costPreference:'quality_first', latencyPreference:'patient', fallbackStrategy:'same_capability_cheaper'},
   frontend: {requiredCapabilities:['coding','ui_design'], preferredCapabilities:['tool_use','fast_reply'], costPreference:'balanced', latencyPreference:'normal', fallbackStrategy:'same_capability_cheaper'},
   qa: {requiredCapabilities:['qa_audit','reasoning'], preferredCapabilities:['coding','long_context'], costPreference:'balanced', latencyPreference:'patient', fallbackStrategy:'same_capability_cheaper'},
   writer: {requiredCapabilities:['writing','fast_reply'], preferredCapabilities:['long_context','low_cost'], costPreference:'low', latencyPreference:'fast', fallbackStrategy:'same_capability_cheaper'},
