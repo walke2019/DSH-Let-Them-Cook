@@ -328,6 +328,20 @@ export function apply(ctx: AppContext, config: Config): void {
         roomManager.saveRoom(current)
       }
     }
+
+    // Auto-sync milestone conclusion & technical decisions to shared scratchpad
+    if (structuredResult?.summary || (member.id === 'commander' && (visibleReplyContent.includes('方案') || visibleReplyContent.includes('通过') || visibleReplyContent.includes('决定') || visibleReplyContent.includes('验收')))) {
+      const summaryText = structuredResult?.summary || visibleReplyContent.slice(0, 180).replace(/\n+/g, ' ')
+      const dateStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+      const note = `\n- [${dateStr}] **${member.name}**：${summaryText}`
+      const currentRoom = roomManager.getRoom(roomId)
+      if (currentRoom) {
+        currentRoom.scratchpad = `${currentRoom.scratchpad || ''}${note}`
+        roomManager.saveRoom(currentRoom)
+        roomManager.broadcast({ type: 'scratchpad:updated', roomId, payload: { scratchpad: currentRoom.scratchpad }, timestamp: Date.now() })
+      }
+    }
+
     const masterId = room.orchestration?.masterAgentId || room.moderatorAgentId || 'commander'
     if (member.id !== masterId) {
       roomManager.addMailboxMessage(roomId, {

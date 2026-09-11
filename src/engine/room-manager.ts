@@ -498,7 +498,14 @@ export class RoomManager {
       updatedAt: now,
     }
     room.captainTaskProtocol = protocol
+    room.pinnedGoal = brief.slice(0, 120)
+    const taskBriefPreview = brief.length > 80 ? `${brief.slice(0, 80)}...` : brief
+    const dateStr = new Date(now).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+    const stageTitle = room.workflow?.stages[room.workflow.currentStageIndex]?.name || '需求推进'
+    const newScratchpadEntry = `\n\n### 📌 [${dateStr}] 当前任务目标：${taskBriefPreview}\n- 任务类型：${taskTier === 'quick' ? '快速任务' : '工作流长任务'}（阶段：${stageTitle}）\n- 编排路线：${tasks.map(t => `${t.ownerRoleId} (${t.title})`).join(' ➔ ')}\n- 状态：${taskTier === 'quick' ? '快速执行推进中' : '分工协同推进中'}`
+    room.scratchpad = `${room.scratchpad || ''}${newScratchpadEntry}`
     this.saveRoom(room)
+    this.broadcast({ type: 'scratchpad:updated', roomId, payload: { scratchpad: room.scratchpad }, timestamp: Date.now() })
     this.broadcast({ type: 'coordination:updated', roomId, payload: protocol, timestamp: Date.now() })
     return protocol
   }
