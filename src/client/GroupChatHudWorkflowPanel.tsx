@@ -2,7 +2,7 @@ import React, {useEffect, useState} from 'react'
 import {AvatarBadge} from './AvatarBadge.js'
 import type {ApprovalTransaction, CaptainTaskNode, GroupMessageData, StructuredAgentResult, WorkflowTask} from './group-chat-hud-types.js'
 import {hudCardStyle, hudGhostButtonStyle, hudPanelStackStyle, hudPrimaryButtonStyle, hudTokens} from './group-chat-hud-styles.js'
-import {tx, type GroupChatLocale} from './i18n.js'
+import {tx, txRoleName, type GroupChatLocale} from './i18n.js'
 
 type RoomData = any
 
@@ -79,12 +79,21 @@ export function GroupChatHudWorkflowPanel({room, messages, onApproveStage, onUpd
       ? {label: unreadCommanderReports ? tx(locale,'待收口','Needs review') : tx(locale,'闭环通过','Loop closed'), tone: unreadCommanderReports ? '#fbbf24' : '#34d399', detail: unreadCommanderReports ? tx(locale,'SubAgent 已上报，等待主 Agent 读取汇总。','SubAgents reported; waiting for Master Agent review.') : tx(locale,'分派、执行、上报、主 Agent 读取链路已打通。','Assignment, execution, reporting and Master review are connected.')}
       : {label: tx(locale,'待验证','Unverified'), tone:'#94a3b8', detail: tx(locale,'还没有形成完整的 SubAgent 上报闭环。','No complete SubAgent report loop yet.')}
 
+  const activeAgentName = focusMember ? txRoleName(focusMember, locale) : (focusAssignment?.ownerRoleId || room?.orchestration?.masterAgentId || 'commander')
+  const statusLabel = focusAssignment
+    ? (locale === 'en-US'
+        ? `${activeAgentName} is ${focusAssignment.status === 'running' ? 'working' : 'queued'}`
+        : `${activeAgentName} 在${focusAssignment.status === 'running' ? '开整' : '排队'}`)
+    : (locale === 'en-US'
+        ? `${activeAgentName} standing by`
+        : `${activeAgentName} 待命控场`)
+
   return <div className="dsh-gc-workflow-panel" style={{...hudPanelStackStyle,gap:10}}>
     <style>{`.dsh-gc-workflow-panel,.dsh-gc-workflow-panel *{box-sizing:border-box;min-width:0}.dsh-gc-stage-dot{width:18px;height:18px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:#fff;flex-shrink:0}.dsh-gc-advanced-details>summary{list-style:none}.dsh-gc-advanced-details>summary::-webkit-details-marker{display:none}`}</style>
 
     <div data-dsh-gc-director-card style={{boxSizing:'border-box',width:'100%',maxWidth:'100%',minWidth:0,overflow:'hidden',padding:'10px 12px',borderRadius:12,background:'linear-gradient(135deg, rgba(77,107,254,0.14), rgba(16,185,129,0.08))',border:'1px solid rgba(77,107,254,0.28)',display:'grid',gap:8}}>
       <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',gap:8,minWidth:0}}><div style={{fontSize:12,fontWeight:800,color:hudTokens.labelPrimary}}>{tx(locale,'执行导演台','Execution director')}</div><span style={{fontSize:10,color:hudTokens.labelTertiary,minWidth:0,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{tx(locale,'主 Agent 控场 · SubAgent 干活','Master Agent coordinates · SubAgents execute')}</span></div>
-      <div style={{display:'grid',gridTemplateColumns:'24px minmax(0,1fr)',gap:8,alignItems:'center',minWidth:0}}><AvatarBadge avatar={focusMember?.avatar || '🎬'} className="gc-roster-avatar" /><div style={{minWidth:0}}><div style={{fontSize:11,fontWeight:700,color:hudTokens.labelPrimary,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{tx(locale,'当前','Current')}：{focusAssignment ? `${focusMember?.name || focusAssignment.ownerRoleId} 在${focusAssignment.status === 'running' ? '开整' : '排队'}` : `${focusMember?.name || room?.orchestration?.masterAgentId || 'commander'} ${tx(locale,'待命控场','standing by')}`}</div><div style={{fontSize:10,color:hudTokens.labelSecondary,marginTop:2,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{focusAssignment?.brief || focusTask?.description || tx(locale,'还没有执行任务；中间 Agent 群聊里一句话丢任务即可。','No active task yet. Drop one sentence into the Agent chat in the center.')}</div></div></div>
+      <div style={{display:'grid',gridTemplateColumns:'24px minmax(0,1fr)',gap:8,alignItems:'center',minWidth:0}}><AvatarBadge avatar={focusMember?.avatar || '🎬'} className="gc-roster-avatar" /><div style={{minWidth:0}}><div style={{fontSize:11,fontWeight:700,color:hudTokens.labelPrimary,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{tx(locale,'当前：','Current: ')}{statusLabel}</div><div style={{fontSize:10,color:hudTokens.labelSecondary,marginTop:2,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{focusAssignment?.brief || focusTask?.description || tx(locale,'还没有执行任务；中间 Agent 群聊里一句话丢任务即可。','No active task yet. Drop one sentence into the Agent chat in the center.')}</div></div></div>
     </div>
 
     <div style={{display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:6}}><MiniStat label={tx(locale,'执行中','Running')} value={runningAssignments.length}/><MiniStat label={tx(locale,'待处理','Queued')} value={queuedAssignments.length}/><MiniStat label={tx(locale,'邮箱','Mailbox')} value={allMailboxCount}/></div>
@@ -106,8 +115,8 @@ export function GroupChatHudWorkflowPanel({room, messages, onApproveStage, onUpd
       {pendingTransactions.slice(-2).map(item => <div key={item.transactionId} style={{display:'grid',gap:3,fontSize:10,color:hudTokens.labelSecondary,borderTop:'1px solid rgba(255,255,255,0.08)',paddingTop:6}}>
         <b style={{fontSize:11,color:hudTokens.labelPrimary,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{item.title}</b>
         <span>{item.summary}</span>
-        <span>{tx(locale,'将改动','Will change')}：{item.willChange.slice(0,3).join(' / ') || '—'}</span>
-        <span>{tx(locale,'回滚','Rollback')}：{item.rollbackPlan.slice(0,2).join(' / ') || '—'}</span>
+        <span>{tx(locale,'将改动：','Will change: ')}{item.willChange.slice(0,3).join(' / ') || '—'}</span>
+        <span>{tx(locale,'回滚：','Rollback: ')}{item.rollbackPlan.slice(0,2).join(' / ') || '—'}</span>
       </div>)}
     </div>}
 
@@ -141,7 +150,7 @@ export function GroupChatHudWorkflowPanel({room, messages, onApproveStage, onUpd
         })}
         {!!routeChips.length && <div style={{display:'flex',gap:5,flexWrap:'wrap'}}>{routeChips.map(([label,owner]) => <span key={label} title={`${label} 归口 @${owner}`} style={{fontSize:10,padding:'3px 7px',borderRadius:999,background:'rgba(255,255,255,0.06)',border:'1px solid rgba(255,255,255,0.09)',color:hudTokens.labelSecondary,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{label} → @{owner}</span>)}</div>}
         {!!room?.assignments?.length && <details open={openAdvancedItem === 'assignments'} style={{padding:'9px 10px',borderRadius:10,background:hudTokens.bgLayer2,border:`1px solid ${hudTokens.borderL1}`}}><summary onClick={e=>{e.preventDefault(); toggleAdvancedItem('assignments')}} style={{cursor:'pointer',fontSize:11,fontWeight:700,color:hudTokens.labelPrimary}}>{tx(locale,'最近任务分派','Recent assignments')} / Assignment</summary><div style={{display:'grid',gap:6,marginTop:8}}>{room.assignments.slice(-8).reverse().map((a:any)=>{const c=statusColor(a.status);return <div key={a.assignmentId} style={{fontSize:10,lineHeight:1.45,color:hudTokens.labelSecondary,border:`1px solid ${c.border}`,background:c.bg,borderRadius:8,padding:'6px 7px'}}><b style={{color:c.fg}}>{a.status}</b> · @{a.ownerRoleId} · {a.workflowTaskId || a.taskType}<br/><span>{a.brief}</span></div>})}</div></details>}
-        {Object.values(room?.mailboxes || {}).some((list:any)=>list.length>0) && <details open={openAdvancedItem === 'mailbox'} style={{padding:'9px 10px',borderRadius:10,background:hudTokens.bgLayer2,border:`1px solid ${hudTokens.borderL1}`}}><summary onClick={e=>{e.preventDefault(); toggleAdvancedItem('mailbox')}} style={{cursor:'pointer',fontSize:11,fontWeight:700,color:hudTokens.labelPrimary}}>{tx(locale,'主 Agent 邮箱','Master Agent mailbox')} / Mailbox</summary><div style={{display:'grid',gap:6,marginTop:8}}>{Object.entries(room?.mailboxes || {}).flatMap(([to,list]:any)=>list.slice(-6).map((msg:any)=><div key={msg.mailboxMessageId} style={{fontSize:10,lineHeight:1.45,color:hudTokens.labelSecondary,border:'1px solid rgba(77,107,254,0.20)',background:msg.readAt?'rgba(255,255,255,0.035)':'rgba(77,107,254,0.08)',borderRadius:8,padding:'6px 7px'}}><div style={{display:'flex',alignItems:'center',justifyContent:'space-between',gap:6}}><b style={{color:hudTokens.labelPrimary}}>@{msg.fromRoleId} → @{to}</b><span style={{fontSize:9,color:msg.readAt?hudTokens.labelTertiary:'#60a5fa'}}>{msg.readAt?'已读':'未读'}</span></div>{msg.assignmentId ? <div>{shortId(msg.assignmentId)}</div> : null}<span>{msg.content.slice(0,160)}{msg.content.length>160?'…':''}</span>{!msg.readAt && <button onClick={()=>void onMarkMailboxRead(msg.mailboxMessageId)} style={{...hudGhostButtonStyle,marginTop:5,justifySelf:'start'}}>{tx(locale,'标记已读','Mark read')}</button>}</div>))}</div></details>}
+        {Object.values(room?.mailboxes || {}).some((list:any)=>list.length>0) && <details open={openAdvancedItem === 'mailbox'} style={{padding:'9px 10px',borderRadius:10,background:hudTokens.bgLayer2,border:`1px solid ${hudTokens.borderL1}`}}><summary onClick={e=>{e.preventDefault(); toggleAdvancedItem('mailbox')}} style={{cursor:'pointer',fontSize:11,fontWeight:700,color:hudTokens.labelPrimary}}>{tx(locale,'主 Agent 邮箱','Master Agent mailbox')} / Mailbox</summary><div style={{display:'grid',gap:6,marginTop:8}}>{Object.entries(room?.mailboxes || {}).flatMap(([to,list]:any)=>list.slice(-6).map((msg:any)=><div key={msg.mailboxMessageId} style={{fontSize:10,lineHeight:1.45,color:hudTokens.labelSecondary,border:'1px solid rgba(77,107,254,0.20)',background:msg.readAt?'rgba(255,255,255,0.035)':'rgba(77,107,254,0.08)',borderRadius:8,padding:'6px 7px'}}><div style={{display:'flex',alignItems:'center',justifyContent:'space-between',gap:6}}><b style={{color:hudTokens.labelPrimary}}>@{msg.fromRoleId} → @{to}</b><span style={{fontSize:9,color:msg.readAt?hudTokens.labelTertiary:'#60a5fa'}}>{msg.readAt?tx(locale,'已读','Read'):tx(locale,'未读','Unread')}</span></div>{msg.assignmentId ? <div>{shortId(msg.assignmentId)}</div> : null}<span>{msg.content.slice(0,160)}{msg.content.length>160?'…':''}</span>{!msg.readAt && <button onClick={()=>void onMarkMailboxRead(msg.mailboxMessageId)} style={{...hudGhostButtonStyle,marginTop:5,justifySelf:'start'}}>{tx(locale,'标记已读','Mark read')}</button>}</div>))}</div></details>}
       </div>
     </details>
   </div>

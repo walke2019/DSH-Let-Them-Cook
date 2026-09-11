@@ -44,3 +44,19 @@ export function onGroupChatLocaleChange(listener: (locale: GroupChatLocale) => v
 export function tx(locale: GroupChatLocale, zh: string, en: string): string {
   return locale === 'en-US' ? en : zh
 }
+
+export function txRoleName(member: { id: string; name: string; nameEn?: string }, locale: GroupChatLocale): string {
+  if (locale === 'en-US' && member.nameEn) return member.nameEn
+  return member.name || member.id
+}
+
+export function txRoleTitle(member: { title?: string; titleEn?: string }, locale: GroupChatLocale): string {
+  if (locale === 'en-US' && member.titleEn) return member.titleEn
+  return member.title || ''
+}
+
+export function txRoleDesc(member: { roleDescription?: string; roleDescriptionEn?: string }, locale: GroupChatLocale): string {
+  if (locale === 'en-US' && member.roleDescriptionEn) return member.roleDescriptionEn
+  return member.roleDescription || ''
+}
+

@@ -1,10 +1,11 @@
 import {subscribeGroupChat} from './group-chat-events.js'
 import {AvatarBadge} from './AvatarBadge.js'
+import {GroupChatToolRow} from './GroupChatToolRow.js'
 import React, {useEffect, useLayoutEffect, useRef, useState} from 'react'
 import {MarkdownText} from '@deepseek-ai/dsh-client-ui-primitives'
 import {GroupChatComposer} from './GroupChatComposer.js'
 import {getThemeVoice} from '../engine/theme-voice.js'
-import {detectGroupChatLocale, onGroupChatLocaleChange, tx, type GroupChatLocale} from './i18n.js'
+import {detectGroupChatLocale, onGroupChatLocaleChange, tx, txRoleName, type GroupChatLocale} from './i18n.js'
 import type {AssignmentEnvelope} from './group-chat-hud-types.js'
 import type {AgentProfile, AgentStatus, GroupMessage} from './group-chat-view-types.js'
 import {useCurrentGroupChatRoomId} from './current-room.js'
@@ -160,6 +161,7 @@ export function GroupChatPanel({mode='full'}:GroupChatPanelProps) {
   const [error,setError]=useState('')
   const [copied,setCopied]=useState('')
   const [retry,setRetry]=useState(0)
+  const [expandOverrides,setExpandOverrides]=useState<Record<string,boolean>>({})
   const root=useRef<HTMLDivElement>(null)
   const scroll=useRef<HTMLDivElement>(null)
   const bottom=useRef<HTMLDivElement>(null)
@@ -184,7 +186,11 @@ export function GroupChatPanel({mode='full'}:GroupChatPanelProps) {
   },[mode])
   const activeAssignments=Object.values(liveAssignments).filter(item=>item.status==='queued'||item.status==='running').sort((a,b)=>(b.startedAt||b.updatedAt||0)-(a.startedAt||a.updatedAt||0)).slice(0,4)
   const isEmptyState=!messages.length&&!activeAssignments.length
-  const memberName=(roleId:string)=>members.find(member=>member.id===roleId)?.name||roleId
+  const memberName=(roleId:string)=>{
+    const m = members.find(member=>member.id===roleId)
+    if (!m) return roleId
+    return txRoleName(m, locale)
+  }
   const memberAvatar=(roleId:string)=>members.find(member=>member.id===roleId)?.avatar||'🤖'
   const assignmentStatusText=(assignment:AssignmentEnvelope)=>assignment.status==='queued'?tx(locale,'已接单，排队中','Queued'):tx(locale,'正在处理','Running')
   const assignmentLiveTitle=(assignment:AssignmentEnvelope)=>assignment.status==='queued'?tx(locale,'已进入执行队列','Queued for execution'):tx(locale,'正在像官方对话一样生成回复','Generating a reply like the official chat')
@@ -310,6 +316,32 @@ export function GroupChatPanel({mode='full'}:GroupChatPanelProps) {
   const copy=async(message:GroupMessage)=>{
     try{await navigator.clipboard.writeText(message.content);setCopied(message.messageId)}catch{setError('复制失败，请选择消息文字复制')}
   }
+  const isCollapsibleContent=(content:string)=>{
+    if(!content)return false
+    const text=content.trim()
+    if(text.length>140)return true
+    const lines=text.split('\n').filter(l=>l.trim().length>0)
+    return lines.length>3
+  }
+  const isMessageExpanded=(messageId:string,content:string,user:boolean)=>{
+    if(user&&!isCollapsibleContent(content))return true
+    if(!isCollapsibleContent(content))return true
+    return expandOverrides[messageId]===true
+  }
+  const toggleMessageExpand=(messageId:string,content:string,user:boolean)=>{
+    const current=isMessageExpanded(messageId,content,user)
+    setExpandOverrides(prev=>({...prev,[messageId]:!current}))
+  }
+  const collapseAll=()=>{
+    const next:Record<string,boolean>={}
+    for(const m of messages)next[m.messageId]=false
+    setExpandOverrides(next)
+  }
+  const expandAll=()=>{
+    const next:Record<string,boolean>={}
+    for(const m of messages)next[m.messageId]=true
+    setExpandOverrides(next)
+  }
   return <div ref={root} data-dsh-group-chat-panel className="gc-conversation">
     <style>{`
       .gc-conversation{position:relative;display:flex;flex-direction:column;flex:1;min-height:0;height:var(--gc-available-height,100%);max-height:var(--gc-available-height,100%);width:100%;overflow:hidden;color:var(--dsw-alias-label-primary,#eee);font-family:inherit;background:transparent;box-sizing:border-box;transition:padding-right .18s ease;}
@@ -390,6 +422,51 @@ export function GroupChatPanel({mode='full'}:GroupChatPanelProps) {
       .gc-message-body :is(p,li,td,th){font-size:13px;line-height:1.7;}
       .gc-message-body pre,.gc-message-body code{font-size:12px;}
       .gc-message-tools pre{white-space:pre-wrap;max-height:240px;}
+      .gc-thread-toolbar{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:0 0 16px;padding:8px 14px;border-radius:12px;background:var(--dsw-alias-bg-layer-1,#18181c);border:1px solid var(--dsw-alias-border-l1,#ffffff14);font-size:12px;}
+      .gc-thread-info{display:flex;align-items:center;gap:6px;color:var(--dsw-alias-label-secondary,#cbd5e1);font-weight:500;}
+      .gc-thread-badge{font-size:13px;}
+      .gc-thread-actions{display:flex;align-items:center;gap:6px;}
+      .gc-thread-btn{display:inline-flex;align-items:center;gap:4px;padding:3px 8px;border-radius:6px;border:1px solid var(--dsw-alias-border-l1,#ffffff18);background:var(--dsw-alias-bg-layer-2,#24242a);color:var(--dsw-alias-label-secondary,#cbd5e1);font:inherit;font-size:11px;cursor:pointer;transition:all .15s ease;}
+      .gc-thread-btn:hover{background:var(--dsw-alias-interactive-bg-hover,#2e2e36);color:var(--dsw-alias-label-primary,#eee);border-color:var(--dsw-alias-border-l2,#ffffff2a);}
+      .gc-message-body-wrap{position:relative;min-width:0;width:100%;}
+      .gc-message-body[data-collapsed="true"]{max-height:86px;overflow:hidden;position:relative;mask-image:linear-gradient(180deg,#000 55%,transparent 100%);-webkit-mask-image:linear-gradient(180deg,#000 55%,transparent 100%);user-select:text;}
+      .gc-collapse-trigger{width:100%;margin-top:6px;padding:6px 10px;display:flex;align-items:center;justify-content:center;gap:6px;border:1px dashed var(--dsw-alias-border-l1,#ffffff20);border-radius:8px;background:color-mix(in oklab,var(--dsw-alias-bg-layer-1,#1e1e24) 80%,transparent);color:var(--dsw-alias-label-secondary,#cbd5e1);font:inherit;font-size:11px;cursor:pointer;transition:all .15s ease;}
+      .gc-collapse-trigger:hover{background:var(--dsw-alias-bg-layer-2,#292930);color:var(--dsw-alias-label-primary,#eee);border-color:var(--dsw-alias-state-business-primary,#4d6bfe66);}
+      .gc-collapse-toggle-btn{padding:3px 6px;display:flex;align-items:center;gap:4px;border:0;background:transparent;color:var(--dsw-alias-label-secondary,#aaa);border-radius:5px;cursor:pointer;font:inherit;font-size:11px;}
+      .gc-collapse-toggle-btn:hover{background:var(--dsw-alias-bg-layer-2,#29292e);color:var(--dsw-alias-label-primary,#eee);}
+      .gc-reasoning-details{margin:8px 0;border:1px solid var(--dsw-alias-border-l1,#ffffff14);border-radius:8px;background:color-mix(in oklab,var(--dsw-alias-bg-base,#141418) 75%,transparent);overflow:hidden;}
+      .gc-reasoning-summary{display:flex;align-items:center;gap:7px;padding:6px 10px;font-size:12px;color:var(--dsw-alias-label-secondary,#a1a1aa);cursor:pointer;user-select:none;list-style:none;}
+      .gc-reasoning-summary::-webkit-details-marker{display:none;}
+      .gc-reasoning-summary:hover{background:var(--dsw-alias-interactive-bg-hover,#ffffff08);color:var(--dsw-alias-label-primary,#eee);}
+      .gc-reasoning-icon{display:inline-flex;color:#a78bfa;flex:0 0 auto;}
+      .gc-reasoning-title{font-weight:500;color:var(--dsw-alias-label-secondary,#cbd5e1);}
+      .gc-reasoning-preview{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--dsw-alias-label-tertiary,#71717a);font-size:11px;}
+      .gc-reasoning-arrow{margin-left:auto;display:inline-flex;transition:transform .2s ease;}
+      .gc-reasoning-details[open] .gc-reasoning-arrow{transform:rotate(180deg);}
+      .gc-reasoning-body{padding:8px 12px 10px;border-top:1px solid var(--dsw-alias-border-l1,#ffffff10);font-size:12px;line-height:1.6;color:var(--dsw-alias-label-secondary,#cbd5e1);}
+      .gc-message-tool-calls{margin:6px 0;display:grid;gap:5px;min-width:0;width:100%;}
+      .gc-tool-row{border:1px solid var(--dsw-alias-border-l1,#ffffff14);border-radius:8px;background:color-mix(in oklab,var(--dsw-alias-bg-base,#141418) 70%,transparent);overflow:hidden;transition:border-color .15s ease,background-color .15s ease;}
+      .gc-tool-row:hover{border-color:var(--dsw-alias-border-l2,#ffffff26);background:color-mix(in oklab,var(--dsw-alias-bg-base,#141418) 85%,transparent);}
+      .gc-tool-row[data-open="true"]{border-color:var(--dsw-alias-border-l2,#ffffff26);background:var(--dsw-alias-bg-base,#141418);}
+      .gc-tool-row-header{display:flex;align-items:center;gap:7px;min-height:30px;padding:4px 10px;cursor:pointer;user-select:none;font-size:12px;}
+      .gc-tool-icon{display:inline-flex;align-items:center;color:var(--dsw-alias-label-secondary,#a1a1aa);flex-shrink:0;}
+      .gc-tool-title{font-weight:600;color:var(--dsw-alias-label-primary,#f8fafc);flex-shrink:0;}
+      .gc-tool-sep{color:var(--dsw-alias-label-tertiary,#71717a);font-size:11px;user-select:none;}
+      .gc-tool-target{font-family:var(--dsw-font-mono,ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace);font-size:11px;color:var(--dsw-alias-state-business-primary,#60a5fa);background:rgba(255,255,255,0.06);padding:1px 6px;border-radius:4px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:320px;border:1px solid rgba(255,255,255,0.06);}
+      .gc-tool-trailing{margin-left:auto;display:flex;align-items:center;gap:8px;font-size:11px;color:var(--dsw-alias-label-tertiary,#71717a);flex-shrink:0;}
+      .gc-tool-duration{font-size:11px;color:var(--dsw-alias-label-tertiary,#71717a);}
+      .gc-tool-status{display:inline-flex;align-items:center;gap:4px;font-size:11px;padding:1px 6px;border-radius:4px;}
+      .gc-tool-status-running{color:#60a5fa;background:rgba(96,165,250,0.12);}
+      .gc-tool-spin{width:8px;height:8px;border:1.5px solid currentColor;border-right-color:transparent;border-radius:50%;animation:gc-tool-spin .8s linear infinite;}
+      @keyframes gc-tool-spin{from{transform:rotate(0deg);}to{transform:rotate(360deg);}}
+      .gc-tool-status-error{color:#f87171;background:rgba(248,113,113,0.12);}
+      .gc-tool-chevron{color:var(--dsw-alias-label-tertiary,#71717a);transition:transform .2s ease;flex-shrink:0;}
+      .gc-tool-chevron-open{transform:rotate(180deg);}
+      .gc-tool-row-body{padding:8px 10px;border-top:1px solid var(--dsw-alias-border-l1,#ffffff10);display:grid;gap:8px;background:color-mix(in oklab,var(--dsw-alias-bg-layer-1,#1e1e24) 40%,transparent);}
+      .gc-tool-section{display:grid;gap:4px;}
+      .gc-tool-section-label{font-size:10px;font-weight:700;color:var(--dsw-alias-label-tertiary,#71717a);letter-spacing:0.04em;}
+      .gc-tool-code{margin:0;padding:6px 8px;border-radius:6px;background:rgba(0,0,0,0.3);border:1px solid rgba(255,255,255,0.06);font-family:var(--dsw-font-mono,ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace);font-size:11px;line-height:1.5;color:var(--dsw-alias-label-secondary,#cbd5e1);max-height:180px;overflow:auto;white-space:pre-wrap;word-break:break-word;}
+      .gc-tool-code-result{background:color-mix(in oklab,var(--dsw-alias-bg-base,#121216) 90%,black);}
       .gc-chat-error{margin:8px auto;max-width:960px;padding:8px 16px;font-size:12px;color:#fca5a5;}
       @media(max-width:900px){.gc-agent-float{display:none;}}
       @media(max-width:760px){body[data-dsh-group-chat-tab-active="true"][data-dsh-group-chat-hud-docked-open="true"] .gc-conversation,body[data-dsh-group-chat-hero-open="true"][data-dsh-group-chat-hud-docked-open="true"] .gc-conversation{padding-right:44px;}body[data-dsh-group-chat-tab-active="true"][data-dsh-group-chat-hud-docked-open="true"] .gc-chat-messages,body[data-dsh-group-chat-hero-open="true"][data-dsh-group-chat-hud-docked-open="true"] .gc-chat-messages{padding-left:12px;padding-right:12px;}body[data-dsh-group-chat-tab-active="true"][data-dsh-group-chat-hud-docked-open="true"] .gc-composer,body[data-dsh-group-chat-hero-open="true"][data-dsh-group-chat-hud-docked-open="true"] .gc-composer{padding-left:12px;padding-right:12px;}}
@@ -403,21 +480,85 @@ export function GroupChatPanel({mode='full'}:GroupChatPanelProps) {
       <div className="gc-scroll-content"><div className="gc-chat-messages">
       {isEmptyState ? <div className="gc-chat-empty">{loading?<><strong>{tx(locale,'正在加载…','Loading…')}</strong><span>{tx(locale,'正在同步当前会话的群聊房间。','Syncing the group chat room for this session.')}</span></>:error?<div className="gc-load-error" role="alert"><strong>{tx(locale,'群聊加载失败','Group chat load failed')}</strong><span>{error}</span><button type="button" onClick={()=>setRetry(v=>v+1)}>{tx(locale,'重试加载','Retry loading')}</button></div>:<div className="gc-onboarding" aria-label={tx(locale,'Agent 群聊首次使用三步引导','Agent group chat onboarding')}><strong>{voice.emptyTitle}</strong><span>{voice.emptySubtitle}</span><div className="gc-onboarding-steps">{onboardingSteps.map(([title,body])=><div className="gc-onboarding-step" key={title}><b>{title}</b><span>{body}</span></div>)}</div><div className="gc-template-row" aria-label={tx(locale,'常见项目模板','Common project templates')}>{quickTemplates.map(item=><button type="button" key={item.label} className="gc-template-chip" onClick={()=>setDraft(item.text)}>{item.label}</button>)}</div></div>}</div> :
       <div className="gc-chat-thread" role="log" aria-label={tx(locale,'群聊消息记录','Group chat message log')} aria-live="polite" aria-relevant="additions">
+        {messages.filter(m=>!m.metadata?.isSilent).length > 1 && (
+          <div className="gc-thread-toolbar" aria-label={tx(locale,'群聊对话折叠控制','Group chat thread collapse controls')}>
+            <div className="gc-thread-info">
+              <span className="gc-thread-badge">💬</span>
+              <span>{tx(locale,`共 ${messages.filter(m=>!m.metadata?.isSilent).length} 条群聊讨论`,`${messages.filter(m=>!m.metadata?.isSilent).length} messages in thread`)}</span>
+            </div>
+            <div className="gc-thread-actions">
+              <button type="button" className="gc-thread-btn" onClick={collapseAll} title={tx(locale,'收起全部讨论（长发言默认收起）','Collapse all long messages')}>
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="m18 15-6-6-6 6"/></svg>
+                {tx(locale,'全部收起','Collapse all')}
+              </button>
+              <button type="button" className="gc-thread-btn" onClick={expandAll} title={tx(locale,'展开全部长发言','Expand all long messages')}>
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="m6 9 6 6 6-6"/></svg>
+                {tx(locale,'全部展开','Expand all')}
+              </button>
+            </div>
+          </div>
+        )}
         {messages.filter(m=>!m.metadata?.isSilent).map(message=>{
           const user=message.sender.kind==='user'
           if(message.sender.kind==='system')return <div key={message.messageId} className="gc-message gc-message-system"><SafeMessageText text={message.content} markdown={useMarkdown}/>{message.metadata?.autoSetup==='draft'&&<div className="gc-autosetup-actions" aria-label={tx(locale,'自动建群草案操作','Auto setup draft actions')}><button type="button" disabled={sending} onClick={()=>sendContent(locale==='en-US'?'Confirm setup':'确认创建')}>{tx(locale,'确认创建','Confirm setup')}</button><button type="button" disabled={sending} onClick={()=>sendContent(locale==='en-US'?'Cancel setup':'取消创建')}>{tx(locale,'取消创建','Cancel setup')}</button><button type="button" onClick={()=>setDraft(tx(locale,'补充修改：','Revise: '))}>{tx(locale,'补充修改','Revise')}</button></div>}</div>
-          return <article key={message.messageId} className={`gc-message ${user?'gc-message-user':'gc-message-agent'}`} aria-label={`${message.sender.name}的消息`}>
+          const isLong=!user&&isCollapsibleContent(message.content)
+          const expanded=isMessageExpanded(message.messageId,message.content,user)
+          const collapsed=isLong&&!expanded
+          const senderDisplayName=user?message.sender.name:memberName(message.sender.id)
+          return <article key={message.messageId} className={`gc-message ${user?'gc-message-user':'gc-message-agent'}`} aria-label={`${senderDisplayName}的消息`}>
             {!user&&<div className="gc-message-meta">
               <AvatarBadge avatar={message.sender.avatar} className="gc-message-avatar" />
-              <span className="gc-message-role">{message.sender.name}</span>
+              <span className="gc-message-role">{senderDisplayName}</span>
             </div>}
-            {message.reasoningContent&&<details><summary>思考过程</summary><SafeMessageText text={message.reasoningContent} markdown={useMarkdown}/></details>}
-            {message.metadata?.toolCalls?.map(tool=><details className="gc-message-tools" key={tool.id}><summary>{tool.name} · {tool.status}</summary><pre>{tool.arguments}</pre>{tool.result&&<pre>{tool.result}</pre>}</details>)}
-            <div className="gc-message-body">{user?message.content:<SafeMessageText text={message.content} markdown={useMarkdown}/>}</div>
+            {message.reasoningContent&&(
+              <details className="gc-reasoning-details">
+                <summary className="gc-reasoning-summary">
+                  <span className="gc-reasoning-icon">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M12 2a4 4 0 0 0-4 4c0 .4.1.8.2 1.2A4.5 4.5 0 0 0 5 11.5c0 1.5.7 2.8 1.8 3.6A4.5 4.5 0 0 0 11 20h2a4.5 4.5 0 0 0 4.2-4.9c1.1-.8 1.8-2.1 1.8-3.6 0-2.3-1.7-4.2-3.8-4.5.1-.4.2-.8.2-1.2a4 4 0 0 0-4-4z"/><path d="M12 2v20"/></svg>
+                  </span>
+                  <span className="gc-reasoning-title">{tx(locale,'思考过程','Thinking process')}</span>
+                  <span className="gc-reasoning-preview">
+                    {message.reasoningContent.trim().split('\n')[0].slice(0, 50)}…
+                  </span>
+                  <span className="gc-reasoning-arrow">
+                    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="m6 9 6 6 6-6"/></svg>
+                  </span>
+                </summary>
+                <div className="gc-reasoning-body">
+                  <SafeMessageText text={message.reasoningContent} markdown={useMarkdown}/>
+                </div>
+              </details>
+            )}
+            {message.metadata?.toolCalls && message.metadata.toolCalls.length > 0 && (
+              <div className="gc-message-tools gc-message-tool-calls" aria-label={tx(locale, '工具调用', 'Tool calls')}>
+                {message.metadata.toolCalls?.map(tool => (
+                  <GroupChatToolRow key={tool.id} tool={tool} locale={locale} />
+                ))}
+              </div>
+            )}
+            <div className="gc-message-body-wrap">
+              <div className="gc-message-body" data-collapsed={collapsed ? 'true' : 'false'}>
+                {user?message.content:<SafeMessageText text={message.content} markdown={useMarkdown}/>}
+              </div>
+              {collapsed && (
+                <button type="button" className="gc-collapse-trigger" onClick={()=>toggleMessageExpand(message.messageId,message.content,user)} aria-label={tx(locale,'展开全文','Expand full message')}>
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="m6 9 6 6 6-6"/></svg>
+                  <span>{tx(locale,`展开全文 · 共 ${message.content.length} 字`,`Expand full message · ${message.content.length} chars`)}</span>
+                </button>
+              )}
+            </div>
             <div className="gc-message-actions">
-              <button type="button" className="gc-copy" onClick={()=>copy(message)} aria-label={`复制${message.sender.name}的消息`}>
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" aria-hidden="true"><rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V4H4v12h4"/></svg>{copied===message.messageId?'已复制':'复制'}
+              <button type="button" className="gc-copy" onClick={()=>copy(message)} aria-label={tx(locale, `复制${senderDisplayName}的消息`, `Copy message from ${senderDisplayName}`)}>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" aria-hidden="true"><rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V4H4v12h4"/></svg>{copied===message.messageId?tx(locale,'已复制','Copied'):tx(locale,'复制','Copy')}
               </button>
+              {isLong && (
+                <button type="button" className="gc-collapse-toggle-btn" onClick={()=>toggleMessageExpand(message.messageId,message.content,user)} aria-label={expanded?tx(locale,'收起内容','Collapse content'):tx(locale,'展开全文','Expand content')}>
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    {expanded ? <path d="m18 15-6-6-6 6"/> : <path d="m6 9 6 6 6-6"/>}
+                  </svg>
+                  {expanded ? tx(locale,'收起','Collapse') : tx(locale,'展开','Expand')}
+                </button>
+              )}
               <time dateTime={new Date(message.timestamp).toISOString()}>{new Date(message.timestamp).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})}</time>
               {!user&&message.metadata?.modelUsed&&<span title={message.metadata.providerUsed}>{message.metadata.modelUsed}</span>}
             </div>

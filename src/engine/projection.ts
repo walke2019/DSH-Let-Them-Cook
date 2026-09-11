@@ -34,7 +34,11 @@ NO_REPLY
  */
   public static formatRoster(members: AgentProfile[], locale: GroupChatLocale = 'zh-CN'): string {
     const list = members.map(
-      m => `- @${m.name} (id: ${m.id}): ${m.roleDescription}`
+      m => {
+        const name = locale === 'en-US' && m.nameEn ? m.nameEn : m.name
+        const desc = locale === 'en-US' && m.roleDescriptionEn ? m.roleDescriptionEn : m.roleDescription
+        return `- @${name} (id: ${m.id}): ${desc}`
+      }
     )
     return locale === 'en-US' ? `[Group Chat Roster]\n${list.join('\n')}` : `【群聊成员名册】\n${list.join('\n')}`
   }

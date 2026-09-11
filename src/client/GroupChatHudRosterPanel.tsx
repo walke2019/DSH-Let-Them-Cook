@@ -3,7 +3,7 @@ import {AvatarBadge} from './AvatarBadge.js'
 import type {AgentProfile} from './group-chat-view-types.js'
 import type {AgentMailboxMessage, AssignmentEnvelope, LedgerData, RuntimeMetrics} from './group-chat-hud-types.js'
 import {hudCardStyle, hudGhostButtonStyle, hudPanelStackStyle, hudPrimaryButtonStyle, hudTextAreaStyle, hudTokens} from './group-chat-hud-styles.js'
-import {tx, type GroupChatLocale} from './i18n.js'
+import {tx, txRoleName, txRoleTitle, type GroupChatLocale} from './i18n.js'
 
 interface ThemeWorkflowDraft { title?: string; stages?: unknown[] }
 
@@ -111,13 +111,17 @@ export function GroupChatHudRosterPanel({
   })
   const commanderId = room?.orchestration?.masterAgentId || room?.moderatorAgentId || 'commander'
   const commander = (room?.members || []).find(member => member.id === commanderId)
+  const commanderFallback = commander?.name || commanderId
+  const commanderDisplayName = commander ? txRoleName(commander, locale) : commanderFallback
 
   return (
     <div data-dsh-gc-roster-panel style={hudPanelStackStyle}>
       {isTeamPanel && <div style={{...hudCardStyle,display:'grid',gap:8}} data-dsh-gc-team-summary>
         <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',gap:8,flexWrap:'wrap'}}>
           <div style={{fontSize:12,fontWeight:800,color:hudTokens.labelPrimary}}>{tx(locale,'团队','Team')}</div>
-          <div style={{fontSize:10,color:hudTokens.labelTertiary}}>{tx(locale,'主 Agent','Master Agent')}：{commander?.name || commanderId} · {tx(locale,'成员','Members')} {room?.members.length || 0}</div>
+          <div style={{fontSize:10,color:hudTokens.labelTertiary}}>
+            {tx(locale, `主 Agent：${commanderDisplayName} · 成员 ${room?.members.length || 0}`, `Master Agent: ${commanderDisplayName} · ${room?.members.length || 0} Members`)}
+          </div>
         </div>
         <input
           value={teamSearch}
@@ -189,19 +193,21 @@ export function GroupChatHudRosterPanel({
 
       {isTeamPanel && filteredMembers.map(member => {
         const stat = agentStats[member.id]
+        const displayName = txRoleName(member, locale)
+        const displayTitle = txRoleTitle(member, locale) || member.id
         return (
           <div key={member.id} style={{display:'flex',alignItems:'center',justifyContent:'space-between',gap:8,padding:'6px 8px',borderRadius:'6px',background:hudTokens.bgLayer2}}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px', minWidth:0 }}>
               <AvatarBadge avatar={member.avatar} className="gc-roster-avatar" />
               <div style={{minWidth:0}}>
-                <div style={{ fontWeight: 600, color: 'var(--dsw-alias-label-primary, #f8fafc)', fontSize: '11px', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{member.name}</div>
-                <div style={{ fontSize: '10px', color: 'var(--dsw-alias-label-caption, #64748b)', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{member.title || member.id}</div>
+                <div style={{ fontWeight: 600, color: 'var(--dsw-alias-label-primary, #f8fafc)', fontSize: '11px', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{displayName}</div>
+                <div style={{ fontSize: '10px', color: 'var(--dsw-alias-label-caption, #64748b)', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{displayTitle}</div>
               </div>
             </div>
             <div style={{ textAlign: 'right', fontSize: '10px', color: 'var(--dsw-alias-label-tertiary, #94a3b8)', display:'flex', alignItems:'center', gap:'6px', whiteSpace:'nowrap', flexShrink:0 }}>
               <span>{stat?.callCount || 0} {tx(locale,'轮','turns')}</span>
               <span>{stat?.totalTokens || 0} T</span>
-              <button type="button" onClick={()=>onEditAgent(member)} aria-label={`${tx(locale,'编辑','Edit')}${member.name}`}>{tx(locale,'编辑','Edit')}</button>
+              <button type="button" onClick={()=>onEditAgent(member)} aria-label={`${tx(locale,'编辑','Edit')}${displayName}`}>{tx(locale,'编辑','Edit')}</button>
             </div>
           </div>
         )

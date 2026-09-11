@@ -1,8 +1,8 @@
 import {AvatarBadge} from './AvatarBadge.js'
 import React, { useEffect, useId, useLayoutEffect, useRef, useState } from 'react'
-import {tx, type GroupChatLocale} from './i18n.js'
+import {tx, txRoleName, txRoleTitle, type GroupChatLocale} from './i18n.js'
 
-type Member = { id: string; name: string; avatar: string; title?: string }
+type Member = { id: string; name: string; nameEn?: string; avatar: string; title?: string; titleEn?: string }
 interface Props {
   members: Member[]
   value: string
@@ -27,7 +27,7 @@ export function GroupChatComposer({ members, value, onChange, onSend, sending, t
   const allLabel = tx(locale, '全员争鸣', 'All agents')
   const allTitle = tx(locale, '邀请所有角色参与', 'Invite every role to respond')
   const options = [...members, { id: 'all', name: allLabel, avatar: '◎', title: allTitle }]
-    .filter(m => `${m.name} ${m.id} ${m.title ?? ''}`.toLowerCase().includes(query.toLowerCase().trim()))
+    .filter(m => `${m.name} ${m.nameEn ?? ''} ${m.id} ${m.title ?? ''} ${m.titleEn ?? ''}`.toLowerCase().includes(query.toLowerCase().trim()))
 
   useLayoutEffect(() => {
     const el = textarea.current
@@ -48,7 +48,8 @@ export function GroupChatComposer({ members, value, onChange, onSend, sending, t
     const start = Math.min(selection.current.start, value.length)
     const end = Math.min(selection.current.end, value.length)
     const before = value.slice(0, start)
-    const mention = `${before && !/\s$/.test(before) ? ' ' : ''}@${member.name} `
+    const mentionName = member.id === 'all' ? member.name : txRoleName(member, locale)
+    const mention = `${before && !/\s$/.test(before) ? ' ' : ''}@${mentionName} `
     onChange(before + mention + value.slice(end))
     setOpen(false)
     requestAnimationFrame(() => {
@@ -117,10 +118,16 @@ export function GroupChatComposer({ members, value, onChange, onSend, sending, t
         <div className="gc-picker-title">{tx(locale,'选择要 @ 的角色','Choose a role to @')}</div>
         <input className="gc-member-search" ref={search} aria-label={tx(locale,'搜索角色','Search roles')} placeholder={tx(locale,'搜索角色…','Search roles…')} value={query} onChange={e => setQuery(e.target.value)} />
         <div className="gc-member-options">
-          {options.map(m => <button type="button" className="gc-member-option" key={m.id} onClick={() => choose(m)}>
-            <AvatarBadge avatar={m.avatar} className="gc-member-avatar" />
-            <span className="gc-member-copy"><strong>{m.name}</strong><small>{m.title || m.id}</small></span>
-          </button>)}
+          {options.map(m => {
+            const displayName = m.id === 'all' ? m.name : txRoleName(m, locale)
+            const displayTitle = m.id === 'all' ? m.title : (txRoleTitle(m, locale) || m.id)
+            return (
+              <button type="button" className="gc-member-option" key={m.id} onClick={() => choose(m)}>
+                <AvatarBadge avatar={m.avatar} className="gc-member-avatar" />
+                <span className="gc-member-copy"><strong>{displayName}</strong><small>{displayTitle}</small></span>
+              </button>
+            )
+          })}
           {!options.length && <div role="status" style={{ padding:12, fontSize:12 }}>{tx(locale,'没有匹配的角色','No matching roles')}</div>}
         </div>
       </div>}

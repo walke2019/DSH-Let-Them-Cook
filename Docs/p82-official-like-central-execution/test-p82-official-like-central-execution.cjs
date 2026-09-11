@@ -13,7 +13,7 @@ const checks = [
   ['progress bar remains auxiliary', panel.includes('assignmentProgress(assignment)') && panel.includes('gc-live-subtitle')],
   ['runtime summarizes tool calls from DSH events', runtime.includes('function summarizeToolCalls') && runtime.includes("event.type === 'tool/call'") && runtime.includes("event.type === 'tool/result'")],
   ['agent message metadata carries toolCalls', types.includes('export interface ToolCallRecord') && types.includes('toolCalls?: ToolCallRecord[]') && index.includes('toolCalls = execution.result.toolCalls || []')],
-  ['completed central messages render tool details', panel.includes('message.metadata?.toolCalls?.map') && panel.includes('gc-message-tools')],
+  ['completed central messages render tool details', (panel.includes('message.metadata?.toolCalls?.map') || panel.includes('message.metadata.toolCalls?.map')) && panel.includes('gc-message-tools')],
   ['new live copy is bilingual', panel.includes("tx(locale,'展开执行详情','Show execution details')") && panel.includes("tx(locale,'模型调用中；完成后会在这里直接变成正式回复'")],
 ]
 

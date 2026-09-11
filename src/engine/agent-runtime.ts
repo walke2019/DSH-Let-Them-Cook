@@ -81,31 +81,49 @@ function extractToolName(data: any): string {
   return String(data?.name || data?.toolName || data?.call?.name || data?.message?.source?.name || data?.message?.name || 'tool')
 }
 
+function extractToolTarget(rawArgs: any): string | undefined {
+  if (!rawArgs) return undefined
+  let parsed = rawArgs
+  if (typeof rawArgs === 'string') {
+    try { parsed = JSON.parse(rawArgs) } catch {}
+  }
+  if (typeof parsed === 'object' && parsed !== null) {
+    const candidate = parsed.file_path || parsed.path || parsed.dir || parsed.pattern || parsed.query || parsed.command || parsed.url
+    if (candidate) return String(candidate)
+  }
+  return undefined
+}
+
 function summarizeToolCalls(events: readonly any[]): ToolCallRecord[] {
   const calls = new Map<string, ToolCallRecord & { startedAt?: number }>()
   for (const event of events) {
     const data = event.data || {}
     if (event.type === 'tool/call') {
       const id = String(data.callId || data.id || data.call?.id || calls.size + 1)
+      const rawPayload = data.arguments || data.args || data.call?.arguments || data.input
       calls.set(id, {
         id,
         name: extractToolName(data),
-        arguments: stringifyToolPayload(data.arguments || data.args || data.call?.arguments || data.input),
+        arguments: stringifyToolPayload(rawPayload),
         status: 'running',
         startedAt: typeof event.time === 'number' ? event.time : undefined,
+        readWritePath: extractToolTarget(rawPayload),
       })
     }
     if (event.type === 'tool/result') {
       const id = String(data.message?.source?.callId || data.callId || data.id || data.call?.id || calls.size + 1)
       const prev = calls.get(id)
       const startedAt = prev?.startedAt
+      const rawPayload = data.arguments || data.args || data.input
+      const target = prev?.readWritePath || extractToolTarget(rawPayload)
       calls.set(id, {
         id,
         name: prev?.name || extractToolName(data),
-        arguments: prev?.arguments || stringifyToolPayload(data.arguments || data.args || data.input),
+        arguments: prev?.arguments || stringifyToolPayload(rawPayload),
         result: stringifyToolPayload(data.result || data.output || data.message?.content || data.error),
         status: data.error ? 'error' : 'success',
         durationMs: typeof startedAt === 'number' && typeof event.time === 'number' ? Math.max(0, event.time - startedAt) : undefined,
+        readWritePath: target,
       })
     }
   }

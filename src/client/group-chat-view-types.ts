@@ -48,10 +48,13 @@ export interface AgentProfile {
   resiliencePolicy?: {fallbackModels:{provider:string;model:string}[];maxRetriesPerModel:number;retryBackoffMs:number;timeoutMs:number}
   id: string
   name: string
+  nameEn?: string
   avatar: string
   color?: string
   title?: string
+  titleEn?: string
   roleDescription: string
+  roleDescriptionEn?: string
   systemPrompt?: string
   permissions: {
     level: string

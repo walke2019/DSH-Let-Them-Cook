@@ -60,10 +60,13 @@ export type PersonaThemeKey = 'modern' | 'three_kingdoms' | 'legends' | 'meme_co
 export interface RoleThemeMapping {
   roleKey: string
   name: string
+  nameEn?: string
   avatar: string
   color: string
   title: string
+  titleEn?: string
   catchphrase: string
+  catchphraseEn?: string
 }
 
 export interface ThemeVoiceProfile {
@@ -160,6 +163,7 @@ export interface AgentProfile {
  * Core public contract type field.
  */
   name: string
+  nameEn?: string
   /**
  * Core public contract type field.
  */
@@ -172,10 +176,12 @@ export interface AgentProfile {
  * Core public contract type field.
  */
   title?: string
+  titleEn?: string
   /**
  * Core public contract type field.
  */
   roleDescription: string
+  roleDescriptionEn?: string
   /**
  * Core public contract type field.
  */

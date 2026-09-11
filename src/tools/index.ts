@@ -92,7 +92,11 @@ export function registerGroupChatTools(
         const room = roomManager.switchTheme(roomId, theme)
         if (!room) return locale === 'en-US' ? `Error: room ${roomId} does not exist.` : `错误：房间 ${roomId} 不存在。`
 
-        const list = room.members.map(m => `- ${m.avatar} **${m.name}** (\`@${m.id}\`, ${m.title || ''})`)
+        const list = room.members.map(m => {
+          const name = locale === 'en-US' && m.nameEn ? m.nameEn : m.name
+          const title = locale === 'en-US' && m.titleEn ? m.titleEn : (m.title || '')
+          return `- ${m.avatar} **${name}** (\`@${m.id}\`${title ? `, ${title}` : ''})`
+        })
         return locale === 'en-US' ? `✅ Agent persona theme switched to [${theme}]. Current roster:\n${list.join('\n')}` : `✅ 智能体名号主题已切换为【${theme === 'meme_comedy' ? '沙雕整活' : theme === 'genshin' ? '原神提瓦特' : theme === 'three_kingdoms' ? '三国风云' : theme === 'legends' ? '科技传奇' : '现代经典'}】！当前名册：\n${list.join('\n')}`
       },
     }),
@@ -117,6 +121,17 @@ export function registerGroupChatTools(
         if (!room) return locale === 'en-US' ? `Error: room ${roomId} does not exist.` : `错误：房间 ${roomId} 不存在。`
 
         const approver = args.approverRoleId || 'commander'
+        if (room.workflow) {
+          const currentStage = room.workflow.stages[room.workflow.currentStageIndex]
+          if (currentStage?.tasks?.length) {
+            for (const t of currentStage.tasks) {
+              if (t.status !== 'passed') {
+                t.status = 'passed'
+                t.updatedAt = Date.now()
+              }
+            }
+          }
+        }
         const result = WorkflowOrchestrator.advanceStage(room, approver, args.summary, locale)
 
         if (!result.success) {

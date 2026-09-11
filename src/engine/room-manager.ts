@@ -51,10 +51,13 @@ export class RoomManager {
       {
         id: 'commander',
         name: mappings.commander.name,
+        nameEn: mappings.commander.nameEn,
         avatar: mappings.commander.avatar,
         color: mappings.commander.color,
         title: mappings.commander.title,
+        titleEn: mappings.commander.titleEn,
         roleDescription: '负责全盘目标把控、任务分工规划、各阶段交付物审核门控与收官验收。',
+        roleDescriptionEn: 'Orchestrates the project goal, reviews phase gates, and drives final closure.',
         systemPrompt: `你是群聊团队的【总指挥官】(${mappings.commander.name})。
 口头禅: "${mappings.commander.catchphrase}"
 你的核心职责：
@@ -80,10 +83,13 @@ export class RoomManager {
       {
         id: 'researcher',
         name: mappings.researcher.name,
+        nameEn: mappings.researcher.nameEn,
         avatar: mappings.researcher.avatar,
         color: mappings.researcher.color,
         title: mappings.researcher.title,
+        titleEn: mappings.researcher.titleEn,
         roleDescription: '负责外部资料搜索、网页解析爬取、竞品方案调研与提取结构化情报总结。',
+        roleDescriptionEn: 'Exhausts external web intel, crawls specs, and distills structured briefings.',
         systemPrompt: `你是群聊团队的【搜索调研专家】(${mappings.researcher.name})。
 口头禅: "${mappings.researcher.catchphrase}"
 你的核心职责：
@@ -109,10 +115,13 @@ export class RoomManager {
       {
         id: 'backend',
         name: mappings.backend.name,
+        nameEn: mappings.backend.nameEn,
         avatar: mappings.backend.avatar,
         color: mappings.backend.color,
         title: mappings.backend.title,
+        titleEn: mappings.backend.titleEn,
         roleDescription: '负责系统业务逻辑实现、数据结构建模、接口契约设计与高可用并发保障。',
+        roleDescriptionEn: 'Implements business logic, API schemas, high concurrency, and resilient systems.',
         systemPrompt: `你是群聊团队的【核心后端架构师】(${mappings.backend.name})。
 口头禅: "${mappings.backend.catchphrase}"
 你的核心职责：
@@ -138,10 +147,13 @@ export class RoomManager {
       {
         id: 'frontend',
         name: mappings.frontend.name,
+        nameEn: mappings.frontend.nameEn,
         avatar: mappings.frontend.avatar,
         color: mappings.frontend.color,
         title: mappings.frontend.title,
+        titleEn: mappings.frontend.titleEn,
         roleDescription: '负责交互原型设计、视觉组件美化、响应式排版与用户体验优化。',
+        roleDescriptionEn: 'Crafts responsive UI, elastic layouts, interactive feedback, and user empathy.',
         systemPrompt: `你是群聊团队的【交互体验设计师/前端开发】(${mappings.frontend.name})。
 口头禅: "${mappings.frontend.catchphrase}"
 你的核心职责：
@@ -167,10 +179,13 @@ export class RoomManager {
       {
         id: 'qa',
         name: mappings.qa.name,
+        nameEn: mappings.qa.nameEn,
         avatar: mappings.qa.avatar,
         color: mappings.qa.color,
         title: mappings.qa.title,
+        titleEn: mappings.qa.titleEn,
         roleDescription: '负责严苛红队对抗审查、极限用例推演、安全漏洞排查与质量阻断把关。',
+        roleDescriptionEn: 'Executes adversarial testing, edge case discovery, and release gate audits.',
         systemPrompt: `你是群聊团队的【红队质量审计官】(${mappings.qa.name})。
 口头禅: "${mappings.qa.catchphrase}"
 你的核心职责：
@@ -196,10 +211,13 @@ export class RoomManager {
       {
         id: 'writer',
         name: mappings.writer.name,
+        nameEn: mappings.writer.nameEn,
         avatar: mappings.writer.avatar,
         color: mappings.writer.color,
         title: mappings.writer.title,
+        titleEn: mappings.writer.titleEn,
         roleDescription: '负责提炼各阶段共识、更新共享黑板、编写标准化交付物与用户手册。',
+        roleDescriptionEn: 'Captures consensus into specs, updates scratchpad, and writes plain-talk docs.',
         systemPrompt: `你是群聊团队的【首席文案记录官】(${mappings.writer.name})。
 口头禅: "${mappings.writer.catchphrase}"
 你的核心职责：
@@ -381,15 +399,19 @@ export class RoomManager {
       const mapped = themeMap[member.id]
       if (mapped) {
         member.name = mapped.name
+        member.nameEn = mapped.nameEn
         member.avatar = mapped.avatar
         member.color = mapped.color
         member.title = mapped.title
+        member.titleEn = mapped.titleEn
         const themedAgent = themedFleet.get(member.id)
         if (themedAgent?.systemPrompt) member.systemPrompt = themedAgent.systemPrompt
         if (themedAgent?.roleDescription) member.roleDescription = themedAgent.roleDescription
+        if (themedAgent?.roleDescriptionEn) member.roleDescriptionEn = themedAgent.roleDescriptionEn
         member.groupChatRules.mentionKeywords = [
           `@${member.id}`,
           `@${mapped.name}`,
+          ...(mapped.nameEn ? [`@${mapped.nameEn}`] : []),
           ...(THEME_CATALOG.modern[member.id] ? [`@${THEME_CATALOG.modern[member.id].name}`] : [])
         ]
       }
@@ -938,7 +960,10 @@ export class RoomManager {
     lines.push('', en ? '## 3. Agent Roster' : '## 三、参与智能体花名册 (Agent Roster)')
     for (const m of room.members) {
       const permTag = en ? `[permission: ${m.permissions.level}]` : `[权限: ${m.permissions.level}]`
-      lines.push(`- **${m.name}** (\`@${m.id}\`, ${m.title || ''}): ${m.roleDescription} ${permTag}`)
+      const name = en && m.nameEn ? m.nameEn : m.name
+      const title = en && m.titleEn ? m.titleEn : (m.title || '')
+      const desc = en && m.roleDescriptionEn ? m.roleDescriptionEn : m.roleDescription
+      lines.push(`- **${name}** (\`@${m.id}\`${title ? `, ${title}` : ''}): ${desc} ${permTag}`)
     }
 
     if (room.assignments?.length) {

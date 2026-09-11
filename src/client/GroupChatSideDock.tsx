@@ -398,7 +398,15 @@ export function GroupChatSideDock() {
           .dsh-gc-sidebar-host,.dsh-gc-sidebar-host *{box-sizing:border-box;min-width:0;}
           .dsh-gc-sidebar-host{overflow:hidden;}
           .dsh-gc-sidebar-host :is(div,span,button,summary,details,p,small,b){max-width:100%;overflow-wrap:anywhere;}
-          .dsh-gc-sidebar-host [style*="white-space:nowrap"]{overflow:hidden!important;text-overflow:ellipsis!important;}
+          .dsh-gc-hud-head{padding:10px 12px;height:48px;min-height:48px;max-height:48px;border-bottom:1px solid var(--dsw-alias-border-l2,rgba(255,255,255,0.08));display:flex;align-items:center;justify-content:space-between;gap:8px;user-select:none;box-sizing:border-box;flex-wrap:nowrap!important;}
+          .dsh-gc-hud-head, .dsh-gc-hud-head *{overflow-wrap:normal!important;}
+          .dsh-gc-hud-head-left{display:flex;align-items:center;gap:8px;min-width:0;flex:1 1 auto;overflow:hidden;}
+          .dsh-gc-hud-title{font-size:13px;font-weight:600;color:var(--dsw-alias-label-primary,#f8fafc);white-space:nowrap!important;overflow:hidden!important;text-overflow:ellipsis!important;line-height:1.2;}
+          .dsh-gc-hud-subtitle{font-size:10px;color:var(--dsw-alias-label-tertiary,#94a3b8);white-space:nowrap!important;overflow:hidden!important;text-overflow:ellipsis!important;line-height:1.2;}
+          .dsh-gc-hud-actions{display:inline-flex;align-items:center;gap:4px;flex-shrink:0;white-space:nowrap!important;}
+          .dsh-gc-locale-toggle{width:56px;min-width:56px;height:24px;padding:0;border-radius:999px;border:1px solid var(--dsw-alias-border-l1,rgba(255,255,255,0.12));background:var(--dsw-alias-bg-layer-2,#202025);color:var(--dsw-alias-label-primary,#f8fafc);cursor:pointer;font-size:11px;font-weight:650;line-height:22px;white-space:nowrap!important;flex-shrink:0;display:inline-flex;align-items:center;justify-content:center;text-align:center;letter-spacing:-0.2px;}
+          .dsh-gc-hud-dock-btn{min-width:44px;height:24px;background:transparent;border:1px solid var(--dsw-alias-border-l1,rgba(255,255,255,0.08));color:var(--dsw-alias-label-secondary,#94a3b8);cursor:pointer;font-size:11px;padding:0 6px;border-radius:7px;white-space:nowrap!important;flex-shrink:0;display:inline-flex;align-items:center;justify-content:center;text-align:center;}
+          .dsh-gc-hud-close-btn{width:24px;height:24px;background:transparent;border:none;color:var(--dsw-alias-label-secondary,#94a3b8);cursor:pointer;font-size:14px;padding:0;border-radius:6px;white-space:nowrap!important;flex-shrink:0;display:inline-flex;align-items:center;justify-content:center;}
           .dsh-gc-sidebar-host details{width:auto!important;max-width:100%!important;overflow:hidden!important;}
           .dsh-gc-sidebar-host summary{max-width:100%!important;overflow:hidden!important;}
           .dsh-gc-sidebar-host select{min-width:0;max-width:100%;}
@@ -414,76 +422,40 @@ export function GroupChatSideDock() {
         {/**
  * Companion HUD: status, configuration, scratchpad, team, workflow, and ledger without duplicating the central chat input.
  */}
-        <div onMouseDown={startDockDrag} title={tx(locale,'拖动 HUD','Drag HUD')} style={{
-          padding: '12px 14px',
-          borderBottom: '1px solid var(--dsw-alias-border-l2, rgba(255,255,255,0.08))',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          cursor: dockFloating ? 'grab' : 'move',
-          userSelect: 'none',
-        }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <span style={{ fontSize: '16px' }}>🧭</span>
-            <div>
-              <div style={{ fontSize: '13px', fontWeight: 600, color: 'var(--dsw-alias-label-primary, #f8fafc)' }}>
+        <div onMouseDown={startDockDrag} title={tx(locale,'拖动 HUD','Drag HUD')} className="dsh-gc-hud-head" style={{cursor: dockFloating ? 'grab' : 'move'}}>
+          <div className="dsh-gc-hud-head-left">
+            <span style={{ fontSize: '16px', flexShrink: 0 }}>🧭</span>
+            <div style={{ minWidth: 0, overflow: 'hidden' }}>
+              <div className="dsh-gc-hud-title" title={tx(locale,'群聊控制台 (HUD)','Group chat console (HUD)')}>
                 {tx(locale,'群聊控制台 (HUD)','Group chat console (HUD)')}
               </div>
-              <div style={{ fontSize: '10px', color: 'var(--dsw-alias-label-tertiary, #94a3b8)' }}>
+              <div className="dsh-gc-hud-subtitle" title={displayRoomTitle}>
                 {displayRoomTitle}
               </div>
             </div>
           </div>
-          <div style={{display:'inline-flex',alignItems:'center',gap:4}} onMouseDown={e=>e.stopPropagation()}>
+          <div className="dsh-gc-hud-actions" onMouseDown={e=>e.stopPropagation()}>
             <button
               type="button"
               className="dsh-gc-locale-toggle"
               onClick={toggleLocale}
               aria-label={tx(locale,'切换为英文界面','Switch to Chinese UI')}
               title={tx(locale,'中英切换','Language toggle')}
-              style={{
-                height: '24px',
-                minWidth: '44px',
-                padding: '0 7px',
-                borderRadius: '999px',
-                border: '1px solid var(--dsw-alias-border-l1, rgba(255,255,255,0.10))',
-                background: 'var(--dsw-alias-bg-layer-2, #202025)',
-                color: 'var(--dsw-alias-label-primary, #f8fafc)',
-                cursor: 'pointer',
-                fontSize: '11px',
-                fontWeight: 650,
-                lineHeight: 1,
-              }}
             >
               {locale === 'zh-CN' ? '中 / EN' : 'EN / 中'}
             </button>
             <button
               type="button"
+              className="dsh-gc-hud-dock-btn"
               onClick={() => dockFloating ? resetDockPosition() : setDockFloating(true)}
               title={dockFloating ? tx(locale,'贴回右侧','Dock to right') : tx(locale,'切到浮窗','Switch to floating')}
-              style={{
-                background: 'transparent',
-                border: '1px solid var(--dsw-alias-border-l1, rgba(255,255,255,0.08))',
-                color: 'var(--dsw-alias-label-secondary, #94a3b8)',
-                cursor: 'pointer',
-                fontSize: '11px',
-                padding: '3px 6px',
-                borderRadius: '7px',
-              }}
             >
               {dockFloating ? tx(locale,'停靠','Dock') : tx(locale,'浮动','Float')}
             </button>
             <button
+              type="button"
+              className="dsh-gc-hud-close-btn"
               onClick={() => setIsOpen(false)}
-              style={{
-                background: 'transparent',
-                border: 'none',
-                color: 'var(--dsw-alias-label-secondary, #94a3b8)',
-                cursor: 'pointer',
-                fontSize: '14px',
-                padding: '4px',
-                borderRadius: '4px',
-              }}
             >
               ✕
             </button>

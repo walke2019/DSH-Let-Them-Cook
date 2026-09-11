@@ -56,6 +56,8 @@ export class DispatchArbiter {
       text.includes('@孔明') ||
       text.includes('@乔布斯') ||
       text.includes('@jobs') ||
+      text.includes('@steve jobs') ||
+      text.includes('@steve') ||
       text.includes('@史蒂夫')
     ) {
       isCommander = true
@@ -67,18 +69,25 @@ export class DispatchArbiter {
       '@马斯克': 'researcher',
       '@musk': 'researcher',
       '@elon': 'researcher',
+      '@elon musk': 'researcher',
       '@埃隆': 'researcher',
       '@黄仁勋': 'backend',
       '@老黄': 'backend',
       '@nvidia': 'backend',
+      '@jensen': 'backend',
+      '@jensen huang': 'backend',
       '@雷布斯': 'frontend',
       '@雷军': 'frontend',
       '@leijun': 'frontend',
+      '@lei jun': 'frontend',
       '@比尔盖茨': 'qa',
       '@盖茨': 'qa',
       '@gates': 'qa',
+      '@bill gates': 'qa',
+      '@bill': 'qa',
       '@张小龙': 'writer',
       '@allen': 'writer',
+      '@allen zhang': 'writer',
     }
     for (const [alias, roleId] of Object.entries(legendAliasMap)) {
       if (text.includes(alias)) {
@@ -92,6 +101,7 @@ export class DispatchArbiter {
       const matchCandidates = [
         `@${member.id.toLowerCase()}`,
         `@${member.name.toLowerCase()}`,
+        ...(member.nameEn ? [`@${member.nameEn.toLowerCase()}`] : []),
         ...(member.groupChatRules?.mentionKeywords || []).map(k => k.toLowerCase())
       ]
 

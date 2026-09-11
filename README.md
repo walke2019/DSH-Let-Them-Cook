@@ -1,125 +1,134 @@
-# DSH Group Chat
+# DSH Group Chat (DeepSeek Harness Multi-Agent Orchestration)
 
-Workspace-scoped multi-Agent group-chat orchestration plugin for DeepSeek Harness (DSH).
+<p align="center">
+  <b>English</b> | <a href="./Docs/README.md">简体中文</a>
+</p>
 
-`dsh-group-chat` is a Cordis extension for DSH. It does **not** replace the official chat. Instead, it adds a dedicated **Agent Chat** workspace tab where users can describe a project task in plain language, review an AI-generated role/workflow draft, confirm it, and then let a master Agent coordinate SubAgents through planning, execution, QA, documentation, and final handoff.
+<p align="center">
+  A workspace-scoped multi-Agent group-chat orchestration plugin built natively for <b>DeepSeek Harness (DSH)</b>.
+</p>
 
-## Language support
+---
 
-- **Default documentation language:** English, for open-source readability.
-- **Runtime UI:** automatically matches `zh-CN` / `en-US` from browser language or user selection.
-- **Chinese support:** Chinese UI copy, Chinese mention aliases, Chinese role names, and Chinese themed personas remain first-class product behavior.
-- **Source comments:** `src/**/*.ts(x)` comments and internal engineering notes should stay in English.
+## 🌟 Overview
 
-## Core capabilities
+`@dsh-external/dsh-group-chat` is a Cordis-powered extension designed for DeepSeek Harness (DSH). It preserves the official DSH chat tab while introducing a dedicated, collaborative **Agent Chat** workspace. 
 
-- **Middle `Agent Chat` tab:** safely registered through `conversation.view` with a stable `prepare()` adapter; the official DSH `Dialog` tab remains untouched.
-- **Right-side `Group Chat HUD`:** mounted through `shell.overlay`; shows workflow, execution status, scratchpad, ledger, team, role, and model settings.
-- **One-line setup flow:** if the user intent is clear, generate a draft; if not, ask a clarifying question; only write to the workspace after user confirmation.
-- **Master Agent + SubAgents:** `commander` understands intent, asks follow-ups, delegates, reviews, and closes; `researcher/backend/frontend/qa/writer` execute specialized work.
-- **Tool ownership and dedupe:** search/crawl/data extraction goes to `researcher`; backend/API/state to `backend`; UI/browser debugging to `frontend`; QA to `qa`; docs to `writer`.
-- **Workspace-scoped state:** roles, themes, workflows, recent models, fallback models, scratchpad, assignments, mailbox, and ledger are stored under `.pm-workflow/dsh-group-chat/` by default.
-- **Stable HUD layout:** docked/floating/draggable/resizable HUD, no global AppFrame squeezing, and scoped spacing only inside the `Agent Chat` tab.
-- **Bilingual runtime generation:** server APIs, tools, Agent prompts, theme drafts, and workflow drafts support `zh-CN / en-US`.
+In this space, users describe complex project goals in natural language. The system drafts a bespoke fleet of specialized AI roles and a tailored multi-stage workflow. Once approved by the user, the **Master Agent (`commander`)** orchestrates specialized **SubAgents** through research, backend engineering, frontend polish, adversarial QA testing, and technical documentation until the project loop is closed.
 
-## Built-in themes
+---
 
-- Default: Meme Squad
-- Meme Squad
-- Genshin / Teyvat
-- Modern Elite
-- Three Kingdoms
-- Tech Legends: Jobs / Musk / Jensen Huang / Lei Jun / Bill Gates / Zhang Xiaolong
+## ✨ Key Highlights
 
-The default generated setup uses the Meme Squad tone: playful, human-readable, and delivery-focused. Switching to Tech Legends creates the feeling of having tech giants working for the user.
+### 1. 🛡️ Native DSH UI Seams (Zero Hijacking)
+- **Central Workspace Tab (`conversation.view`)**: Safely registered with a stable `prepare()` adapter; official chat behavior and conversation tree remain 100% intact.
+- **Companion HUD Cockpit (`shell.overlay`)**: Resizable, dockable, or floating task dashboard displaying real-time execution states, stage gates, consensus scratchpad, and token ledgers without squeezing DSH AppFrame grids.
 
-## References and integration notes
+### 2. 🧰 Native-Feel Tool Call Rows & Progressive Disclosure
+- **Native Tool Row Adapter**: Replaces unformatted dumps with official-grade disclosure rows for `read`, `edit`, `write`, `grep`, `glob`, `bash`, and web search.
+- **Target Path Extraction**: Automatically extracts and displays target files (e.g. `src/index.ts`), search regex patterns, or bash commands as clickable, monospace badges.
+- **Live State & Micro-interactions**: Real-time pulse animation during execution, microsecond duration tags upon completion, and two-stage **Input (Args)** / **Output (Result)** collapsible drawers.
 
-This project was designed with several prior art and integration constraints in mind:
+### 3. 🌐 100% Full-Stack Bilingual Support (`zh-CN` / `en-US`)
+- **Dynamic Localization**: Automatically detects browser locale with manual one-click switching in the HUD header (`中 / EN`).
+- **Bilingual Roster & Mentions**: All personas (e.g., `Steve Jobs` / `史蒂夫·乔布斯`, `Jensen Huang` / `黄仁勋`, `Meme Director` / `离谱总导演`) support bilingual display, localized system prompts, and cross-language `@mentions` (both `@jobs` and `@乔布斯` resolve accurately).
+- **Localized Reports & Summaries**: Markdown export tools and meeting digests respect active locale without hardcoded fallback leaks.
 
-- **DSH official extension seams:** use `conversation.view` for the middle Agent Chat tab and `shell.overlay` for the companion HUD; do not modify DSH core source or hijack the official Dialog tab.
-- **Hermes-style isolation:** named bot roles, capability stripping, central message routing, and no private external sends from SubAgents.
-- **OpenClaw-style coordination:** `NO_REPLY` silence token, role-scoped responses, anti-loop rules, and explicit dispatcher ownership.
-- **dsh-mnemon / memory integration:** memory/context injection can coexist with this plugin. Historical `prepare` errors should be diagnosed as either frontend `conversation.view.prepare` adapter issues or backend tool scheduler / duplicated `@deepseek-ai/dsh-tools` symbol issues, not blindly attributed to the group-chat plugin.
-- **Workspace-first state:** role themes, workflows, model choices, scratchpad, assignments, mailbox, and ledger stay under the current workspace by default.
+### 4. 🎭 Built-in Persona Themes
+- **Tech Legends (`legends`)**: Steve Jobs (Commander), Elon Musk (Researcher), Jensen Huang (Backend), Lei Jun (Frontend), Bill Gates (QA), Allen Zhang (Writer).
+- **Meme Squad (`meme_comedy`)**: Playful, human-readable, and delivery-focused persona fleet.
+- **Modern Elite (`modern`)**: High-rigor engineering and architecture specialists.
+- **Three Kingdoms (`three_kingdoms`)**: Zhuge Liang, Sima Hui, Guan Yu, Zhou Yu, Wei Yan, Chen Lin.
+- **Genshin / Teyvat (`genshin`)**: Jean, Lisa, Zhongli, Nilou, Hu Tao, Paimon.
 
-## Project structure
+---
+
+## 🏗️ Architecture at a Glance
+
+```text
+DeepSeek Harness Web GUI (http://127.0.0.1:3080)
+ ├── Official "Dialog" View (Untouched)
+ └── Group Chat Workspace Extension
+      ├── Central View: Agent Chat (src/client/GroupChatPanel.tsx)
+      │    ├── Master-led Conversation Stream & Live Tool Rows
+      │    ├── Auto-Collapsible Long Messages (Native Gradient Mask)
+      │    └── Bottom Sticky Composer with Searchable @Mention Picker
+      └── Right Overlay: Group Chat HUD (src/client/GroupChatSideDock.tsx)
+           ├── Execution Director & Loop Quality Monitor
+           ├── Captain Plan (Task Protocol & Verification Gates)
+           ├── Roster Management & One-line Persona / Workflow Generator
+           └── Shared Consensus Scratchpad & Real-time Token Ledger
+```
+
+---
+
+## 🚀 Quick Start
+
+### 1. Build and Bundle
+```bash
+# Type check TypeScript definitions
+npm run typecheck
+
+# Build host (tsc) and client bundle (tsdown)
+npm run build:all
+```
+
+### 2. Live Injection & Hot Reload
+If using `dsh-super-injector`:
+```bash
+# Inject or update the package into DSH web profile
+dev_install_package --dir "/path/to/Dsh-group-chat"
+
+# Perform zero-downtime hot reload
+dev_reload_package --packageName "dsh-group-chat"
+```
+
+### 3. Verify in Browser
+Open `http://127.0.0.1:3080/` and refresh the page (`F5` or `Cmd + R`):
+1. The **Agent 群聊 (Agent Chat)** tab appears in the conversation tabs.
+2. Click the tab to start a new mission: drop one sentence explaining your goal.
+3. The Master Agent will propose a team roster and workflow draft for your confirmation.
+
+---
+
+## 🧪 Test Matrix & Quality Verification
+
+```bash
+# Run the complete regression test matrix
+npm run test:matrix
+
+# Run targeted unit & integration suites
+npm run test:bilingual-role-coverage   # Verify 100% bilingual role & mention coverage
+npm run test:native-tool-row-adapter   # Verify native tool disclosure and execution rows
+npm run test:collapsible-message-body  # Verify message progressive disclosure
+npm run test:tech-legends-theme        # Verify Tech Legends persona bindings
+```
+
+---
+
+## 📂 Project Structure
 
 ```text
 dsh-group-chat/
-├── README.md
-├── AGENTS.md
-├── Docs/
-│   ├── README.md
-│   ├── TODO.md
-│   ├── business-specification.md
-│   ├── technical-architecture.md
-│   ├── dispatch-engine.md
-│   ├── standards-and-extensibility.md
-│   ├── workflow-and-role-personas.md
-│   └── ... phase-specific docs and validation records
+├── README.md                      # English documentation (with Chinese switcher)
+├── AGENTS.md                      # Cross-agent collaboration contracts & coding rules
+├── Docs/                          # Comprehensive technical design & phase docs
+│   ├── README.md                  # Detailed Chinese documentation index
+│   ├── technical-architecture.md  # Deep dive into Cordis hooks and runtime engine
+│   ├── dispatch-engine.md         # Master Agent & SubAgent dispatch arbiter
+│   └── ...                        # Historical P-series test reports & specs
 ├── src/
-│   ├── index.ts
-│   ├── types.ts
-│   ├── compat/
-│   ├── engine/
-│   └── client/
-├── scripts/
+│   ├── index.ts                   # Host entry & Cordis service definitions
+│   ├── types.ts                   # Core TypeScript contracts & data schemas
+│   ├── engine/                    # Dispatcher, arbiter, projection & theme catalogs
+│   ├── tools/                     # Agent-callable coordination & workflow tools
+│   └── client/                    # React UI components, styles & i18n helpers
 ├── package.json
-├── tsconfig.json
 └── tsdown.config.ts
 ```
 
-## Development and validation
+---
 
-```bash
-npm run typecheck
-npm run build:all
-npm run test:matrix
-npm run preflight
-```
+## 📄 License
 
-Local DSH Web usually runs at:
-
-```text
-http://127.0.0.1:3080/
-```
-
-For UI changes, also verify in a browser:
-
-- The official `Dialog` tab still works.
-- The `Agent Chat` tab exists and does not trigger `prepare` errors.
-- The HUD does not cover the middle composer.
-- HUD text does not overflow the right panel.
-- The middle layout remains stable when the official left sidebar expands/collapses.
-
-## Pre-push checklist
-
-```bash
-npm run build:all
-npm run preflight
-npm run test:matrix
-```
-
-Latest full validation result: `TEST_MATRIX_EXIT:0`.
-
-## Documentation
-
-See [`Docs/README.md`](Docs/README.md).
-
-## 中文支持
-
-本项目 README 默认使用英文，方便开源社区阅读；运行态仍完整支持中文：中文界面、中文 `@角色`、中文主题名、中文提示词和 `zh-CN / en-US` 自动匹配都保留。
-
-## License
-
-MIT License
-
-
-## P65-P69 Task Cockpit Iteration
-
-- [P65 Captain Task Protocol](./Docs/p65-captain-task-protocol/README.md): every central Agent chat task now creates a commander-led task route map.
-- [P66 Durable SubAgent Resume](./Docs/p66-durable-subagent-resume/README.md): SubAgent claim/block/handoff/report/close/resume events are recorded for workspace recovery.
-- [P67 Approve & Run Transaction Card](./Docs/p67-approve-run-transaction-card/README.md): change-oriented work can expose will-change and rollback plans before approval.
-- [P68 Team Coordination Tools](./Docs/p68-team-coordination-tools/README.md): Agent-callable coordination tools keep master/subagent reporting auditable.
-- [P69 Task Cockpit Productization](./Docs/p69-task-cockpit-productization/README.md): HUD now emphasizes current work, loop quality, captain plan and approval cards instead of chat-only novelty.
+Distributed under the [MIT License](LICENSE).
