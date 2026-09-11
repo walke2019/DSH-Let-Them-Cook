@@ -209,17 +209,31 @@ export function GroupChatPanel({mode='full'}:GroupChatPanelProps) {
       return [...byId.values()].sort((a,b)=>a.timestamp-b.timestamp)
     })
     setLoading(true);setError('')
-    fetch(`/dsh-group-chat/api/room?id=${encodeURIComponent(roomId)}&ensure=1`,{signal:controller.signal}).then(async r=>{
-      if(!r.ok)throw Error(tx(locale,'群聊加载失败','Group chat load failed')+` (${r.status})`)
-      const data=await r.json()
-      if(!data.room)throw Error(tx(locale,'群聊数据暂未就绪','Group chat data is not ready yet'))
-      if(!active||controller.signal.aborted)return
-      setMembers(data.room.members);setActiveTheme(data.room.activeTheme || 'meme_comedy');setLiveAssignments(Object.fromEntries((data.room.assignments||[]).map((assignment:AssignmentEnvelope)=>[assignment.assignmentId,assignment])));upsert(data.messages||[])
-    }).catch(e=>{
-      if(!active)return
-      const message=timedOut?tx(locale,'群聊数据加载超时，正在自动重试；也可点重试或重新打开 dsh web 打印的认证链接。','Group chat data load timed out and will auto-retry. You can also click retry or reopen the authenticated URL printed by dsh web.'):e instanceof Error?e.message:String(e)
-      setError(message)
-    }).finally(()=>{window.clearTimeout(timeout);if(active)setLoading(false)})
+    const fetchWithRetry = async (attemptsLeft = 2): Promise<void> => {
+      try {
+        const r = await fetch(`/dsh-group-chat/api/room?id=${encodeURIComponent(roomId)}&ensure=1`, {signal: controller.signal})
+        if (!r.ok) throw Error(tx(locale, '群聊加载失败', 'Group chat load failed') + ` (${r.status})`)
+        const data = await r.json()
+        if (!data.room) throw Error(tx(locale, '群聊数据暂未就绪', 'Group chat data is not ready yet'))
+        if (!active || controller.signal.aborted) return
+        setMembers(data.room.members)
+        setActiveTheme(data.room.activeTheme || 'meme_comedy')
+        setLiveAssignments(Object.fromEntries((data.room.assignments || []).map((assignment: AssignmentEnvelope) => [assignment.assignmentId, assignment])))
+        upsert(data.messages || [])
+        setError('')
+      } catch (e) {
+        if (!active || controller.signal.aborted) return
+        if (attemptsLeft > 0 && !timedOut) {
+          await new Promise(resolve => window.setTimeout(resolve, 1000))
+          if (active && !controller.signal.aborted) return fetchWithRetry(attemptsLeft - 1)
+        }
+        const message = timedOut ? tx(locale, '群聊数据加载超时，正在自动重试；也可点重试或重新打开 dsh web 打印的认证链接。', 'Group chat data load timed out and will auto-retry. You can also click retry or reopen the authenticated URL printed by dsh web.') : e instanceof Error ? e.message : String(e)
+        setError(message)
+      } finally {
+        if (active) setLoading(false)
+      }
+    }
+    void fetchWithRetry()
     const unsubscribe=subscribeGroupChat(e=>{
       if(controller.signal.aborted)return
       try{
