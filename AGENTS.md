@@ -1,6 +1,8 @@
-# AGENTS.md — DSH Let Them Cook (开整天团) 群聊多 Agent 协同守则与跨角色交互契约
+# AGENTS.md — DSH Let Them Cook (开整天团) AI Agent 编码、UI 规范标准及避坑开发指南
 
-本文件定义了在 `dsh-group-chat` (DSH Let Them Cook / 开整天团) 环境中运行的所有智能体（无论是作为群聊成员的业务 Agent，还是协助开发该项目的代码 Agent）必须严格遵循的操作公约与行为底线。
+本文件是面向所有参与 `DSH Let Them Cook` (DSH 开整天团，包标识 `@dsh-external/dsh-let-them-cook`) 维护、重构与功能演进的 **AI Coding Agent**，以及在群聊多智能体协同中运行的 **业务 Participant Agent** 的最高工程宪法与避坑指南。
+
+凡是在本项目中编写代码、挂载 DSH 扩展插槽、设计 UI 交互样式、处理运行时事件流或调度工作流任务，必须严格遵守以下契约！
 
 ---
 
