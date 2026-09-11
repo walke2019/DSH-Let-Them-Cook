@@ -9,311 +9,313 @@
 </p>
 
 <p align="center">
-  <b>Toss in the work, let them cook!</b><br/>
-  <b>把活儿丢进群，放手让他们开整！</b><br/>
-  专为 <b>DeepSeek Harness (DSH)</b> 原生打造的工作区级多 Agent 自治协同与闭环交付编排扩展。<br/>
-  别再给单聊 AI 当全职保姆了！拒绝纯嘴炮虚假执行，拒绝机器人互拍马屁——让专业团队真正跑工具、敲代码、做质检，拿交付结果说话！
+  <b>English</b> | <a href="./Docs/README.md">简体中文 (详细文档)</a>
 </p>
 
 <p align="center">
-  <a href="#-一句话说清核心价值-what-makes-it-cook">核心价值</a> •
-  <a href="#-与-dsh-底座业务架构边界-architecture--boundaries">架构边界</a> •
-  <a href="#-业务闭环流转全景-workflow-lifecycle">业务闭环</a> •
-  <a href="#-硬核功能亮点-features">硬核亮点</a> •
-  <a href="#-内置天团世界观-personas">天团世界观</a> •
-  <a href="#-扩展安装部署指南-installation--deployment">安装部署</a> •
-  <a href="#-质量保证与测试矩阵-quality--test-matrix">测试矩阵</a> •
-  <a href="#-项目导航与开发宪章-navigation--agentsmd">开发宪章</a>
+  <b>Toss in the work, let them cook!</b><br/>
+  <i>把活儿丢进群，放手让他们开整！</i><br/>
+  A workspace-scoped multi-Agent autonomous orchestration & delivery plugin built natively for <b>DeepSeek Harness (DSH)</b>.<br/>
+  Stop babysitting single chatbots. Cut the fluff, eliminate bot-to-bot sycophancy, and let a coordinated squad execute real tools, inspect code diffs, run red-team QA, and close project loops autonomously!
+</p>
+
+<p align="center">
+  <a href="#-core-value-what-makes-it-cook">Core Value</a> •
+  <a href="#-architecture--host-boundaries">Architecture & Boundaries</a> •
+  <a href="#-autonomous-workflow-lifecycle">Workflow Lifecycle</a> •
+  <a href="#-key-highlights">Key Highlights</a> •
+  <a href="#-built-in-personas--themes">Themes & Personas</a> •
+  <a href="#-installation--deployment-guide">Installation Guide</a> •
+  <a href="#-test-matrix--quality-assurance">Test Matrix</a> •
+  <a href="#-navigation--development-constitution-agentsmd">AGENTS.md Constitution</a>
 </p>
 
 ---
 
-## 🍳 一句话说清核心价值 (What Makes It Cook?)
+## 🍳 Core Value: What Makes It Cook?
 
-### 痛点：传统 AI 单聊 / 假多智能体的四大翻车现场
-1. **“人工当保姆”**：你得一步步问、一步步催，写个功能得来回拷问几十次，稍微长一点的任务 AI 就突然失忆停摆；
-2. **“嘴炮流干活”**：模型在对话框里信誓旦旦声称“我已为您读取了文件”、“我已跑通了单元测试”，一查后台实际上连工具权限都没有，纯靠幻觉胡说八道；
-3. **“机器人自嗨”**：很多所谓的多智能体插件，一旦跑起来就是几个角色在群里互相拍马屁致谢（“感谢架构师”、“同意楼上观点”），Token 烧得飞起，产物一无所有；
-4. **“暴力侵入宿主”**：动不动就劫持主界面，污染全局 DOM，搞得官方源版“对话”输入框都丢了，升级版本直接崩盘。
+### The Pain Points: 4 Disasters in Traditional Chatbots & Pseudo-Multi-Agents
+1. **The "Full-time Babysitter" Trap**: You have to nudge the AI step by step. If a task exceeds 3 turns, it loses context, stalls, or forgets what it was building;
+2. **"Armchair Developers" (Hallucinated Tool Execution)**: Chatbots claim *"I have inspected your files and passed all unit tests"*, while behind the scenes they have zero tool permissions and touched zero files;
+3. **Bot-to-Bot Echo Chambers**: Supposed multi-agent tools often devolve into endless rounds of mutual flattery (*"Thanks Architect!"*, *"Totally agree with you!"*), burning thousands of tokens while producing zero deliverables;
+4. **Host Hijacking & Fragility**: Hacky plugins hijack global DOM structures, breaking the official DSH chat tab, vanishing the composer, and crashing across version updates.
 
-### 解法：DSH 开整天团的自治交付哲学
-> **你只当老板负责喝咖啡与点头确认，剩下的脏活累活交给天团开整！**
+### The Solution: The "Let Them Cook" Philosophy
+> **You act as the Director enjoying your coffee and giving final approvals — the squad takes care of all the grunt work.**
 
-- **老板只需丢一句话**：不用费心手搓角色 Prompt 或配置复杂工作流。中央群聊一句话丢出需求（例如：“修个页面溢出 Bug”、“为后端接入 Redis 缓存”、“做个发版前全面审计”）；
-- **主控秒级出方案**：总指挥官（`commander`，如乔布斯/诸葛亮）秒级理解意图，生成量身定制的角色阵容与五阶段工作流草案，**得到你确认批准后，才真正动工作区配置**；
-- **各领域专员各司其职，工具真刀真枪执行**：
-  - 调研专员（马斯克）跑原生工具搜索与网页情报爬取；
-  - 后端架构（黄仁勋）手搓 API 逻辑、修改代码、真机跑测试；
-  - 前端开发（雷布斯）还原交互样式、精修组件；
-  - 质量审计（比尔·盖茨）提大刀做红队测试、执行 Bash 验证命令；
-  - 首席写手（张小龙）收口技术文档与 TODO。
-- **官方同款工具状态机与代码 Diff**：每个工具调用都有独立卡片，毫秒级流式跳动。`edit` 自动计算 `+29 -14` 行号变动，`bash` 提取具体任务描述，退出码非零醒目标注 `失败` 标签；
-- **全链路加密 Mailbox 与质检门禁**：SubAgent 完成任务后通过内部信箱向主控汇总，QA 验收未通过严禁强行推进，彻底保障交付质量；
-- **人在回路主权在握**：遇到关键里程碑、架构技术选型或重大风险，总指挥官主动向你请示汇报，绝不在暗地里擅自自闭环！
+- **Drop One Sentence as Director**: No need to craft complex system prompts or fiddle with graph configs. Simply describe your mission in natural language (e.g. *"Fix the 500 error in auth router"*, *"Add Redis caching layer"*, *"Run pre-release audit"*);
+- **Instant Squad Formation & Workflow Proposal**: The **Master Agent (`commander`)** analyzes intent within seconds, drafting a bespoke roster and a 5-stage delivery pipeline. **Nothing is written to your workspace until you confirm and approve**;
+- **Specialists Execute Real Tools**:
+  - **Researcher (e.g., Elon Musk)**: Dispatches web search and scraper tools for documentation and references;
+  - **Backend Architect (e.g., Jensen Huang)**: Inspects files, edits code, calculates diffs, and runs local commands;
+  - **Frontend Polish (e.g., Lei Jun)**: Tweaks UI components and visual styles;
+  - **QA Director (e.g., Bill Gates)**: Adversarial red-teaming, automated verification via `bash`, ensuring zero regressions;
+  - **Chief Scribe (e.g., Allen Zhang)**: Consolidates release notes and syncs the backlog.
+- **Native-Feel Tool Row Adapters with Live Diffs**: Streamed tool execution rows show file paths, diff statistics (e.g. `+29 -14`), bash descriptions, and red `Failed` tags for non-zero exit codes;
+- **Quality Gates & Encrypted Mailbox**: SubAgents report back to the Master Agent via structured mailboxes. Tasks must pass strict QA verification commands before the stage gate advances;
+- **Human-in-the-Loop Sovereign Control**: At critical milestones, architecture trade-offs, or destructive operations, the Commander proactively consults you for confirmation.
 
 ---
 
-## 🏗️ 与 DSH 底座业务架构边界 (Architecture & Boundaries)
+## 🏗️ Architecture & Host Boundaries
 
-本扩展作为 **Cordis 扩展模块** 深度集成于 DeepSeek Harness，遵循 **“零污染、零劫持、无感注入、安全避让”** 的顶级工程契约：
+`@dsh-external/dsh-let-them-cook` runs as a **Cordis extension module** inside DeepSeek Harness. It adheres strictly to the **Zero-Hijacking & Scoped Lifecycle** contract:
 
 ```text
 ┌──────────────────────────────────────────────────────────────────────────────────┐
-│                        DeepSeek Harness (DSH) 官方底座宿主                        │
+│                          DeepSeek Harness (DSH) Host                             │
 │                                                                                  │
 │  ┌────────────────────────┐  ┌────────────────────────────────────────────────┐  │
-│  │  官方源版「对话」视图   │  │  DSH 原生微内核与运行时服务 (Cordis Engine)    │  │
-│  │  (Zero Hijacking 零劫持│  │  ├─ @deepseek-ai/dsh-tools 原生工具库          │  │
-│  │   生命周期 100% 独立)  │  │  │  (read, edit, write, grep, glob, bash 等)   │  │
-│  └────────────────────────┘  │  ├─ LLM 请求拦截管道 (Provider / Model 动态路由)│  │
-│                              │  └─ Session 状态机与持久化事件流               │  │
+│  │  Official "Chat" View  │  │  DSH Microkernel & Runtime Services (Cordis)    │  │
+│  │  (Zero Hijacking, 100% │  │  ├─ @deepseek-ai/dsh-tools (read, edit, bash...)│  │
+│  │   Clean Isolation)     │  │  ├─ LLM Request Interception (Provider Routing)│  │
+│  └────────────────────────┘  │  └─ Session State Machine & Event Persistence  │  │
 │                              └───────────────────────┬────────────────────────┘  │
 └──────────────────────────────────────────────────────┼───────────────────────────┘
-                                                       │ 规范 Slot & Tool Scope 直通
+                                                       │ Clean Slot & Tool Whitelist
                                                        ▼
 ┌──────────────────────────────────────────────────────────────────────────────────┐
-│             🍳 DSH Let Them Cook (开整天团) 业务层 (@dsh-external/dsh-let-them-cook)     │
+│             🍳 DSH Let Them Cook (@dsh-external/dsh-let-them-cook)               │
 │                                                                                  │
-│   【主舞台】conversation.view 插槽              【驾驶舱】shell.overlay 悬浮/停靠  │
+│   【Main Stage】conversation.view Slot          【Cockpit】shell.overlay Dock/Float │
 │   ┌────────────────────────────────────┐       ┌───────────────────────────────┐ │
-│   │    中央 Agent 群聊主阵地           │◄─────►│    开整天团工作台 (HUD)       │ │
-│   │                                    │ 协同  │                               │ │
-│   │ ├─ 老板丢任务：一键生成/确认草案    │ 状态  │ ├─ 路线图：Captain Task 路线  │ │
-│   │ ├─ 专员争鸣：专职责边界与防死循环  │ 同步  │ ├─ 质检门禁：Stage DAG Quality│ │
-│   │ ├─ 流式工具卡：Diff 行号/Bash 描述 │ (SSE) │ ├─ 共享黑板：Scratchpad 决策  │ │
-│   │ ├─ 长文本渐进展开 (Gradient Mask)  │       │ └─ 消耗账本：Prompt Cache 命中│ │
-│   │ └─ 常驻底部输入框：Searchable @Picker│       └───────────────────────────────┘ │
+│   │   Central Agent Group Chat Tab     │◄─────►│    Companion HUD Cockpit      │ │
+│   │                                    │ State │                               │ │
+│   │ ├─ Director Prompt: Auto Draft Plan│ Sync  │ ├─ Route Map: Captain Protocol│ │
+│   │ ├─ Role Boundaries: NO_REPLY Token │ (SSE) │ ├─ Quality Gate: Stage DAG    │ │
+│   │ ├─ Live Tool Rows: +Diff / Bash    │       │ ├─ Consensus: Scratchpad      │ │
+│   │ ├─ Progressive Long Message Masks  │       │ └─ Ledger: Prompt Cache Hits  │ │
+│   │ └─ Bottom Fixed Searchable Composer│       └───────────────────────────────┘ │
 │   └────────────────────────────────────┘                                         │
 │                              ▲                                                   │
-│                              │ 250ms 事件探针 & Mailbox 上报                     │
+│                              │ 250ms Event Polling & Mailbox Delivery            │
 │   ┌──────────────────────────┴────────────────────────────────────────────────┐  │
-│   │    开整调度与防中断引擎 (Dispatch & Anti-Stall Engine)                     │  │
-│   │    ├─ Universal Master Handoff：SubAgent 交付完毕强制回传主控收口         │  │
-│   │    ├─ 双语推进识别引擎：智能识别“通过/准予/Approved/Proceed/LGTM”         │  │
-│   │    ├─ 动态交互配额：快速任务 6~8 轮紧凑防发散，长工作流 24 轮充沛保障     │  │
-│   │    ├─ 看门狗自愈机制：超时或异常自动向指挥官发报警信，由主控接管汇报      │  │
-│   │    └─ 工作区级持久化：`.pm-workflow/dsh-group-chat/` 换项目绝对不串台     │  │
+│   │    Dispatch & Anti-Stall Engine                                           │  │
+│   │    ├─ Universal Master Handoff: Mandatory return to Commander on complete │  │
+│   │    ├─ Bilingual Stage Advance: Fuzzy match "Approved / Proceed / LGTM"    │  │
+│   │    ├─ Adaptive Interaction Budget: 6~8 turns for quick, 24 for workflow   │  │
+│   │    ├─ Watchdog Self-Healing: Auto alert mailbox on timeout, Commander takes over│
+│   │    └─ Workspace-Scoped State: `.pm-workflow/dsh-group-chat/` isolated     │  │
 │   └───────────────────────────────────────────────────────────────────────────┘  │
 └──────────────────────────────────────────────────────────────────────────────────┘
 ```
 
-### 为什么我们敢说“绝不搞崩官方环境”？
-1. **官方对话 100% 原汁原味**：离开本插件进入官方原生“对话”标签时，本插件的所有 DOM 容器、HUD 覆盖、样式劫持完全卸载，不留下任何脏数据或无效样式；
-2. **绝对安全的 `prepare()` 契约**：在 `conversation.view` 插槽中暴露合规的生命周期适配层，无论官方 DSH 怎样热更新升级，都不会触发 `Cannot read properties of undefined (reading 'prepare')`；
-3. **HUD 智能对称避让**：右侧 HUD 控制台只在当前插件激活时按需渲染；展开或拖拽缩放时仅调整群聊主界面的内部间距，绝不粗暴覆写全局 AppFrame 栅格。
+### Why It Never Breaks Official DSH Behavior
+1. **Zero Pollution in Official Chat**: Switching to the official "Chat" tab unmounts all plugin elements, HUD overlays, and styles. Zero leftover classes or body attributes;
+2. **Stable `prepare()` Lifecycle**: Registers `conversation.view` with an immutable adapter so DSH upgrades never throw `Cannot read properties of undefined (reading 'prepare')`;
+3. **Smart HUD Spacing**: The HUD overlay only adjusts the inner padding of the group chat conversation container. It never tampers with DSH AppFrame grids or global variables.
 
 ---
 
-## 🔄 业务闭环流转全景 (Workflow Lifecycle)
+## 🔄 Autonomous Workflow Lifecycle
 
-从你提出一个想法，到代码真正落地提交，天团内部全自动化流转：
+From a simple task prompt to tested code delivery:
 
 ```mermaid
 sequenceDiagram
     autonumber
-    actor Boss as 👨‍💼 人类老板 (User)
-    participant Cmd as 👑 总指挥官 (Commander)
-    participant Arbiter as ⚙️ 调度仲裁器 (Arbiter)
-    participant Sub as 🛠️ 专职 Agent (Backend/QA/etc.)
-    participant Tools as 💻 DSH 原生工具 (read/edit/bash)
-    participant Gate as 🚦 质量门禁 (Quality Gate)
+    actor Boss as 👨‍💼 Human Director (User)
+    participant Cmd as 👑 Commander (Master Agent)
+    participant Arbiter as ⚙️ Dispatch Arbiter
+    participant Sub as 🛠️ Specialist Agent (Backend/QA)
+    participant Tools as 💻 Native DSH Tools (read/edit/bash)
+    participant Gate as 🚦 Quality Gate (QA Check)
 
-    Boss->>Cmd: 1. 丢入一句任务需求 (例如：“修个接口 500 错误”)
-    Cmd->>Boss: 2. 拟定团队阵容与工作流草案 (待确认)
-    Boss->>Cmd: 3. 点击「确认创建」/ 回复确认
-    Cmd->>Arbiter: 4. 创建任务路线图 (Captain Task Protocol)
-    Arbiter->>Sub: 5. 派单给专职人员并下发任务信封 (Assignment)
+    Boss->>Cmd: 1. Send goal (e.g. "Fix HTTP 500 error in auth router")
+    Cmd->>Boss: 2. Propose specialist roster & 5-stage workflow draft
+    Boss->>Cmd: 3. Click "Confirm setup" / Approve
+    Cmd->>Arbiter: 4. Build Captain Task Route Map
+    Arbiter->>Sub: 5. Assign task envelope to specialist
     activate Sub
-    Sub->>Tools: 6. 真实调用 read/grep/edit/bash
-    Tools-->>Sub: 7. 执行产物与 Exit Code
-    Sub-->>Arbiter: 8. 250ms 流式探针上报实时工具状态 (呈现 Diff 与卡片)
-    Sub->>Cmd: 9. 任务完成，通过 Mailbox 投递交付成果报告
+    Sub->>Tools: 6. Execute native tools: read / grep / edit / bash
+    Tools-->>Sub: 7. Return tool outputs & exit codes
+    Sub-->>Arbiter: 8. 250ms live stream probe updates tool rows & diffs (+29 -14)
+    Sub->>Cmd: 9. Task complete, post report to Commander's mailbox
     deactivate Sub
-    Cmd->>Gate: 10. 检查 QA 验收与 verifyCommand 测试是否跑通
-    alt 验收不合格
-        Gate-->>Cmd: 驳回并提出整改意见
-        Cmd->>Sub: 责令整改重新修复
-    else 验收合格
-        Gate-->>Cmd: 质量门禁放行
-        Cmd->>Boss: 11. 里程碑结题汇报，请求人类老板最终验收与批示！
+    Cmd->>Gate: 10. Run verifyCommand & inspect QA checklist
+    alt Verification Failed
+        Gate-->>Cmd: Reject & report failure details
+        Cmd->>Sub: Command revision & retry
+    else Verification Passed
+        Gate-->>Cmd: Quality Gate cleared
+        Cmd->>Boss: 11. Milestone summary & request Director's acceptance!
     end
 ```
 
 ---
 
-## ✨ 硬核功能亮点 (Key Highlights)
+## ✨ Key Highlights
 
-### 1. 🧰 官方同款流式工具卡片 (Official-like Native Tool Rows)
-不再是一个转圈的等待图标！在 SubAgent 执行工具时，中央群聊消息流中实时跳出官方同款动态卡片：
+### 1. 🧰 Official-Like Native Tool Rows with Live Diffs
+Gone are the days of blind spinners! Tool invocations appear in real-time within the conversation stream:
 ```text
 Grep   120000
 读取   src/index.ts
 Bash   Add commander and writer to model-settings.json
 编辑   src/engine/arbiter.ts   +29 -14
-失败   Bash   npm test:matrix
+失败   Bash   npm run test:matrix
 ```
-- **代码行号 Diff**：自动比对 `edit` 前后行数，渲染 `+29 -14` 红绿药丸标签；
-- **智能语义提取**：自动呈现操作文件路径，提取 Bash 任务真实意图，高亮检索关键词；
-- **错误熔断机制**：发生非零退出码或异常时，显示醒目红底 `失败` 标签；
-- **双层抽屉折叠**：每一行工具均可点击折叠/展开，查看完整的入参 (Input) 与产物 (Output)。
+- **Line Diff Extraction**: Automatically compares replacement strings for `edit`, displaying monospace `+add -del` badges;
+- **Semantic Target Badge**: File paths for `read`, description intent for `bash`, and query patterns for `grep`;
+- **Error Badges**: Explicit red `Failed` badge when commands return non-zero exit codes;
+- **Two-Stage Drawer**: Click any row to expand its full **Input (Args)** and **Output (Result)**.
 
-### 2. ⚡ 真正的 Prompt Caching 与真实消耗账本
-对标官方 DSH 的底座计量与缓存规范：
-- **全厂商缓存协议兼容**：兼容解析 DeepSeek 的 `prompt_cache_hit_tokens`、OpenAI 的 `prompt_tokens_details.cached_tokens` 与 Anthropic 的 `cache_read_input_tokens`；
-- **拒绝虚假 0% 误导**：无缓存数据时优雅标明，真实命中共享团队宪章前缀时精准呈现：
+### 2. ⚡ Genuine Prompt Caching & Transparent Token Ledger
+Accurate, uncompromised token accounting aligned with official DSH `TurnUsage`:
+- **Cross-Gateway Prompt Caching**: Parses `prompt_cache_hit_tokens` (DeepSeek), `prompt_tokens_details.cached_tokens` (OpenAI), and `cache_read_input_tokens` (Anthropic);
+- **No Deceptive 0%**: Distinguishes unsupported gateways from valid hits. When shared constitution prefixes hit KV cache, displays:
   ```
-  3 轮 · 8 步  LLM 4.2s · 工具调用 1.8s  首 token 平均 0.6s · 72 tok/s  缓存命中 68%  输入 12.4K tok · 输出 1.2K tok
+  3 turns · 8 steps  LLM 4.2s · Tools 1.8s  TTFT 0.6s · 72 tok/s  Cache Hit 68%  Input 12.4K tok · Output 1.2K tok
   ```
 
-### 3. 🛡️ 对话连贯性与防死锁引擎 (Anti-Stall Engine)
-- **Universal Master Handoff**：任何专职角色交付完成后，若未显式 @ 其他专家，调度器强制回传给总指挥官，杜绝由于工作流未配审核人而造成的全局死锁；
-- **看门狗超时自愈**：长任务耗时过长触发看门狗时，自动向主控投递报警信，唤醒主控介入降级模型或汇报人类；
-- **动态自适应轮次**：长任务交互预算自适应扩容至 **24 轮**，保障五阶段闭环顺畅跑完。
+### 3. 🛡️ Anti-Stall & Resilience Engine
+- **Universal Master Handoff**: When a SubAgent finishes, the dispatcher hands control back to `commander` by default, eliminating stalls in unapproved stages;
+- **Watchdog Self-Healing**: Tasks exceeding execution limits auto-generate an alarm to the Commander's mailbox instead of abruptly crashing;
+- **Adaptive Turn Budget**: Expands interaction limits up to **24 rounds** for long workflows, preventing premature cutoffs.
 
-### 4. 🌐 100% 全栈中英双语 (`zh-CN` / `en-US`)
-- **HUD 标题栏一键切换**：点击标题栏 `中 / EN`，全界面秒级无感切换；
-- **双语花名册与模糊 @ 唤醒**：输入 `@乔布斯`、`@jobs`、`@黄仁勋`、`@jensen` 均能精准识别；
-- **双语导出纪要**：Markdown 纪要导出、工作流阶段报告均根据当前环境输出纯正中英文，绝无拼接硬编码。
+### 4. 🌐 100% Full-Stack Bilingual Support (`zh-CN` / `en-US`)
+- **One-Click Toggle**: Switch languages anytime in the HUD header (`中 / EN`);
+- **Bilingual Roster & Fuzzy Mentions**: Both `@Steve Jobs` and `@乔布斯`, `@Jensen` and `@黄仁勋` resolve seamlessly;
+- **Localized Artifacts**: Meeting digests, markdown exports, and DAG reports output in your active language.
 
 ---
 
-## 🎭 天团世界观与内置主题 (Personas & Themes)
+## 🎭 Built-in Personas & Themes
 
-想要严肃交付？还是让科技巨头为你打工？或者干脆沙雕整活？一键随意切换：
+Switch between serious enterprise delivery, legendary tech giants, or comedic meme squads:
 
-| 主题标识 | 主题名号 | 调性定位 | 核心阵容（主控 / 调研 / 后端 / 前端 / 测试 / 文案） |
+| Theme Key | Name | Tone | Core Fleet (Commander / Researcher / Backend / Frontend / QA / Writer) |
 | :--- | :--- | :--- | :--- |
-| **`legends`** | **科技传奇 (Tech Legends)** | 科技巨头来给老板打工，发布会级品味 | **乔布斯**（总指挥）• **马斯克**（调研）• **黄仁勋**（后端核显）• **雷布斯**（前端交互）• **比尔·盖茨**（红队QA）• **张小龙**（文案） |
-| **`meme_comedy`** | **沙雕整活 (Meme Squad)** | 嘴碎但贼靠谱，甩锅防背锅，欢脱交付 | **离谱总导演** • **搜索侦探** • **搬砖硬汉** • **像素画师** • **找茬杠精** • **背锅文书** |
-| **`modern`** | **现代精英 (Modern Elite)** | 严谨大厂工程架构，高规格交付 | **技术总监** • **业务调研员** • **后端架构师** • **前端开发** • **质量总监** • **技术文档官** |
-| **`three_kingdoms`**| **三国风云 (Three Kingdoms)** | 军令如山，运筹帷幄 | **诸葛孔明**（主帅）• **水镜先生**（斥候）• **关云长**（先锋）• **周公瑾**（都督）• **魏文长**（断后）• **陈孔璋**（军师祭酒） |
-| **`genshin`** | **原神提瓦特 (Teyvat Guild)** | 冒险家协会，清剿委托 | **琴团长** • **丽莎** • **钟离** • **妮露** • **胡桃** • **派蒙** |
+| **`legends`** | **Tech Legends (科技传奇)** | Silicon Valley giants working for you | **Steve Jobs** • **Elon Musk** • **Jensen Huang** • **Lei Jun** • **Bill Gates** • **Allen Zhang** |
+| **`meme_comedy`** | **Meme Squad (沙雕整活)** | Hilarious banter, sharp delivery | **Meme Director** • **Detective Doge** • **Bricklaying Bro** • **Pixel Picasso** • **Nitpicking QA** • **Scapegoat Scribe** |
+| **`modern`** | **Modern Elite (现代精英)** | Enterprise rigor, standard engineering | **Tech Lead** • **Business Analyst** • **Backend Architect** • **Frontend Dev** • **QA Director** • **Technical Writer** |
+| **`three_kingdoms`**| **Three Kingdoms (三国风云)** | Military precision, strategic counsel | **Zhuge Liang** • **Sima Hui** • **Guan Yu** • **Zhou Yu** • **Wei Yan** • **Chen Lin** |
+| **`genshin`** | **Teyvat Guild (原神提瓦特)** | Adventurers guild taking commissions | **Jean** • **Lisa** • **Zhongli** • **Nilou** • **Hu Tao** • **Paimon** |
 
 ---
 
-## 📦 扩展安装部署指南 (Installation & Deployment)
+## 📦 Installation & Deployment Guide
 
-无论你是要在日常使用的 DSH Web 客户端中直接安装，还是进行二次开发，请参考以下详尽步骤：
+Follow these steps to deploy `@dsh-external/dsh-let-them-cook` into DeepSeek Harness:
 
-### 1. 环境依赖要求
-- **Node.js**: `>= 18.0.0` (推荐 Node 20 LTS 或 Node 22)
-- **DeepSeek Harness (DSH)**: 已安装官方 `@deepseek-ai/dsh` 环境
-- **包管理器**: `npm` / `pnpm`
+### 1. Prerequisites
+- **Node.js**: `>= 18.0.0` (Node 20 LTS or Node 22 recommended)
+- **DeepSeek Harness (DSH)**: Official `@deepseek-ai/dsh` environment installed
+- **Package Manager**: `npm` or `pnpm`
 
 ---
 
-### 2. 源码克隆与制品编译
+### 2. Clone & Build Artifacts
 ```bash
-# 1. 克隆本项目仓库
+# 1. Clone the repository
 git clone https://github.com/walke2019/DSH-Let-Them-Cook.git
 cd DSH-Let-Them-Cook
 
-# 2. 安装项目依赖
+# 2. Install dependencies
 npm install
 
-# 3. 运行 TypeScript 类型检查
+# 3. Check TypeScript definitions
 npm run typecheck
 
-# 4. 同时编译 Host 后端制品 (tsc) 与 Client 前端制品 (tsdown)
+# 4. Build both Host (tsc) and Web Client (tsdown) bundles
 npm run build:all
 ```
-编译完成后，会在项目根目录下生成 `lib/` 目录：
-- `lib/index.js`：Cordis 后端服务入口与微内核插件定义；
-- `lib/client.js`：经过 Tree-shaking 优化的 React 19 前端 Bundle；
-- `lib/types/`：完整的 TypeScript 类型声明。
+Once built, the `lib/` directory will be generated:
+- `lib/index.js`: Cordis host service entry and plugin exports;
+- `lib/client.js`: Tree-shaken React 19 web bundle;
+- `lib/types/`: Full TypeScript typings.
 
 ---
 
-### 3. 部署与接入官方 DSH
+### 3. Registering into DSH
 
-#### 方式 A：标准配置文件接入（推荐，最简便）
-官方 DSH 采用 Cordis Profile 加载机制。编辑用户目录下的配置文件：
+#### Method A: Official Cordis Patch (Recommended)
+Edit the DSH web profile configuration on your machine:
 - **macOS / Linux**: `~/.dsh/profiles/web/cordis.patch.yml`
 - **Windows**: `%USERPROFILE%\.dsh\profiles\web\cordis.patch.yml`
 
-在文件中追加插件加载项：
+Add the plugin to the profile insert list:
 ```yaml
-# 在 profile patch 中挂载本插件
+# Add DSH Let Them Cook to the web profile
 - insert:
     - id: group-chat
       name: '@dsh-external/dsh-let-them-cook'
 ```
 
-如果采用本地软链开发，可以在该目录下创建 npm link 或全局模块连接：
+If developing locally via symlinks:
 ```bash
-# 在 DSH-Let-Them-Cook 根目录下执行
+# Inside the DSH-Let-Them-Cook directory
 npm link
 
-# 检查当前 DSH profile 环境中的 node_modules 是否已建立链接
+# Ensure your DSH profile environment links to this local package
 ```
 
-#### 方式 B：通过 `dsh-super-injector` 无感热重载接入
-如果你部署了扩展注入器工具：
+#### Method B: Zero-Downtime Hot Reload via Injector
+If using an extension injector:
 ```bash
-# 1. 注入或更新插件包路径
-dev_install_package --dir "/绝对路径/DSH-Let-Them-Cook"
+# 1. Install or update package path
+dev_install_package --dir "/absolute/path/to/DSH-Let-Them-Cook"
 
-# 2. 触发零停机热重载
+# 2. Trigger hot reload without restarting DSH
 dev_reload_package --packageName "dsh-let-them-cook"
 ```
 
 ---
 
-### 4. 启动 DSH Web 并开始体验
-在终端执行官方启动命令：
+### 4. Launch DSH Web & Verify
+Start the official DSH web server in terminal:
 ```bash
 npx -y @deepseek-ai/dsh web --no-open
 ```
-终端会输出如下所示的带认证 Token 的本地服务链接：
+The console will print an authenticated URL with an access token:
 ```text
 [dsh web] listening on http://127.0.0.1:3080/?token=8a7b9c...
 ```
-**在浏览器中打开该完整 URL**：
-1. 页面中央顶部会多出一个专属的 **`Agent 群聊`** 标签，点击即可进入天团主阵地；
-2. 页面右侧将出现可折叠、可拖拽缩放的 **`开整天团工作台 (HUD)`**；
-3. 如果是在左侧开启的新建空白会话（Blank Hero），页面上会出现“💬 进入 Agent 群聊”的快捷入口，点击即可一键唤醒！
+**Open the full URL (with token) in your browser**:
+1. An **`Agent 群聊 (Agent Chat)`** tab will appear at the top of the conversation view;
+2. The companion **`开整天团工作台 (HUD Cockpit)`** will dock on the right;
+3. On fresh blank hero screens, a handy `"💬 进入 Agent 群聊"` button lets you jump straight into action!
 
 ---
 
-### 5. 常见部署排错避坑 (Troubleshooting)
+### 5. Troubleshooting Guide
 
-| 现象 | 可能原因 | 解决办法 |
+| Symptom | Cause | Solution |
 | :--- | :--- | :--- |
-| 打开页面提示 `dsh web authentication required` | 打开了裸 `http://127.0.0.1:3080/`，缺少 URL Token 鉴权参数 | 重新从 DSH 启动终端中复制带 `?token=...` 的完整链接并在浏览器中打开 |
-| 控制台报 `Cannot read properties of undefined (reading 'prepare')` | 使用了过时的历史旧插件，破坏了 DSH `conversation.view` 契约 | 确保运行了最新的 `npm run build:all`，本插件自带稳定的 `prepare()` 适配器 |
-| 修改前端 React 代码后页面没有变化 | 未重新生成 `lib/client.js` 前端制品 | 执行 `npm run build:client`（约 30ms），然后在浏览器中按 `Cmd + R` 或 `F5` 刷新页面 |
-| 端口冲突 `EADDRINUSE: 3080` | 上一个 DSH 进程未完全退出 | 检查并结束残留的 node 进程（如 `lsof -i :3080`），然后重新启动 |
+| `dsh web authentication required` | Opened bare `http://127.0.0.1:3080/` without the query token | Copy the complete link with `?token=...` printed by `dsh web` |
+| `Cannot read properties of undefined (reading 'prepare')` | Legacy group chat plugin broke `conversation.view` lifecycle | Run `npm run build:all` to ensure the updated `prepare()` adapter is built |
+| React UI changes not reflecting | `lib/client.js` bundle not rebuilt | Run `npm run build:client` (takes ~30ms), then press `F5` / `Cmd + R` in browser |
+| Port conflict `EADDRINUSE: 3080` | Previous DSH process still running | Terminate lingering node instances (`lsof -i :3080` or kill process) and restart |
 
 ---
 
-## 🧪 质量保证与测试矩阵 (Quality & Test Matrix)
+## 🧪 Test Matrix & Quality Assurance
 
-本项目设立了覆盖全链路的 **50 项严格自动化回归与集成测试矩阵**，发布前必须全数通过：
+This repository enforces a **50-suite automated regression & integration test matrix**:
 
 ```bash
-# 执行完整测试矩阵（涵盖工具白名单、DAG 状态机、Prompt 缓存、多语言与防死锁）
+# Run the complete test matrix (tool scope, DAG gates, prompt cache, i18n, anti-stall)
 npm run test:matrix
 
-# 生产级发布预检
+# Production release preflight audit
 npm run preflight
 ```
 
 ---
 
-## 📂 项目导航与开发宪章 (Navigation & AGENTS.md)
+## 📂 Navigation & Development Constitution (`AGENTS.md`)
 
-为了保证本项目的代码质量和长期架构纯洁性，项目严格划分了三大文档定位：
+This repository maintains a strict three-tier documentation structure:
 
-- **[`README.md`](./README.md)**（当前文件）：面向所有使用者的业务定位、核心价值、架构边界图与安装部署总览；
-- **[`AGENTS.md`](./AGENTS.md)**：**所有参与本项目开发/维护的 AI Coding Agent 的工程宪法与避坑指南**！
-  - 严禁破坏 DSH 微内核，严禁劫持官方源版对话；
-  - 包含原生工具白名单映射、流式工具探针对齐、Prompt 缓存解析、工作流防中断引擎等 **30 条铁律与避坑指南**；
-  - 内附 **核心规范与避坑专项文档映射表 (Norm-to-Docs Matrix)**，可直接跳转对应的底层设计；
-- **[`/Docs`](./Docs/README.md)**：收录了从 P1 到 P88 的所有技术方案设计、踩坑剖析与演进历史索引（详见 [Docs/README.md](./Docs/README.md)）。
+- **[`README.md`](./README.md)** (This file): **English by default (with Chinese switcher)**; covers product vision, core values, architectural boundaries, and deployment;
+- **[`AGENTS.md`](./AGENTS.md)**: **The Engineering Constitution for all AI Coding Agents and Participant Agents**!
+  - 30+ mandatory rules including zero DSH host hijacking, native tool streaming, prompt cache multi-vendor parsing, and anti-stall arbiters;
+  - Includes the **Norm-to-Docs Matrix** to quickly reference deep-dive design specs;
+- **[`/Docs`](./Docs/README.md)**: Comprehensive technical designs and P1~P88 evolutionary specs (Chinese detailed docs).
 
 ---
 
-## 📄 开源许可证 (License)
+## 📄 License
 
-本项目采用 [MIT License](LICENSE) 授权开源。<br/>
-**把活儿丢进群，放手让他们开整！** 🍳
+Distributed under the [MIT License](LICENSE).<br/>
+**Toss in the work, let them cook!** 🍳
