@@ -4,7 +4,8 @@ const root = path.resolve(__dirname, '..')
 const dock = fs.readFileSync(path.join(root, 'src/client/GroupChatSideDock.tsx'), 'utf8')
 const workflowPanel = fs.readFileSync(path.join(root, 'src/client/GroupChatHudWorkflowPanel.tsx'), 'utf8')
 const hudSurface = dock + '\n' + workflowPanel
-const doc = fs.readFileSync(path.join(root, 'docs/tasks/phases/p17-hud-director-console.md'), 'utf8')
+const docPath = fs.existsSync(path.join(root, 'docs/tasks/phases/p17-hud-director-console/README.md')) ? path.join(root, 'docs/tasks/phases/p17-hud-director-console/README.md') : path.join(root, 'docs/tasks/phases/p17-hud-director-console.md')
+const doc = fs.readFileSync(docPath, 'utf8')
 function assert(cond,msg){if(!cond){console.error('[P17] '+msg);process.exit(1)}}
 assert(doc.includes('HUD 执行导演台增强'), 'P17 doc exists')
 assert(workflowPanel.includes('data-dsh-gc-director-card'), 'director card has stable marker')

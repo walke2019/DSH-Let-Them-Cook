@@ -98,9 +98,9 @@ DSH-Let-Them-Cook/
 - `docs/tasks/phases/p12-official-chat-compat/README.md` — 官方对话兼容保障
 - `docs/tasks/phases/p13-hud-chat-entry/README.md` — HUD 快捷对话入口
 - `docs/tasks/phases/p14-safe-middle-conversation-tab/README.md` — 中间对话标签安全挂载
-- `docs/tasks/phases/p15-auto-plan-confirm-flow.md` — 自动建群草案确认流程
-- `docs/tasks/phases/p16-theme-voice-copy-system.md` — 主题口音与人语文案系统
-- `docs/tasks/phases/p17-hud-director-console.md` — HUD 执行导演台
+- `docs/tasks/phases/p15-auto-plan-confirm-flow/README.md` — 自动建群草案确认流程
+- `docs/tasks/phases/p16-theme-voice-copy-system/README.md` — 主题口音与人语文案系统
+- `docs/tasks/phases/p17-hud-director-console/README.md` — HUD 执行导演台
 - `docs/tasks/phases/p18-browser-visual-regression/README.md` — 浏览器端视觉回归
 - `docs/tasks/phases/p19-real-project-loop/README.md` — 真实小任务闭环
 - `docs/tasks/phases/p20-low-friction-onboarding/README.md` — 低理解成本体验

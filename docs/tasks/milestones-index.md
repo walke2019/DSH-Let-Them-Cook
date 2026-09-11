@@ -16,9 +16,9 @@
 | **P10** | 端到端免 LLM 闭环 | [docs/tasks/phases/p10-end-to-end-small-task](../tasks/phases/p10-end-to-end-small-task/README.md) | `test-p10-e2e-definition.cjs` |
 | **P11** | 发版红线预检与纯洁性扫描 | [docs/tasks/phases/p11-release-preflight](../tasks/phases/p11-release-preflight/README.md) | `test-p11-preflight-definition.cjs` |
 | **P14** | 中间对话标签安全挂载 | [docs/tasks/phases/p14-safe-middle-conversation-tab](../tasks/phases/p14-safe-middle-conversation-tab/README.md) | `test-p14-safe-middle-conversation-tab.cjs` |
-| **P15** | 自动建群草案确认流程 | [docs/tasks/phases/p15-auto-plan-confirm-flow](../tasks/phases/p15-auto-plan-confirm-flow.md) | `test-p15-auto-plan-confirm-flow.cjs` |
-| **P16** | 主题口音与人语文案系统 | [docs/tasks/phases/p16-theme-voice-copy-system](../tasks/phases/p16-theme-voice-copy-system.md) | `test-p16-theme-voice-copy-system.cjs` |
-| **P17** | HUD 执行导演台 | [docs/tasks/phases/p17-hud-director-console](../tasks/phases/p17-hud-director-console.md) | `test-p17-hud-director-console.cjs` |
+| **P15** | 自动建群草案确认流程 | [docs/tasks/phases/p15-auto-plan-confirm-flow](../tasks/phases/p15-auto-plan-confirm-flow/README.md) | `test-p15-auto-plan-confirm-flow.cjs` |
+| **P16** | 主题口音与人语文案系统 | [docs/tasks/phases/p16-theme-voice-copy-system](../tasks/phases/p16-theme-voice-copy-system/README.md) | `test-p16-theme-voice-copy-system.cjs` |
+| **P17** | HUD 执行导演台 | [docs/tasks/phases/p17-hud-director-console](../tasks/phases/p17-hud-director-console/README.md) | `test-p17-hud-director-console.cjs` |
 | **P21~P30** | HUD 组件化与公共样式 Tokens | [docs/p21~p30](../tasks/phases/p27-hud-style-tokens/README.md) | `test-p21~p30-*.cjs` |
 | **P38** | 官方源对话页隔离保护 | [docs/tasks/phases/p38-official-source-dialog-guard](../tasks/phases/p38-official-source-dialog-guard/README.md) | `test-p38-official-source-dialog-guard.cjs` |
 | **P39** | 源版对话与群聊切换回归 | [docs/tasks/phases/p39-source-agent-tab-switch-regression](../tasks/phases/p39-source-agent-tab-switch-regression/README.md) | `test-p39-source-agent-tab-switch-regression.cjs` |

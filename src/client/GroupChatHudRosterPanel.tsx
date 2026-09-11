@@ -38,10 +38,12 @@ function formatTokens(n=0): string {
 }
 
 function metricLine(calls=0, m?: RuntimeMetrics): string {
-  const input = (m?.inputTokens || 0) + (m?.cacheReadTokens || 0) + (m?.cacheWriteTokens || 0)
+  const inTok = m?.inputTokens || 0
+  const cacheRead = m?.cacheReadTokens || 0
+  const promptTokens = inTok >= cacheRead ? inTok : (inTok + cacheRead)
+  const input = promptTokens + (m?.cacheWriteTokens || 0)
   const output = m?.outputTokens || 0
-  const totalInputForCache = (m?.inputTokens || 0) + (m?.cacheReadTokens || 0)
-  const cacheHit = totalInputForCache ? Math.round(((m?.cacheReadTokens || 0) / totalInputForCache) * 100) : 0
+  const cacheHit = promptTokens > 0 ? Math.round((cacheRead / promptTokens) * 100) : 0
   const first = m?.firstTokenCount ? `${((m.firstTokenMsTotal / m.firstTokenCount) / 1000).toFixed(1)}s` : '—'
   const llmSeconds = (m?.llmMs || 0) / 1000
   const tokPerSec = llmSeconds > 0 ? Math.round(output / llmSeconds) : 0
@@ -117,7 +119,7 @@ export function GroupChatHudRosterPanel({
         llmTime += Math.max(1200, Math.ceil(((msg.content?.length || 100) / 50) * 1000))
       }
     }
-    const cacheRead = raw.cacheReadTokens > 0 ? raw.cacheReadTokens : (steps > 1 ? Math.round(inTok * 0.68) : 0)
+    const cacheRead = raw.cacheReadTokens || 0
     return {
       ...raw,
       stepCount: Math.max(raw.stepCount, steps),
@@ -216,7 +218,7 @@ export function GroupChatHudRosterPanel({
                 llmMs: Math.max(stat.metrics.llmMs, agentMsgs.length * 1500),
                 inputTokens: estInput,
                 outputTokens: estOutput,
-                cacheReadTokens: stat.metrics.cacheReadTokens || (agentMsgs.length > 1 ? Math.round(estInput * 0.68) : 0),
+                cacheReadTokens: stat.metrics.cacheReadTokens || 0,
                 turnCount: Math.max(stat.metrics.turnCount, stat.callCount || agentMsgs.length),
               }
               return (

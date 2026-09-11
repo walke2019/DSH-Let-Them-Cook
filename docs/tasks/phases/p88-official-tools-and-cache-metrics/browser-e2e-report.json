@@ -1,0 +1,136 @@
+{
+  "timestamp": "2026-09-11T23:10:10.918Z",
+  "checks": [
+    {
+      "name": "Page loads with HTTP 200",
+      "passed": true,
+      "details": {
+        "status": 200
+      }
+    },
+    {
+      "name": "Page title is DeepSeek Harness",
+      "passed": true,
+      "details": {
+        "title": "DeepSeek Harness"
+      }
+    },
+    {
+      "name": "Hero Entry Button is visible on blank session",
+      "passed": true,
+      "details": {}
+    },
+    {
+      "name": "Composer Input Entry Button is visible",
+      "passed": true,
+      "details": {}
+    },
+    {
+      "name": "Hero button opens HUD companion sidebar",
+      "passed": true,
+      "details": {
+        "hudOpen": "true",
+        "sidebarHostVisible": true
+      }
+    },
+    {
+      "name": "Successfully entered session \"多规格图像生成调用测试\"",
+      "passed": true,
+      "details": {}
+    },
+    {
+      "name": "Official \"对话\" tab is present in tab strip",
+      "passed": true,
+      "details": {}
+    },
+    {
+      "name": "\"Agent 群聊\" tab is safely mounted in tab strip",
+      "passed": true,
+      "details": {}
+    },
+    {
+      "name": "Agent 群聊 tab activates correctly and marks body",
+      "passed": true,
+      "details": {
+        "bodyActiveTab": "true",
+        "hasSidebar": true,
+        "hasChatPanel": true,
+        "composerHidden": true
+      }
+    },
+    {
+      "name": "Agent chat panel is mounted in middle view",
+      "passed": true,
+      "details": {}
+    },
+    {
+      "name": "HUD tab \"团队\" is clickable and responds",
+      "passed": true,
+      "details": {}
+    },
+    {
+      "name": "HUD tab \"黑板\" is clickable and responds",
+      "passed": true,
+      "details": {}
+    },
+    {
+      "name": "HUD tab \"账本\" is clickable and responds",
+      "passed": true,
+      "details": {}
+    },
+    {
+      "name": "Ledger metrics line displays properly without NaN",
+      "passed": true,
+      "details": {
+        "hasMetricsLine": true,
+        "hasCacheHit": true,
+        "cacheHitMatch": "缓存命中 0%",
+        "hasLlmTime": true,
+        "hasTokens": true,
+        "noNan": true,
+        "textSnippet": "总体运行统计官方摘要风格0 轮 · 0 步 LLM 0s · 工具调用 0s 首 token 平均 — · 0 tok/s 缓存命中 0% 输入 0 tok · 输出 0 tok按 Agent / 模型展开暂无 Agent 调用记录；首次角色发言后会显示分项。完整流水分派 0 · 邮箱 0 · 未读 0全部进行中 0未读 0任务分派 / Assignment（0/0）没有匹配的任务分派记录。主 Agent 邮箱 / Mailbox（0/0）没有匹配的邮箱记录。"
+      }
+    },
+    {
+      "name": "Cache hit calculation renders official percentage",
+      "passed": true,
+      "details": {
+        "cacheHit": "缓存命中 0%"
+      }
+    },
+    {
+      "name": "body active tab attribute cleaned up on exit",
+      "passed": true,
+      "details": {
+        "bodyActiveTab": null,
+        "bodyHudOpen": null,
+        "hasSidebarHost": false,
+        "hasConversationTab": false,
+        "hasOfficialComposer": true,
+        "centerText": "多规格图像生成调用测试标准模式对话轨迹Agent 群聊加载更早BashCheck models with local CPA key你在干嘛？我不是只让你测试模型生成图像吗06:56BashAdd k"
+      }
+    },
+    {
+      "name": "Plugin conversation tab unmounted without trace",
+      "passed": true,
+      "details": {}
+    },
+    {
+      "name": "Official composer seat restored",
+      "passed": true,
+      "details": {}
+    },
+    {
+      "name": "Zero uncaught JavaScript exceptions or runtime errors",
+      "passed": true,
+      "details": {
+        "errors": []
+      }
+    }
+  ],
+  "logs": [],
+  "errors": [],
+  "screenshots": [
+    "/Users/walkemac/Projects/DSH/docs/tasks/phases/p88-official-tools-and-cache-metrics/browser-e2e-verified.png"
+  ]
+}

@@ -145,7 +145,7 @@
 - 中间 `Agent 群聊` 对话区空态、引导与快捷模板必须跟随当前 `room.activeTheme`，保留沙雕、现代、科技传奇等独立世界观调性。详见：[docs/tasks/phases/p45-theme-aware-central-copy/README.md](./docs/tasks/phases/p45-theme-aware-central-copy/README.md)。
 
 ### 6. 自动草案命名质量守则
-- 过滤“请把、帮我、这个、扩展”等噪声词；语义化提取“双语”、“Redis”等业务前缀。详见：[docs/tasks/phases/p15-auto-plan-confirm-flow.md](./docs/tasks/phases/p15-auto-plan-confirm-flow.md)。
+- 过滤“请把、帮我、这个、扩展”等噪声词；语义化提取“双语”、“Redis”等业务前缀。详见：[docs/tasks/phases/p15-auto-plan-confirm-flow/README.md](./docs/tasks/phases/p15-auto-plan-confirm-flow/README.md)。
 
 ### 7. 中英文业务文案与工具白名单避坑
 - 统一走 `src/client/i18n.ts` 的 `tx(locale, zh, en)`。旧白名单工具名须通过 `normalizeToolNames()` 规整，杜绝 `tools.restrict()` 阻断调用。详见：[docs/tasks/phases/p47-bilingual-ui-and-tool-scope/README.md](./docs/tasks/phases/p47-bilingual-ui-and-tool-scope/README.md)。

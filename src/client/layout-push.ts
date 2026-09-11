@@ -4,14 +4,14 @@
 
 export const LAYOUT_PUSH_CSS = `
 /* Keep the official main view clean: do not add AppFrame padding; hide the official composer only while the Agent Chat tab is active. */
-#root [data-dsh-frame],
-#root > [data-slot="root"] > div {
+body[data-dsh-group-chat-tab-active="true"] #root [data-dsh-frame],
+body[data-dsh-group-chat-tab-active="true"] #root > [data-slot="root"] > div {
   box-sizing: border-box !important;
 }
 
 /* Keep legacy selectors compatible, but never push details or the main conversation into a narrow column. */
-#root [data-dsh-frame] > [data-side="details"],
-#root > [data-slot="root"] > div > [data-side="details"] {
+body[data-dsh-group-chat-tab-active="true"] #root [data-dsh-frame] > [data-side="details"],
+body[data-dsh-group-chat-tab-active="true"] #root > [data-slot="root"] > div > [data-side="details"] {
   transform: none !important;
 }
 
