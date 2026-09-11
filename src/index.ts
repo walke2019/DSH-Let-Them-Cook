@@ -432,6 +432,12 @@ export function apply(ctx: AppContext, config: Config): void {
             res.end(JSON.stringify({ error: 'Room not found' }))
             return
           }
+          for (const member of room.members) {
+            const saved = modelSettings.get(room.roomId, member.id)
+            if (saved && (!member.llmConfig.provider || !member.llmConfig.model)) {
+              roomManager.updateAgentProfile(room.roomId, member.id, saved)
+            }
+          }
           if (shouldEnsure) persistRoomState(roomId)
           const messages = roomManager.getMessages(roomId)
           const ledger = roomManager.getLedger(roomId)

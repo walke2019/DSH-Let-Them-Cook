@@ -27,7 +27,11 @@ export class ModelSettingsStore {
       this.data={...data,recent:data.recent.slice(0,MAX_RECENT_MODELS),health:data.health&&typeof data.health==='object'?data.health:{}}
     }
   }
-  get(room:string,role:string){return this.data.roles[JSON.stringify([room,role])]}
+  get(room:string,role:string){
+    return this.data.roles[JSON.stringify([room,role])] ||
+      this.data.roles[JSON.stringify(['*',role])] ||
+      Object.entries(this.data.roles).find(([k]) => k.endsWith(`,"${role}"]`))?.[1]
+  }
   recent(){return this.data.recent.slice(0,MAX_RECENT_MODELS)}
   health(){return {...this.data.health}}
   markResult(model:ModelRef, ok:boolean, error?:string){
