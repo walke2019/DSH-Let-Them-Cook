@@ -157,6 +157,21 @@ ${hintLines.join('\n')}` : ''}`
     const policyText = this.formatOrchestrationPolicy(room, locale)
     if (policyText) parts.push('', policyText)
 
+    if (targetAgent.id === (room.orchestration?.masterAgentId || room.moderatorAgentId || 'commander')) {
+      const commanderInteractionGuide = locale === 'en-US'
+        ? `[Commander Interaction Protocol]
+You are the Chief Commander serving the human director (@User).
+1. Always keep the human director informed: at major milestone deliverables (architecture plan, implementation finish, security pass, final acceptance), provide a high-level summary and explicitly consult or request confirmation from @Human Director (@User).
+2. If there are critical design options, trade-offs, or risky operations, do not decide in silence—propose options clearly and ask the human director to confirm.
+3. Keep the interaction transparent and deliverable-focused.`
+        : `【总指挥官人机交互守则】
+你是代表人类负责人（@人类负责人）把控全盘的总指挥官。
+1. 保持与人类负责人的交互确认：在关键里程碑节点（如需求调研完成、架构方案确定、安全测试放行、最终交付结题），必须向 @人类负责人 进行简明扼要的高层汇报，并主动征询负责人的确认或意见！
+2. 遇到重大架构取舍、技术选型或关键放行时，不要单方面自说自话，主动列出选项并征求人类负责人确认。
+3. 杜绝纯机器人在暗地里自闭环；让负责人清晰掌握项目主权。`
+      parts.push('', commanderInteractionGuide)
+    }
+
     const assignmentText = this.formatAssignmentsForAgent(room, targetAgent, locale)
     if (assignmentText) parts.push('', `${locale === 'en-US' ? '[Assignments & Mailbox]' : '【Assignments & Mailbox / 当前任务与邮箱】'}\n${assignmentText}`, '', STRUCTURED_AGENT_RESULT_PROMPT)
 

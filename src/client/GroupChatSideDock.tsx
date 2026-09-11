@@ -640,6 +640,7 @@ export function GroupChatSideDock() {
             <GroupChatHudRosterPanel
               room={room}
               ledger={ledger}
+              messages={messages}
               themeBrief={themeBrief}
               themeBusy={themeBusy}
               themeDraft={themeDraft}
@@ -661,6 +662,7 @@ export function GroupChatSideDock() {
             <GroupChatHudRosterPanel
               room={room}
               ledger={ledger}
+              messages={messages}
               themeBrief={themeBrief}
               themeBusy={themeBusy}
               themeDraft={themeDraft}

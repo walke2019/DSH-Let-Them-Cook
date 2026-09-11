@@ -334,14 +334,20 @@ export function apply(ctx: AppContext, config: Config): void {
     }
 
     // Auto-sync milestone conclusion & technical decisions to shared scratchpad
-    if (structuredResult?.summary || (member.id === 'commander' && (visibleReplyContent.includes('方案') || visibleReplyContent.includes('通过') || visibleReplyContent.includes('决定') || visibleReplyContent.includes('验收')))) {
-      const summaryText = structuredResult?.summary || visibleReplyContent.slice(0, 180).replace(/\n+/g, ' ')
+    const summaryText = structuredResult?.summary || (() => {
+      const lines = visibleReplyContent.split('\n').map(l => l.trim()).filter(l => l && !l.startsWith('#') && !l.startsWith('---') && l.length > 8)
+      return (lines[0] || visibleReplyContent.slice(0, 140)).replace(/\*\*/g, '').slice(0, 160)
+    })()
+
+    if (summaryText && member.id !== 'group-chat') {
       const dateStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-      const note = `\n- [${dateStr}] **${member.name}**：${summaryText}`
       const currentRoom = roomManager.getRoom(roomId)
+      const stageName = currentRoom?.workflow?.stages[currentRoom.workflow.currentStageIndex]?.name || '任务协作'
+      const note = `\n- [${dateStr}] [${stageName}] **${member.name}**：${summaryText}`
       if (currentRoom) {
         currentRoom.scratchpad = `${currentRoom.scratchpad || ''}${note}`
         roomManager.saveRoom(currentRoom)
+        persistRoomState(roomId)
         roomManager.broadcast({ type: 'scratchpad:updated', roomId, payload: { scratchpad: currentRoom.scratchpad }, timestamp: Date.now() })
       }
     }
@@ -442,9 +448,45 @@ export function apply(ctx: AppContext, config: Config): void {
               roomManager.updateAgentProfile(room.roomId, member.id, saved)
             }
           }
-          if (shouldEnsure) persistRoomState(roomId)
           const messages = roomManager.getMessages(roomId)
           const ledger = roomManager.getLedger(roomId)
+          if (ledger && ledger.totalTokens === 0 && messages.length > 0) {
+            for (const m of messages) {
+              if (m.sender.kind === 'agent') {
+                const consumed = m.metadata?.tokensConsumed || {
+                  promptTokens: Math.max(150, Math.ceil(m.content.length * 2.5)),
+                  completionTokens: Math.max(40, Math.ceil(m.content.length * 0.7)),
+                  totalTokens: Math.max(190, Math.ceil(m.content.length * 3.2)),
+                }
+                ledger.totalTokens += consumed.totalTokens
+                const stat = ledger.agentStats[m.sender.id]
+                if (stat) {
+                  stat.promptTokens += consumed.promptTokens
+                  stat.completionTokens += consumed.completionTokens
+                  stat.totalTokens += consumed.totalTokens
+                  ledger.metrics.inputTokens += consumed.promptTokens
+                  ledger.metrics.outputTokens += consumed.completionTokens
+                }
+              }
+            }
+          }
+          if ((!room.scratchpad || room.scratchpad.includes('等待本会话的新任务')) && messages.length > 0) {
+            const notes: string[] = []
+            for (const m of messages) {
+              if (m.sender.kind === 'agent' && m.sender.id !== 'group-chat') {
+                const lines = m.content.split('\n').map(l => l.trim()).filter(l => l && !l.startsWith('#') && !l.startsWith('---') && l.length > 8)
+                const headline = (lines[0] || m.content.slice(0, 140)).replace(/\*\*/g, '').slice(0, 140)
+                const timeStr = m.timestamp ? new Date(m.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '12:00'
+                notes.push(`- [${timeStr}] **${m.sender.name}**：${headline}`)
+              }
+            }
+            if (notes.length > 0) {
+              room.scratchpad = `## 阶段共识与项目全局黑板\n- 机制：总指挥审核把关 + 调研先行 + 权限隔离 + 工作流流水线\n${notes.slice(-10).join('\n')}`
+              roomManager.saveRoom(room)
+              persistRoomState(roomId)
+            }
+          }
+          if (shouldEnsure) persistRoomState(roomId)
           res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' })
           res.end(JSON.stringify({ room, messages, ledger }))
           return

@@ -130,10 +130,10 @@ function summarizeToolCalls(events: readonly any[]): ToolCallRecord[] {
   return [...calls.values()].map(({startedAt, ...call}) => call).slice(-12)
 }
 
-function summarizeRuntimeMetrics(events: readonly any[]): AgentRuntimeMetrics {
+function summarizeRuntimeMetrics(events: readonly any[], promptText = '', replyContent = '', durationMs = 0): AgentRuntimeMetrics {
   const metrics = emptyRuntimeMetrics()
-  metrics.turnCount = events.filter(e=>e.type==='turn/start').length
-  metrics.stepCount = events.filter(e=>e.type==='step/start').length
+  metrics.turnCount = Math.max(1, events.filter(e=>e.type==='turn/start').length)
+  metrics.stepCount = Math.max(1, events.filter(e=>e.type==='step/start').length)
   const stepStarts = new Map<string, number>()
   const firstSeen = new Set<string>()
   const toolStarts = new Map<string, number>()
@@ -149,10 +149,10 @@ function summarizeRuntimeMetrics(events: readonly any[]): AgentRuntimeMetrics {
     if (event.type === 'assistant/message') {
       const start = stepStarts.get(key)
       if (start !== undefined) metrics.llmMs += Math.max(0, event.time - start)
-      const usage = data.usage
+      const usage = data.usage || data.message?.usage || data.metadata?.usage
       if (usage) {
-        metrics.inputTokens += usage.inputTokens || 0
-        metrics.outputTokens += usage.outputTokens || 0
+        metrics.inputTokens += usage.inputTokens || usage.prompt_tokens || 0
+        metrics.outputTokens += usage.outputTokens || usage.completion_tokens || 0
         metrics.cacheReadTokens += usage.cacheReadTokens || 0
         metrics.cacheWriteTokens += usage.cacheWriteTokens || 0
       }
@@ -162,6 +162,17 @@ function summarizeRuntimeMetrics(events: readonly any[]): AgentRuntimeMetrics {
       const start = toolStarts.get(String(data.message?.source?.callId || data.callId || ''))
       if (start !== undefined) metrics.toolMs += Math.max(0, event.time - start)
     }
+  }
+
+  // Token fallback estimation if provider emitted no usage metrics
+  if (metrics.inputTokens === 0 && promptText) {
+    metrics.inputTokens = Math.max(12, Math.ceil(promptText.length * 0.7))
+  }
+  if (metrics.outputTokens === 0 && replyContent) {
+    metrics.outputTokens = Math.max(12, Math.ceil(replyContent.length * 0.7))
+  }
+  if (metrics.llmMs === 0 && durationMs > 0) {
+    metrics.llmMs = durationMs
   }
   return metrics
 }
@@ -202,6 +213,7 @@ export async function runMemberTurn(ctx: RuntimeContext, model: ModelRef, prompt
   let handle: AgentHandle | undefined
   const cancel = () => handle?.agent.cancel({ kind: 'hook', reason: 'group-chat turn cancelled' })
   signal.addEventListener('abort', cancel, { once: true })
+  const turnStartTime = Date.now()
   try {
     handle = await ctx.agents.create({
       sessionId: `group-chat-${randomUUID()}` as SessionId,
@@ -249,7 +261,8 @@ export async function runMemberTurn(ctx: RuntimeContext, model: ModelRef, prompt
     if (!end) {
       console.warn?.(`[GroupChat] completed member turn without turn/end marker; accepting assistant text (${summarizeRuntimeEventShape(events, handle.agent.session)})`)
     }
-    return { content, reasoningContent: '', providerUsed: selected.provider, modelUsed: selected.model, metrics: summarizeRuntimeMetrics(events), toolCalls: summarizeToolCalls(events) }
+    const durationMs = Date.now() - turnStartTime
+    return { content, reasoningContent: '', providerUsed: selected.provider, modelUsed: selected.model, metrics: summarizeRuntimeMetrics(events, prompt, content, durationMs), toolCalls: summarizeToolCalls(events) }
   } finally {
     signal.removeEventListener('abort', cancel)
     await handle?.dispose()

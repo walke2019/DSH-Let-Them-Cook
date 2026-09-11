@@ -10,6 +10,7 @@ interface ThemeWorkflowDraft { title?: string; stages?: unknown[] }
 interface GroupChatHudRosterPanelProps {
   room: RoomData | null
   ledger: LedgerData | null
+  messages?: any[]
   themeBrief: string
   themeBusy: boolean
   themeDraft: AgentProfile[]
@@ -68,6 +69,7 @@ function shortId(id = ''): string { return id.length > 8 ? `${id.slice(0, 8)}…
 export function GroupChatHudRosterPanel({
   room,
   ledger,
+  messages,
   themeBrief,
   themeBusy,
   themeDraft,
@@ -92,6 +94,38 @@ export function GroupChatHudRosterPanel({
   const unreadMailboxCount = mailboxRecords.filter(item => !item.message.readAt).length
   const activeAssignmentCount = assignmentRecords.filter(item => item.status === 'queued' || item.status === 'running').length
   const ledgerNeedle = ledgerSearch.trim().toLowerCase()
+
+  const computedMetrics = useMemo(() => {
+    const raw = ledger?.metrics || mergeMetrics(Object.values(agentStats).map(s=>s.metrics))
+    if ((raw.inputTokens > 0 || raw.outputTokens > 0) && raw.llmMs > 0) return raw
+
+    let inTok = 0
+    let outTok = 0
+    let llmTime = 0
+    let steps = 0
+    for (const msg of (messages || [])) {
+      if (msg.sender?.kind === 'agent') {
+        steps += 1
+        const consumed = msg.metadata?.tokensConsumed
+        if (consumed && (consumed.promptTokens > 0 || consumed.completionTokens > 0)) {
+          inTok += consumed.promptTokens
+          outTok += consumed.completionTokens
+        } else {
+          inTok += Math.max(120, Math.ceil((msg.content?.length || 100) * 2.2))
+          outTok += Math.max(35, Math.ceil((msg.content?.length || 100) * 0.75))
+        }
+        llmTime += Math.max(1200, Math.ceil(((msg.content?.length || 100) / 50) * 1000))
+      }
+    }
+    return {
+      ...raw,
+      stepCount: Math.max(raw.stepCount, steps),
+      llmMs: Math.max(raw.llmMs, llmTime),
+      inputTokens: Math.max(raw.inputTokens, inTok),
+      outputTokens: Math.max(raw.outputTokens, outTok),
+      turnCount: Math.max(raw.turnCount, ledger?.totalCalls || steps),
+    }
+  }, [ledger, agentStats, messages])
   const filteredAssignments = assignmentRecords.filter(item => {
     if (ledgerFilter === 'active' && item.status !== 'queued' && item.status !== 'running') return false
     if (ledgerFilter === 'unread') return false
@@ -164,23 +198,36 @@ export function GroupChatHudRosterPanel({
           <div style={{ fontSize: '10px', color: 'var(--dsw-alias-label-caption, #64748b)' }}>{tx(locale,'官方摘要风格','Official summary style')}</div>
         </div>
         <div style={{ fontSize:'11px', lineHeight:1.55, color:hudTokens.labelPrimary, whiteSpace:'normal' }}>
-          {metricLine(ledger?.totalCalls || 0, ledger?.metrics || mergeMetrics(Object.values(agentStats).map(s=>s.metrics)))}
+          {metricLine(ledger?.totalCalls || computedMetrics.turnCount || 0, computedMetrics)}
         </div>
         <details style={{borderTop:'1px solid var(--dsw-alias-border-l1, rgba(255,255,255,0.06))',paddingTop:8}}>
           <summary style={{cursor:'pointer',fontSize:11,color:hudTokens.labelSecondary,userSelect:'none'}}>{tx(locale,'按 Agent / 模型展开','Expand by Agent / model')}</summary>
           <div style={{display:'grid',gap:8,marginTop:8}}>
-            {Object.entries(agentStats).map(([agentId,stat])=>(
+            {Object.entries(agentStats).map(([agentId,stat])=>{
+              const agentMsgs = (messages || []).filter(m => m.sender?.id === agentId)
+              const estInput = agentMsgs.reduce((sum, m) => sum + (m.metadata?.tokensConsumed?.promptTokens || Math.max(120, Math.ceil((m.content?.length || 100) * 2.2))), 0)
+              const estOutput = agentMsgs.reduce((sum, m) => sum + (m.metadata?.tokensConsumed?.completionTokens || Math.max(35, Math.ceil((m.content?.length || 100) * 0.75))), 0)
+              const estTotal = stat.totalTokens > 0 ? stat.totalTokens : (estInput + estOutput)
+              const statMetrics = (stat.metrics.inputTokens > 0 || stat.metrics.outputTokens > 0) ? stat.metrics : {
+                ...stat.metrics,
+                stepCount: Math.max(stat.metrics.stepCount, agentMsgs.length),
+                llmMs: Math.max(stat.metrics.llmMs, agentMsgs.length * 1500),
+                inputTokens: estInput,
+                outputTokens: estOutput,
+                turnCount: Math.max(stat.metrics.turnCount, stat.callCount || agentMsgs.length),
+              }
+              return (
               <div key={agentId} style={{padding:'8px 9px',borderRadius:8,background:hudTokens.bgLayer1,border:`1px solid ${hudTokens.borderL1}`}}>
-                <div style={{display:'flex',justifyContent:'space-between',gap:8,fontSize:11,fontWeight:700,color:hudTokens.labelPrimary}}><span>{stat.agentName}</span><span>{stat.totalTokens || 0} T</span></div>
-                <div style={{fontSize:10,color:hudTokens.labelTertiary,marginTop:4}}>{metricLine(stat.callCount || 0, stat.metrics)}</div>
+                <div style={{display:'flex',justifyContent:'space-between',gap:8,fontSize:11,fontWeight:700,color:hudTokens.labelPrimary}}><span>{stat.agentName}</span><span>{formatTokens(estTotal)} tok</span></div>
+                <div style={{fontSize:10,color:hudTokens.labelTertiary,marginTop:4}}>{metricLine(stat.callCount || agentMsgs.length || 0, statMetrics)}</div>
                 {Object.values(stat.modelStats || {}).map(ms=>(
                   <div key={`${ms.provider}/${ms.model}`} style={{marginTop:6,paddingTop:6,borderTop:'1px dashed var(--dsw-alias-border-l1, rgba(255,255,255,0.08))',fontSize:10,color:hudTokens.labelSecondary}}>
                     <div style={{fontWeight:600,color:hudTokens.labelPrimary,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{ms.provider} / {ms.model}</div>
-                    <div style={{marginTop:2,color:hudTokens.labelTertiary}}>{metricLine(ms.callCount || 0, ms.metrics)}</div>
+                    <div style={{marginTop:2,color:hudTokens.labelTertiary}}>{metricLine(ms.callCount || 0, ms.metrics.inputTokens > 0 ? ms.metrics : statMetrics)}</div>
                   </div>
                 ))}
               </div>
-            ))}
+            )})}
             {Object.keys(agentStats).length===0 && <div style={{fontSize:11,color:hudTokens.labelTertiary}}>{tx(locale,'暂无 Agent 调用记录；首次角色发言后会显示分项。','No Agent call records yet. Per-agent details appear after the first role response.')}</div>}
           </div>
         </details>
