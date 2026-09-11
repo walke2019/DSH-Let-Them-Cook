@@ -282,3 +282,16 @@ pm run test:new-session-agent-entry、
 pm run test:hero-left-collapse 和 
 pm run test:ui:entry。
 
+### 29. 对话连贯性与工作流防中断铁律（P87）
+- 任何 SubAgent 执行产出后，调度器默认回传给主控（commander），严禁因阶段未设 requiresApproval 或无显式 @ 而直接返回 isTerminal: true 导致死锁停摆。
+- 指挥官推进工作流必须支持中英文及模糊语义识别（通过/批准/推进/合格/approved/proceed/lgtm 等）。
+- 长任务（workflow_driven）交互预算必须支持动态扩容至 20~24 轮以上，杜绝被基础短任务熔断规则腰斩。
+- SubAgent 执行异常或看门狗超时时，自动向 commander 发送报警信，唤醒 commander 接管并向人类负责人汇报，杜绝无声冻结。
+
+### 30. 原生工具白名单与流式展现铁律（P88）
+- 严禁使用虚拟抽象工具名（如 tool_fs、tool_jobs）作为最终下发给模型的唯一标识；必须严格映射并赋予真实的 DSH 底座工具（read, write, edit, glob, grep, bash, web_search, web_fetch 等）。
+- 成员执行异步任务时，必须建立流式事件探针（250ms），实时将 tool/call 和 tool/result 注入正在执行的气泡卡片并广播 assignment:updated，让用户在中央对话中实时可见工具跃动。
+- 前端必须严格对齐官方 DSH 工具卡样式：edit 显示 +add -del 行号差异，bash 显示命令任务描述，失败显示红底 失败 标签。
+- 严禁粗暴计算并向用户展示虚假的“缓存命中 0%”：严格对齐官方 DSH TurnUsage 口径，解析各网关多源缓存字段（prompt_tokens_details.cached_tokens, prompt_cache_hit_tokens, cache_read_input_tokens），在无缓存数据时不误报 0%，真实命中时准确展示百分比。
+- 主 Agent（总指挥官）在关键里程碑（调研完成、架构确定、红队通过、最终验收）必须主动 @人类负责人 进行简明汇报并征求确认，严禁脱离人类监管单方面自闭环。
+

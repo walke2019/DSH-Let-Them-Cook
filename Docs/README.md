@@ -182,3 +182,7 @@
 
 - [P83 新会话入口自点击守卫](p83-hero-entry-self-click-guard/README.md)：修复 blank hero 中 Agent 群聊 小入口误点自身，导致临时中央群聊面板没有打开的问题。
 
+- [P87 对话连贯性与防终止防死锁治理](p87-dialog-continuity-and-stall-prevention/README.md)：工作流未审批状态机解冻、全角色回传主控、双语推进关键词容错与动态自适应交互轮次配额。
+
+- [P88 原生工具流式展现、缓存命中统计与人机协同交互治理](p88-official-tools-and-cache-metrics/README.md)：赋予全角色真实原生工具权限、250ms 探针流式广播工具卡片、对齐官方 DSH `TurnUsage` 缓存统计口径，并在主控守则中确立主动征询人类负责人机制。
+
