@@ -148,6 +148,24 @@ export function summarizeToolCalls(events: readonly any[]): ToolCallRecord[] {
   return [...calls.values()].map(({startedAt, ...call}) => call).slice(-20)
 }
 
+function extractUsageFromEvent(event: any): any {
+  const data = event?.data || {}
+  if (data.usage) return data.usage
+  if (data.message?.usage) return data.message.usage
+  if (data.metadata?.usage) return data.metadata.usage
+  if (Array.isArray(data.stream)) {
+    for (let index = data.stream.length - 1; index >= 0; index -= 1) {
+      const record = data.stream[index]
+      if (record?.type === 'chunk' && record.chunk?.type === 'usage' && record.chunk.usage) {
+        return record.chunk.usage
+      }
+      if (record?.chunk?.usage) return record.chunk.usage
+      if (record?.usage) return record.usage
+    }
+  }
+  return undefined
+}
+
 function summarizeRuntimeMetrics(events: readonly any[], promptText = '', replyContent = '', durationMs = 0): AgentRuntimeMetrics {
   const metrics = emptyRuntimeMetrics()
   metrics.turnCount = Math.max(1, events.filter(e=>e.type==='turn/start').length)
@@ -159,20 +177,30 @@ function summarizeRuntimeMetrics(events: readonly any[], promptText = '', replyC
     const data = event.data || {}
     const key = `${data.turn}:${data.step}`
     if (event.type === 'step/start') stepStarts.set(key, event.time)
-    if (event.type === 'assistant/chunk' && !firstSeen.has(key) && hasVisibleDelta(data.chunk)) {
+    if ((event.type === 'assistant/chunk' || event.type === 'assistant/live-chunk') && !firstSeen.has(key) && hasVisibleDelta(data.chunk)) {
       const start = stepStarts.get(key)
       if (start !== undefined) { metrics.firstTokenMsTotal += Math.max(0, event.time - start); metrics.firstTokenCount += 1 }
       firstSeen.add(key)
     }
-    if (event.type === 'assistant/message') {
+    if (event.type === 'assistant/message' || event.type === 'assistant/attempt') {
       const start = stepStarts.get(key)
       if (start !== undefined) metrics.llmMs += Math.max(0, event.time - start)
-      const usage = data.usage || data.message?.usage || data.metadata?.usage
+      const usage = extractUsageFromEvent(event)
       if (usage) {
-        metrics.inputTokens += usage.inputTokens || usage.prompt_tokens || usage.uncachedInputTokens || 0
-        metrics.outputTokens += usage.outputTokens || usage.completion_tokens || 0
-        const cacheRead = usage.cacheReadTokens ?? usage.prompt_tokens_details?.cached_tokens ?? usage.prompt_cache_hit_tokens ?? usage.cache_read_input_tokens ?? usage.cached_tokens ?? 0
+        const cacheRead = usage.cacheReadTokens ?? usage.prompt_tokens_details?.cached_tokens ?? usage.prompt_cache_hit_tokens ?? usage.cache_read_input_tokens ?? usage.cached_tokens ?? usage.total_cached_tokens ?? usage.input_cached_tokens ?? 0
         const cacheWrite = usage.cacheWriteTokens ?? usage.prompt_cache_miss_tokens ?? usage.cache_creation_input_tokens ?? 0
+        let inTok = 0
+        if (typeof usage.inputTokens === 'number') {
+          inTok = usage.inputTokens
+        } else if (typeof usage.prompt_tokens === 'number') {
+          inTok = Math.max(0, usage.prompt_tokens - cacheRead)
+        } else if (typeof usage.uncachedInputTokens === 'number') {
+          inTok = usage.uncachedInputTokens
+        }
+        const outTok = usage.outputTokens ?? usage.completion_tokens ?? 0
+
+        metrics.inputTokens += inTok
+        metrics.outputTokens += outTok
         metrics.cacheReadTokens += cacheRead
         metrics.cacheWriteTokens += cacheWrite
       }

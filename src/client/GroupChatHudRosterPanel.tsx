@@ -40,14 +40,14 @@ function formatTokens(n=0): string {
 function metricLine(calls=0, m?: RuntimeMetrics): string {
   const inTok = m?.inputTokens || 0
   const cacheRead = m?.cacheReadTokens || 0
-  const promptTokens = inTok >= cacheRead ? inTok : (inTok + cacheRead)
-  const input = promptTokens + (m?.cacheWriteTokens || 0)
+  const cacheWrite = m?.cacheWriteTokens || 0
+  const promptTokens = inTok + cacheRead + cacheWrite
   const output = m?.outputTokens || 0
   const cacheHit = promptTokens > 0 ? Math.round((cacheRead / promptTokens) * 100) : 0
   const first = m?.firstTokenCount ? `${((m.firstTokenMsTotal / m.firstTokenCount) / 1000).toFixed(1)}s` : '—'
   const llmSeconds = (m?.llmMs || 0) / 1000
   const tokPerSec = llmSeconds > 0 ? Math.round(output / llmSeconds) : 0
-  return `${calls} 轮 · ${m?.stepCount || 0} 步  LLM ${formatDuration(m?.llmMs)} · 工具调用 ${formatDuration(m?.toolMs)}  首 token 平均 ${first} · ${tokPerSec} tok/s  缓存命中 ${cacheHit}%  输入 ${formatTokens(input)} tok · 输出 ${formatTokens(output)} tok`
+  return `${calls} 轮 · ${m?.stepCount || 0} 步  LLM ${formatDuration(m?.llmMs)} · 工具调用 ${formatDuration(m?.toolMs)}  首 token 平均 ${first} · ${tokPerSec} tok/s  缓存命中 ${cacheHit}%  输入 ${formatTokens(promptTokens)} tok · 输出 ${formatTokens(output)} tok`
 }
 
 function mergeMetrics(items: Array<RuntimeMetrics | undefined>): RuntimeMetrics {
