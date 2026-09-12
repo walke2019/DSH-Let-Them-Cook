@@ -512,11 +512,10 @@ export class DispatchArbiter {
     const hasDecisionKeywords = lower.includes('请您抉择') || lower.includes('需要您拍板') || lower.includes('请用户选择') || lower.includes('方案抉择') || lower.includes('等待您确认') || lower.includes('请拍板') || lower.includes('如何抉择') || lower.includes('请您拍板') || lower.includes('请用户拍板')
     const hasOptionsMention = /选项\s*[a-d1-4]|方案\s*[a-d1-4]|option\s*[a-d1-4]/i.test(text) || text.includes('【方案') || text.includes('【选项')
 
-    const isQuestioning = text.includes('？') || text.includes('?') || text.includes('请选择') || text.includes('请确认') || text.includes('拍板')
+    const isQuestioning = text.includes('？') || text.includes('?') || text.includes('请选择') || text.includes('请确认') || text.includes('请您抉择') || text.includes('需要您拍板')
 
-    const isAwaiting = (hasUserAddress && (hasOptionsMention || hasDecisionKeywords || isQuestioning)) ||
-      (hasDecisionKeywords && (hasOptionsMention || isQuestioning)) ||
-      (hasOptionsMention && isQuestioning && hasUserAddress)
+    // Only treat as real decision if it actually presents structured options or asks an explicit question with options
+    const isAwaiting = hasOptionsMention && (hasDecisionKeywords || isQuestioning || hasUserAddress)
 
     if (!isAwaiting) return { isAwaiting: false }
 

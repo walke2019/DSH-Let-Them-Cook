@@ -641,43 +641,89 @@ export function GroupChatPanel({mode='full'}:GroupChatPanelProps) {
       {error&&!isEmptyState&&<div className="gc-chat-error" role="alert">{error} <button type="button" onClick={()=>setRetry(v=>v+1)}>{tx(locale,'重试加载','Retry loading')}</button></div>}
       {awaitingDecision && (
         <div data-dsh-gc-decision-card className="gc-decision-prompt-card" style={{
-          margin: '0 16px 10px',
-          padding: '10px 14px',
+          margin: '0 16px 12px',
+          padding: '14px 16px',
           borderRadius: 12,
-          border: '1px solid rgba(77,107,254,0.4)',
-          background: 'linear-gradient(135deg, rgba(77,107,254,0.14), rgba(16,185,129,0.08))',
+          border: '1px solid rgba(77,107,254,0.45)',
+          background: 'linear-gradient(135deg, rgba(30,30,38,0.95), rgba(20,20,26,0.95))',
+          boxShadow: '0 4px 20px rgba(0,0,0,0.3)',
           display: 'grid',
-          gap: 6,
+          gap: 10,
         }}>
-          <div style={{display:'flex',alignItems:'center',gap:8,fontWeight:700,color:'#93c5fd',fontSize:12}}>
-            <span>🎯</span>
-            <span>{tx(locale, '总指挥官发起方案抉择（等待您拍板）', 'Commander requested decision (Awaiting your choice)')}</span>
+          <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',gap:8}}>
+            <div style={{display:'flex',alignItems:'center',gap:8,fontWeight:700,color:'#93c5fd',fontSize:13}}>
+              <span>🎯</span>
+              <span>{tx(locale, '总指挥官发起方案抉择（请您拍板）', 'Commander requested decision (Awaiting your choice)')}</span>
+            </div>
+            <button
+              type="button"
+              style={{
+                background: 'transparent',
+                border: 'none',
+                color: 'var(--dsw-alias-label-tertiary,#94a3b8)',
+                cursor: 'pointer',
+                fontSize: 14,
+                padding: '2px 6px'
+              }}
+              onClick={() => setAwaitingDecision(undefined)}
+              title={tx(locale, '暂时忽略', 'Dismiss')}
+            >
+              ✕
+            </button>
           </div>
-          <div style={{fontSize:12,color:'var(--dsw-alias-label-primary,#eee)',lineHeight:1.4}}>
+          <div style={{fontSize:13,color:'var(--dsw-alias-label-primary,#f1f5f9)',lineHeight:1.5,whiteSpace:'pre-wrap'}}>
             {awaitingDecision.question}
           </div>
-          {awaitingDecision.options && awaitingDecision.options.length > 0 && (
-            <div style={{display:'flex',gap:8,flexWrap:'wrap',marginTop:4}}>
+          {awaitingDecision.options && awaitingDecision.options.length > 0 ? (
+            <div style={{display:'grid',gap:8,marginTop:4}}>
               {awaitingDecision.options.map(opt => (
                 <button
                   key={opt.key}
                   type="button"
-                  className="gc-template-chip"
                   style={{
-                    borderColor: opt.isRecommended ? '#10b981' : 'rgba(77,107,254,0.4)',
-                    background: opt.isRecommended ? 'rgba(16,185,129,0.18)' : 'rgba(77,107,254,0.12)',
-                    fontWeight: 600,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    padding: '8px 12px',
+                    borderRadius: 8,
+                    border: opt.isRecommended ? '1px solid #10b981' : '1px solid rgba(255,255,255,0.12)',
+                    background: opt.isRecommended ? 'rgba(16,185,129,0.12)' : 'rgba(255,255,255,0.04)',
+                    color: 'var(--dsw-alias-label-primary,#f8fafc)',
                     fontSize: 12,
-                    padding: '5px 12px',
+                    fontWeight: 500,
                     cursor: 'pointer',
+                    textAlign: 'left',
+                    transition: 'all 0.15s ease'
                   }}
                   onClick={() => {
                     void send(locale === 'en-US' ? `I choose: ${opt.label}` : `我拍板选择：${opt.label}`)
                   }}
                 >
-                  {opt.isRecommended ? `⭐ ${opt.label}` : opt.label}
+                  <span>{opt.isRecommended ? `⭐ ${opt.label}` : opt.label}</span>
+                  <span style={{fontSize:11,color:opt.isRecommended ? '#34d399' : '#60a5fa',fontWeight:600}}>
+                    {tx(locale, '直接采纳 ↵', 'Select ↵')}
+                  </span>
                 </button>
               ))}
+            </div>
+          ) : (
+            <div style={{display:'flex',gap:8,marginTop:4}}>
+              <button
+                type="button"
+                className="gc-template-chip"
+                style={{borderColor:'#10b981',background:'rgba(16,185,129,0.15)',fontWeight:600}}
+                onClick={() => { void send(locale === 'en-US' ? 'Approved, proceed.' : '同意，按此方案推进。') }}
+              >
+                ✓ {tx(locale, '同意，按此方案推进', 'Approved, proceed')}
+              </button>
+              <button
+                type="button"
+                className="gc-template-chip"
+                style={{borderColor:'rgba(255,255,255,0.15)',background:'transparent'}}
+                onClick={() => { void send(locale === 'en-US' ? 'Need modification:' : '需要修改：') }}
+              >
+                ✎ {tx(locale, '需要补充/修改', 'Need modification')}
+              </button>
             </div>
           )}
         </div>
