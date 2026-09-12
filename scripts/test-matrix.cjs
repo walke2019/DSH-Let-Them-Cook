@@ -100,6 +100,7 @@ const steps = [
   ['node', ['__tests__/test-p90-dsh-runtime-trace-liveness.cjs']],
   ['node', ['__tests__/test-p91-liveness-aware-watchdog.cjs']],
   ['node', ['__tests__/test-p92-dsh-tool-event-adapter.cjs']],
+  ['node', ['__tests__/test-p93-capability-diagnostics-ui.cjs']],
   ['node', ['__tests__/test-long-dialog-e2e.cjs']],
   ['node', ['scripts/e2e-no-llm.cjs']],
   ['npm', ['run', 'preflight']],

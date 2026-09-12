@@ -119,6 +119,7 @@
     "test:dsh-runtime-trace-liveness": "node __tests__/test-p90-dsh-runtime-trace-liveness.cjs",
     "test:liveness-aware-watchdog": "node __tests__/test-p91-liveness-aware-watchdog.cjs",
     "test:dsh-tool-event-adapter": "node __tests__/test-p92-dsh-tool-event-adapter.cjs",
+    "test:capability-diagnostics-ui": "node __tests__/test-p93-capability-diagnostics-ui.cjs",
     "test:long-dialog-e2e": "node __tests__/test-long-dialog-e2e.cjs",
     "test:browser:e2e": "node scripts/browser-e2e-debug.cjs"
   }

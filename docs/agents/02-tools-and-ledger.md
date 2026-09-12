@@ -47,5 +47,6 @@
 ## 2. 自动化回归命令
 - `npm run test:central-live-status` — 中央执行状态可见性回归
 - `npm run test:native-tool-row-adapter` — 原生工具行号 Diff 与展示适配回归
+- `npm run test:capability-diagnostics-ui` — HUD 底座能力诊断卡回归
 - `npm run test:approve-run-transaction-card` — 确认后执行事务卡片回归
 - `npm run test:team-coordination-tools` — 团队协同工具箱回归

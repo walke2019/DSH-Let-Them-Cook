@@ -5,7 +5,8 @@ import {GroupChatHudTopControls} from './GroupChatHudTopControls.js'
 import {GroupChatHudWorkflowPanel} from './GroupChatHudWorkflowPanel.js'
 import {GroupChatHudRosterPanel} from './GroupChatHudRosterPanel.js'
 import {GroupChatHudScratchpadPanel} from './GroupChatHudScratchpadPanel.js'
-import type {AssignmentEnvelope, AgentMailboxMessage, GroupMessageData, LedgerData, WorkflowTask} from './group-chat-hud-types.js'
+import {GroupChatHudDiagnosticsPanel} from './GroupChatHudDiagnosticsPanel.js'
+import type {AssignmentEnvelope, AgentMailboxMessage, CompatReport, GroupMessageData, LedgerData, WorkflowTask} from './group-chat-hud-types.js'
 import type {AgentProfile} from './group-chat-view-types.js'
 import {detectGroupChatLocale, onGroupChatLocaleChange, setGroupChatLocale, tx, type GroupChatLocale} from './i18n.js'
 import {GroupChatHeroEntry} from './GroupChatHeroEntry.js'
@@ -26,9 +27,10 @@ export function GroupChatSideDock() {
   const [room, setRoom] = useState<RoomData | null>(null)
   const [ledger, setLedger] = useState<LedgerData | null>(null)
   const [messages, setMessages] = useState<GroupMessageData[]>([])
+  const [compat, setCompat] = useState<CompatReport | null>(null)
   const [scratchpadDraft, setScratchpadDraft] = useState('')
   const [isEditingScratchpad, setIsEditingScratchpad] = useState(false)
-  const [activeTab, setActiveTab] = useState<'team' | 'workflow' | 'scratchpad' | 'ledger'>('team')
+  const [activeTab, setActiveTab] = useState<'team' | 'workflow' | 'scratchpad' | 'ledger' | 'diagnostics'>('team')
   const [locale,setLocale] = useState<GroupChatLocale>(()=>detectGroupChatLocale())
   const [themeBrief,setThemeBrief] = useState(()=>tx(detectGroupChatLocale(),'沙雕但靠谱的互联网项目小队，说人话、有梗、能交付；顺手按任务生成工作流','A chaotic-but-reliable internet project squad: human tone, fun, deliverable; generate workflow with the task.'))
   const [themeBusy,setThemeBusy] = useState(false)
@@ -84,6 +86,17 @@ export function GroupChatSideDock() {
     return () => { observer.disconnect(); window.removeEventListener('focus', refresh) }
   }, []) // dsh-group-chat: observe active conversation tab and temporary hero surface
 
+  const fetchCompatData = async () => {
+    try {
+      const res = await fetch('/dsh-group-chat/api/compat')
+      if (!res.ok) return
+      const data = await res.json()
+      setCompat(data)
+    } catch (err) {
+      console.error('[GroupChatDock] compat fetch error:', err)
+    }
+  }
+
   const fetchRoomData = async () => {
     try {
       const res = await fetch(`/dsh-group-chat/api/room?id=${encodeURIComponent(roomId)}&ensure=1`)
@@ -102,6 +115,7 @@ export function GroupChatSideDock() {
 
   useEffect(() => {
     fetchRoomData()
+    fetchCompatData()
 
     const pollTimer = window.setInterval(fetchRoomData, 2500)
 
@@ -576,6 +590,7 @@ export function GroupChatSideDock() {
             { id: 'workflow', label: tx(locale,'工作流','Workflow') },
             { id: 'scratchpad', label: tx(locale,'黑板','Blackboard') },
             { id: 'ledger', label: tx(locale,'账本','Ledger') },
+            { id: 'diagnostics', label: tx(locale,'诊断','Diagnostics') },
           ].map(tab => (
             <button
               key={tab.id}
@@ -673,6 +688,16 @@ export function GroupChatSideDock() {
               onEditAgent={setEditingAgent}
               onMarkMailboxRead={markMailboxRead}
               panel="ledger"
+              locale={locale}
+            />
+          )}
+
+          {activeTab === 'diagnostics' && (
+            <GroupChatHudDiagnosticsPanel
+              compat={compat}
+              ledgerSource={compat?.features?.sessionProjectionStateOf ? 'dsh-session-projections' : 'event-stream-usage'}
+              watchdogSource="dsh-runtime-liveness"
+              toolEventSource="dsh-tool-event-adapter"
               locale={locale}
             />
           )}

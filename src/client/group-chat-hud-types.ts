@@ -78,6 +78,14 @@ export interface ModelLedgerData {
   metrics: RuntimeMetrics
 }
 
+export interface CompatReport {
+  ok: boolean
+  version?: string
+  features: Record<string, boolean>
+  warnings: string[]
+  optimizations: string[]
+}
+
 export interface LedgerData {
   totalCalls: number
   totalTokens: number
