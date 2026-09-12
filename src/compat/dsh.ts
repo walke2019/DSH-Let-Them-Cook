@@ -66,7 +66,7 @@ const SEMANTIC_TOOL_ALIASES: Record<string, string[]> = {
 export function detectDshCompat(ctx: any): DshCompatReport {
   const warnings: string[] = []
   const optimizations: string[] = []
-  const projections = ctx?.get?.('sessionProjections', false) || ctx?.sessionProjections
+  const projections = typeof ctx?.get === 'function' ? ctx.get('sessionProjections', false) : undefined
   const bridge = detectDshApprovalWorkflowBridge(ctx)
   const features = {
     llmCatalog: !!ctx?.llm && typeof ctx.llm.listProviders === 'function' && typeof ctx.llm.listModels === 'function',

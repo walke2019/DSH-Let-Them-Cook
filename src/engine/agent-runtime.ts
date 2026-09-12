@@ -268,7 +268,7 @@ export async function runMemberTurn(ctx: RuntimeContext, model: ModelRef, prompt
 
     // Leverage latest DSH native session projections (tokenUsage & sessionStats) if registered
     try {
-      const projections = (ctx as any).get?.('sessionProjections', false) || (ctx as any).sessionProjections
+      const projections = typeof (ctx as any)?.get === 'function' ? (ctx as any).get('sessionProjections', false) : undefined
       if (projections && handle?.agent?.session) {
         const usageState = projections.stateOf?.(handle.agent.session, 'tokenUsage')
         if (usageState?.totals) {

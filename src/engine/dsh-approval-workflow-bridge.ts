@@ -15,7 +15,11 @@ export interface DshApprovalWorkflowBridgeReport {
 }
 
 function serviceOf(ctx: any, key: string): any {
-  try { return ctx?.get?.(key, false) || ctx?.[key] } catch { return ctx?.[key] }
+  try {
+    return typeof ctx?.get === 'function' ? ctx.get(key, false) : undefined
+  } catch {
+    return undefined
+  }
 }
 
 export function detectDshApprovalWorkflowBridge(ctx: any): DshApprovalWorkflowBridgeReport {
