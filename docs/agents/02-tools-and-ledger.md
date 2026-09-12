@@ -12,7 +12,8 @@
 - 详见：[docs/tasks/phases/execution-tool-routing-runtime/README.md](../tasks/phases/execution-tool-routing-runtime/README.md)、[docs/tasks/phases/p88-official-tools-and-cache-metrics/README.md](../tasks/phases/p88-official-tools-and-cache-metrics/README.md)。
 
 ### 1.2 中央消息流 250ms 工具探针与行号 Diff
-- `runMemberTurn` 挂载 250ms 流式探针，实时检测底层 `session.events` 中的 `tool/call` 与 `tool/result`；
+- `runMemberTurn` 挂载 250ms 流式探针，但工具事实解析统一委托给 `src/engine/dsh-tool-event-adapter.ts`；
+- 适配器优先消费 DSH 原生工具事件：`tool/ptc-dispatch-start`、`tool/ptc-dispatch`、`tool/call`、`tool/result`，输出稳定的 `ToolCallRecord` 视图模型；
 - 通过 SSE 实时向前端广播 `assignment:updated`，驱动中央对话流气泡实时展示工具调用状态；
 - `edit` 工具调用必须智能解析提取行号差异（如 `+29 -14`），`bash` 提取清晰描述，工具执行失败显式标红（`isError` 标签）；
 - 详见：[docs/tasks/phases/p77-central-live-execution-status/README.md](../tasks/phases/p77-central-live-execution-status/README.md)、[docs/tasks/phases/p82-official-like-central-execution/README.md](../tasks/phases/p82-official-like-central-execution/README.md)、[docs/tasks/phases/p86-native-tool-row-adapter/README.md](../tasks/phases/p86-native-tool-row-adapter/README.md)。

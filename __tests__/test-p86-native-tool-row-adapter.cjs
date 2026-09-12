@@ -5,6 +5,7 @@ const root = path.resolve(__dirname, '..')
 const toolRow = fs.readFileSync(path.join(root, 'src/client/GroupChatToolRow.tsx'), 'utf8')
 const panel = fs.readFileSync(path.join(root, 'src/client/GroupChatPanel.tsx'), 'utf8')
 const runtime = fs.readFileSync(path.join(root, 'src/engine/agent-runtime.ts'), 'utf8')
+const adapter = fs.readFileSync(path.join(root, 'src/engine/dsh-tool-event-adapter.ts'), 'utf8')
 
 const checks = [
   ['GroupChatToolRow component exists and exports properly', toolRow.includes('export function GroupChatToolRow')],
@@ -16,7 +17,9 @@ const checks = [
   ['ToolRow provides native disclosure animation and rotation chevron', toolRow.includes('gc-tool-chevron-open') && toolRow.includes('open ? \'true\' : \'false\'')],
   ['ToolRow supports running pulse and error badges', toolRow.includes('gc-tool-spin') && (toolRow.includes('gc-tool-status-error') || toolRow.includes('gc-tool-tag-error'))],
   ['GroupChatPanel replaced raw details with GroupChatToolRow', panel.includes('<GroupChatToolRow') && !panel.includes('className="gc-message-tools"')],
-  ['Agent runtime extracts readWritePath for fast indexing', runtime.includes('readWritePath: extractToolTarget(rawPayload') || runtime.includes('extractToolTarget(rawPayload, name)')],
+  ['Agent runtime delegates tool parsing to DSH adapter', runtime.includes("import { summarizeToolCalls } from './dsh-tool-event-adapter.js'")],
+  ['DSH tool event adapter extracts readWritePath for fast indexing', adapter.includes('readWritePath: extractToolTarget(rawPayload') || adapter.includes('extractToolTarget(rawPayload, name)')],
+  ['DSH tool event adapter supports PTC dispatch events', adapter.includes("tool/ptc-dispatch-start") && adapter.includes("tool/ptc-dispatch")],
 ]
 
 const failed = checks.filter(([, ok]) => !ok)

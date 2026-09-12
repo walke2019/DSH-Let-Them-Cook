@@ -5,6 +5,7 @@ import type { SessionId, UserMessage } from '@deepseek-ai/dsh-session'
 import type { AgentRuntimeMetrics, DshRuntimeTrace, ModelRef, ToolCallRecord } from '../types.js'
 import type {GroupChatLocale} from '../client/i18n.js'
 import { getCurrentModel, restrictToolsCompat } from '../compat/dsh.js'
+import { summarizeToolCalls } from './dsh-tool-event-adapter.js'
 import { classifyRuntimeLiveness, type RuntimeLivenessSnapshot } from './runtime-liveness.js'
 
 export type RuntimeContext = Context & { agents: AgentRegistry; tools: any; systemPrompt: any; agentDefaultModel: any }
@@ -70,83 +71,6 @@ function summarizeRuntimeEventShape(events: readonly any[], session: any): strin
     }
   }
   return `events=${events.length} [${types}], surface=${surface}`
-}
-
-function stringifyToolPayload(value: unknown): string {
-  if (value === undefined || value === null) return ''
-  if (typeof value === 'string') return value
-  try { return JSON.stringify(value, null, 2) } catch { return String(value) }
-}
-
-function extractToolName(data: any): string {
-  return String(data?.name || data?.toolName || data?.call?.name || data?.message?.source?.name || data?.message?.name || 'tool')
-}
-
-function extractToolTarget(rawArgs: any, toolName?: string): string | undefined {
-  if (!rawArgs) return undefined
-  let parsed = rawArgs
-  if (typeof rawArgs === 'string') {
-    try { parsed = JSON.parse(rawArgs) } catch {}
-  }
-  if (typeof parsed === 'object' && parsed !== null) {
-    if (toolName === 'bash') {
-      return parsed.description ? String(parsed.description) : (parsed.command ? String(parsed.command) : undefined)
-    }
-    if (toolName === 'edit') {
-      const path = parsed.file_path || parsed.path
-      const oldStr = typeof parsed.old_string === 'string' ? parsed.old_string : ''
-      const newStr = typeof parsed.new_string === 'string' ? parsed.new_string : ''
-      if (oldStr || newStr) {
-        const delLines = oldStr ? oldStr.split('\n').length : 0
-        const addLines = newStr ? newStr.split('\n').length : 0
-        return path ? `${path}  +${addLines} -${delLines}` : `+${addLines} -${delLines}`
-      }
-      return path ? String(path) : undefined
-    }
-    const candidate = parsed.description || parsed.file_path || parsed.path || parsed.pattern || parsed.query || (Array.isArray(parsed.queries) ? parsed.queries[0] : undefined) || parsed.command || parsed.dir || parsed.url
-    if (candidate) return String(candidate)
-  }
-  return undefined
-}
-
-export function summarizeToolCalls(events: readonly any[]): ToolCallRecord[] {
-  const calls = new Map<string, ToolCallRecord & { startedAt?: number }>()
-  for (const event of events) {
-    const data = event.data || {}
-    if (event.type === 'tool/call') {
-      const id = String(data.callId || data.id || data.call?.id || calls.size + 1)
-      const rawPayload = data.arguments || data.args || data.call?.arguments || data.input
-      const name = extractToolName(data)
-      calls.set(id, {
-        id,
-        name,
-        arguments: stringifyToolPayload(rawPayload),
-        status: 'running',
-        startedAt: typeof event.time === 'number' ? event.time : undefined,
-        readWritePath: extractToolTarget(rawPayload, name),
-      })
-    }
-    if (event.type === 'tool/result') {
-      const id = String(data.message?.source?.callId || data.callId || data.id || data.call?.id || calls.size + 1)
-      const prev = calls.get(id)
-      const startedAt = prev?.startedAt
-      const rawPayload = data.arguments || data.args || data.input
-      const name = prev?.name || extractToolName(data)
-      const target = prev?.readWritePath || extractToolTarget(rawPayload, name)
-      const resultText = stringifyToolPayload(data.result || data.output || data.message?.content || data.error)
-      const isErr = !!data.error || (resultText.includes('[exit code:') && !resultText.includes('[exit code: 0]'))
-      calls.set(id, {
-        id,
-        name,
-        arguments: prev?.arguments || stringifyToolPayload(rawPayload),
-        result: resultText,
-        status: isErr ? 'error' : 'success',
-        durationMs: typeof startedAt === 'number' && typeof event.time === 'number' ? Math.max(0, event.time - startedAt) : undefined,
-        readWritePath: target,
-      })
-    }
-  }
-  return [...calls.values()].map(({startedAt, ...call}) => call).slice(-20)
 }
 
 function extractUsageFromEvent(event: any): any {
