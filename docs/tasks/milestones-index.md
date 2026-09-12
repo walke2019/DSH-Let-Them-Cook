@@ -1,6 +1,6 @@
-# P1~P88 迭代里程碑全景索引 (Milestones Index)
+# P1~P94 迭代里程碑全景索引 (Milestones Index)
 
-本索引按阶段汇集本项目所有已完成的研发里程碑及其专项文档与验证方式：
+本索引按阶段汇集本项目所有已完成的研发里程碑及其专项文档与验证方式。P89~P94 记录了面向最新版 DSH-native primitives 的零污染重构、runtime trace、liveness watchdog、工具事件适配、HUD 能力诊断与 approval/workflow bridge diagnostics：
 
 | 阶段 | 主题 / 任务名 | 详细设计文档 | 对应单测脚本 (`__tests__/`) |
 | :--- | :--- | :--- | :--- |
@@ -47,4 +47,10 @@
 | **P85** | 全角色全链路双语覆盖 | [docs/tasks/phases/p85-bilingual-role-coverage](../tasks/phases/p85-bilingual-role-coverage/README.md) | `test-p85-bilingual-role-coverage.cjs` |
 | **P86** | 原生工具行号 Diff 可视化 | [docs/tasks/phases/p86-native-tool-row-adapter](../tasks/phases/p86-native-tool-row-adapter/README.md) | `test-p86-native-tool-row-adapter.cjs` |
 | **P87** | 对话防死循环与连续性自愈 | [docs/tasks/phases/p87-dialog-continuity-and-stall-prevention](../tasks/phases/p87-dialog-continuity-and-stall-prevention/README.md) | `test-p87-dialog-continuity.cjs` |
-| **P88** | 原生工具直通与真实 Prompt Cache 审计 | [docs/tasks/phases/p88-official-tools-and-cache-metrics](../tasks/phases/p88-official-tools-and-cache-metrics/README.md) | `npm run test:matrix` |
+| **P88** | 原生工具直通与真实 Prompt Cache 审计 | [docs/tasks/phases/p88-official-tools-and-cache-metrics](../tasks/phases/p88-official-tools-and-cache-metrics/README.md) | `test-p88-official-tools-and-cache-metrics.cjs` |
+| **P89** | DSH-native 零污染基础 | [docs/tasks/phases/p89-dsh-native-foundation](../tasks/phases/p89-dsh-native-foundation/README.md) | `test-p89-dsh-native-foundation.cjs` |
+| **P90** | Runtime trace 与 liveness 状态机 | [docs/tasks/phases/p90-dsh-runtime-trace-liveness](../tasks/phases/p90-dsh-runtime-trace-liveness/README.md) | `test-p90-dsh-runtime-trace-liveness.cjs` |
+| **P91** | Liveness-aware assignment watchdog | [docs/tasks/phases/p91-liveness-aware-watchdog](../tasks/phases/p91-liveness-aware-watchdog/README.md) | `test-p91-liveness-aware-watchdog.cjs` |
+| **P92** | DSH-native tool event adapter | [docs/tasks/phases/p92-dsh-tool-event-adapter](../tasks/phases/p92-dsh-tool-event-adapter/README.md) | `test-p92-dsh-tool-event-adapter.cjs` |
+| **P93** | Capability diagnostics HUD | [docs/tasks/phases/p93-capability-diagnostics-ui](../tasks/phases/p93-capability-diagnostics-ui/README.md) | `test-p93-capability-diagnostics-ui.cjs` |
+| **P94** | Approval / workflow bridge diagnostics | [docs/tasks/phases/p94-approval-workflow-bridge](../tasks/phases/p94-approval-workflow-bridge/README.md) | `test-p94-approval-workflow-bridge.cjs` |

@@ -34,6 +34,10 @@
 - Universal Master Handoff 完工必回主控与长任务 24 轮预算；
 - `README.md` 默认地道英文与 `AGENTS.md` 模块化规范治理。
 
-### Phase 6: 当前与后续规划
-- **测试工程目录标准化**：将 90+ 套测试统一沉淀入 `__tests__/` 目录；
-- **文档体系标准化**：`docs/` 按业务分类重构为 `agents/`、`tasks/`、`architecture/`、`releases/`。
+### Phase 6: DSH-native 零污染现代化 (P89 ~ P94) - [已完成]
+- **DSH-native foundation**：删除重复 UI surface，移除 host DOM patch 与文本长度估算；
+- **Runtime trace & liveness**：assignment/message 绑定 DSH subagent session trace，并基于 events 判断 `llm_streaming`、`tool_running`、`retrying`、`stalled` 等运行态；
+- **Liveness-aware watchdog**：看门狗优先读取 DSH runtime liveness，避免长推理、工具执行或 retry 被时间阈值误杀；
+- **Native tool event adapter**：统一适配 `tool/call`、`tool/result`、`tool/ptc-dispatch-start`、`tool/ptc-dispatch`；
+- **Capability diagnostics HUD**：HUD 新增 `诊断 / Diagnostics`，展示 ledger/watchdog/tool events/approval/workflow fact sources；
+- **Approval / workflow bridge diagnostics**：检测 `approval.request` 与 workflow run seam，可用则标记 native source，不可用则明确保留插件语义层且不伪装。

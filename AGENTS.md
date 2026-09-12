@@ -14,7 +14,7 @@
 | :--- | :--- | :--- |
 | **`README.md`** | **业务定位与产品说明书** | 面向全体用户与开发者：阐述项目核心价值、架构边界图、业务流转时序图及完整的扩展安装部署运行指南。**必须默认英文编写，顶部提供中文切换**。 |
 | **`AGENTS.md`** (本文件) | **AI Agent 编码、UI 规范与避坑开发宪章** | 面向 AI Coding Agent 及群聊业务 Agent：强制性工程铁律、DSH 扩展插槽契约、UI 零污染规则与避坑开发宪章。**采用规范索引+分类引用 Docs 机制**。 |
-| **`docs/README.md`** | **技术方案与演进索引中心** | 面向深度架构研究与回归维护：汇集 P1~P88 全阶段演进设计、单测报告、性能分析与避坑专著。 |
+| **`docs/README.md`** | **技术方案与演进索引中心** | 面向深度架构研究与回归维护：汇集 P1~P94 全阶段演进设计、单测报告、性能分析与避坑专著。 |
 | **`__tests__/`** | **自动化测试工程目录** | 存放所有 90+ 套自动化回归与集成测试脚本（`__tests__/*.cjs`），对齐标准化开源项目工程目录规范。 |
 
 ---
@@ -36,16 +36,18 @@
 ### 2. ⚡ 原生工具调用、流式状态机与计费审计 (Tools, Streaming & Ledger)
 > 领域专著索引：**[docs/agents/02-tools-and-ledger.md](./docs/agents/02-tools-and-ledger.md)**
 - **DSH 底座原生工具白名单直通**：参见 [docs/tasks/phases/execution-tool-routing-runtime/README.md](./docs/tasks/phases/execution-tool-routing-runtime/README.md)、[docs/tasks/phases/p88-official-tools-and-cache-metrics/README.md](./docs/tasks/phases/p88-official-tools-and-cache-metrics/README.md)
-- **中央消息流 250ms 工具探针与行号 Diff (+add -del)**：参见 [docs/tasks/phases/p77-central-live-execution-status/README.md](./docs/tasks/phases/p77-central-live-execution-status/README.md)、[docs/tasks/phases/p82-official-like-central-execution/README.md](./docs/tasks/phases/p82-official-like-central-execution/README.md)、[docs/tasks/phases/p86-native-tool-row-adapter/README.md](./docs/tasks/phases/p86-native-tool-row-adapter/README.md)
+- **零污染 DSH-native foundation**：参见 [docs/tasks/phases/p89-dsh-native-foundation/README.md](./docs/tasks/phases/p89-dsh-native-foundation/README.md)
+- **中央消息流 250ms 工具探针与行号 Diff (+add -del)**：参见 [docs/tasks/phases/p77-central-live-execution-status/README.md](./docs/tasks/phases/p77-central-live-execution-status/README.md)、[docs/tasks/phases/p82-official-like-central-execution/README.md](./docs/tasks/phases/p82-official-like-central-execution/README.md)、[docs/tasks/phases/p86-native-tool-row-adapter/README.md](./docs/tasks/phases/p86-native-tool-row-adapter/README.md)、[docs/tasks/phases/p92-dsh-tool-event-adapter/README.md](./docs/tasks/phases/p92-dsh-tool-event-adapter/README.md)
 - **多网关 Prompt Cache 命中率解析与真实账本**：参见 [docs/tasks/phases/p88-official-tools-and-cache-metrics/README.md](./docs/tasks/phases/p88-official-tools-and-cache-metrics/README.md)
-- **结构化交付卡片与确认后执行事务**：参见 [docs/tasks/phases/p6-structured-agent-result/README.md](./docs/tasks/phases/p6-structured-agent-result/README.md)、[docs/tasks/phases/p67-approve-run-transaction-card/README.md](./docs/tasks/phases/p67-approve-run-transaction-card/README.md)
+- **DSH 底座能力诊断与 fact source 可视化**：参见 [docs/tasks/phases/p93-capability-diagnostics-ui/README.md](./docs/tasks/phases/p93-capability-diagnostics-ui/README.md)
+- **结构化交付卡片、确认后执行事务与 approval bridge**：参见 [docs/tasks/phases/p6-structured-agent-result/README.md](./docs/tasks/phases/p6-structured-agent-result/README.md)、[docs/tasks/phases/p67-approve-run-transaction-card/README.md](./docs/tasks/phases/p67-approve-run-transaction-card/README.md)、[docs/tasks/phases/p94-approval-workflow-bridge/README.md](./docs/tasks/phases/p94-approval-workflow-bridge/README.md)
 - **团队协同工具箱 (Claim/Block/Handoff/Report/Close)**：参见 [docs/tasks/phases/p68-team-coordination-tools/README.md](./docs/tasks/phases/p68-team-coordination-tools/README.md)
 
 ### 3. 🛡️ 调度编排、防死循环与自愈机制 (Orchestration & Anti-Stall)
 > 领域专著索引：**[docs/agents/03-orchestration-and-anti-stall.md](./docs/agents/03-orchestration-and-anti-stall.md)**
 - **Universal Master Handoff（完工必回主控）**：参见 [docs/tasks/phases/p81-workflow-commander-delegation/README.md](./docs/tasks/phases/p81-workflow-commander-delegation/README.md)、[docs/tasks/phases/p87-dialog-continuity-and-stall-prevention/README.md](./docs/tasks/phases/p87-dialog-continuity-and-stall-prevention/README.md)
 - **阶段流转双语模糊识别（通过/批准/Approved/LGTM）**：参见 [docs/tasks/phases/p87-dialog-continuity-and-stall-prevention/README.md](./docs/tasks/phases/p87-dialog-continuity-and-stall-prevention/README.md)
-- **任务看门狗超时机制与报警信自愈**：参见 [docs/tasks/phases/p62-runtime-agent-watchdog/README.md](./docs/tasks/phases/p62-runtime-agent-watchdog/README.md)、[docs/tasks/phases/p63-assignment-watchdog-timeout/README.md](./docs/tasks/phases/p63-assignment-watchdog-timeout/README.md)
+- **DSH runtime trace、liveness 状态机与看门狗自愈**：参见 [docs/tasks/phases/p62-runtime-agent-watchdog/README.md](./docs/tasks/phases/p62-runtime-agent-watchdog/README.md)、[docs/tasks/phases/p63-assignment-watchdog-timeout/README.md](./docs/tasks/phases/p63-assignment-watchdog-timeout/README.md)、[docs/tasks/phases/p90-dsh-runtime-trace-liveness/README.md](./docs/tasks/phases/p90-dsh-runtime-trace-liveness/README.md)、[docs/tasks/phases/p91-liveness-aware-watchdog/README.md](./docs/tasks/phases/p91-liveness-aware-watchdog/README.md)
 - **Agent turn surface fallback 兼容降级**：参见 [docs/tasks/phases/p78-agent-turn-surface-fallback/README.md](./docs/tasks/phases/p78-agent-turn-surface-fallback/README.md)
 - **长任务动态 24 轮交互预算与快速任务分层**：参见 [docs/tasks/phases/p51-task-tier-progress/README.md](./docs/tasks/phases/p51-task-tier-progress/README.md)、[docs/tasks/phases/p87-dialog-continuity-and-stall-prevention/README.md](./docs/tasks/phases/p87-dialog-continuity-and-stall-prevention/README.md)
 - **DAG 阶段门禁与 verifyCommand 测试验收**：参见 [docs/tasks/phases/p2-workflow-task-dag-quality-gate/README.md](./docs/tasks/phases/p2-workflow-task-dag-quality-gate/README.md)

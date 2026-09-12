@@ -1,6 +1,6 @@
 # DSH Let Them Cook (开整天团) 技术方案、规范与任务文档中心
 
-> 本目录为项目标准化技术方案中心，涵盖多智能体协同引擎设计、UI 扩展插槽生命周期契约、发版预检与 P1~P88 全量演进里程碑。
+> 本目录为项目标准化技术方案中心，涵盖多智能体协同引擎设计、UI 扩展插槽生命周期契约、发版预检与 P1~P94 全量演进里程碑。
 
 ---
 
@@ -21,7 +21,7 @@ DSH-Let-Them-Cook/
     ├── architecture/              # 3. 系统架构与技术设计白皮书
     ├── releases/                  # 4. 版本发版记录与发布检查清单
     ├── archive/                   # 5. 历史修复与沙箱归档
-    └── p1-* ~ p88-*               # 6. P1~P88 各演进阶段专项设计文档
+    └── p1-* ~ p94-*               # 6. P1~P94 各演进阶段专项设计文档
 ```
 
 ---
@@ -39,9 +39,9 @@ DSH-Let-Them-Cook/
 ### 2. 📋 开发任务与待办清单 (`docs/tasks/`)
 项目开发进度管理、迭代阶段划分与任务跟踪：
 - **[docs/tasks/README.md](./tasks/README.md)**：开发任务管理总览
-- **[TODO.md](./TODO.md)** (或查看 [tasks/TODO.md](./tasks/TODO.md))：全局待办开发任务清单（P0~P88 迭代进展追踪）
+- **[TODO.md](./TODO.md)** (或查看 [tasks/TODO.md](./tasks/TODO.md))：全局待办开发任务清单（P0~P94 迭代进展追踪）
 - **[roadmap.md](./tasks/roadmap.md)**：版本演进规划与中长期技术路线图
-- **[milestones-index.md](./tasks/milestones-index.md)**：P1~P88 迭代里程碑全景索引
+- **[milestones-index.md](./tasks/milestones-index.md)**：P1~P94 迭代里程碑全景索引
 
 ### 3. 🏛️ 系统架构与技术设计 (`docs/architecture/`)
 核心系统架构设计、微内核挂载与协作机制深度白皮书：
@@ -82,7 +82,7 @@ DSH-Let-Them-Cook/
 
 ---
 
-## 📦 P1~P88 迭代演进阶段专著索引 (Evolutionary Specs)
+## 📦 P1~P94 迭代演进阶段专著索引 (Evolutionary Specs)
 
 - `docs/tasks/phases/p1-assignment-mailbox-runtime/README.md` — 任务信封与 Mailbox 运行时
 - `docs/tasks/phases/p2-workflow-task-dag-quality-gate/README.md` — 工作流任务 DAG 与质量门禁
@@ -172,3 +172,9 @@ DSH-Let-Them-Cook/
 - `docs/tasks/phases/p86-native-tool-row-adapter/README.md` — 原生工具行号 Diff 可视化适配器
 - `docs/tasks/phases/p87-dialog-continuity-and-stall-prevention/README.md` — 对话连续性保障与防死锁自愈
 - `docs/tasks/phases/p88-official-tools-and-cache-metrics/README.md` — 底座原生工具直通与真实 Prompt Cache 计费
+- `docs/tasks/phases/p89-dsh-native-foundation/README.md` — DSH-native 零污染基础与事实源重构
+- `docs/tasks/phases/p90-dsh-runtime-trace-liveness/README.md` — DSH runtime trace 与 liveness 状态机
+- `docs/tasks/phases/p91-liveness-aware-watchdog/README.md` — DSH liveness-aware assignment watchdog
+- `docs/tasks/phases/p92-dsh-tool-event-adapter/README.md` — DSH-native 工具事件适配器
+- `docs/tasks/phases/p93-capability-diagnostics-ui/README.md` — HUD DSH 底座能力诊断面板
+- `docs/tasks/phases/p94-approval-workflow-bridge/README.md` — Approval / Workflow bridge 能力诊断

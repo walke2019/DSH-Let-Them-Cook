@@ -507,3 +507,39 @@
 - [x] 新增 
 pm run test:hero-entry-self-click-guard 并接入 matrix/preflight。
 
+
+## P89 — DSH-native 零污染基础
+- [x] 删除重复入口/旧 UI surface，保留插件自有根节点。
+- [x] 移除 host DOM patch 选择器与全局布局污染。
+- [x] 取消基于消息长度的 token/ledger 主指标估算。
+- [x] 增加回归守卫：`npm run test:dsh-native-foundation`。
+
+## P90 — DSH runtime trace 与 liveness 状态机
+- [x] 新增 `DshRuntimeTrace` 并写入 assignment/message metadata。
+- [x] 新增 `classifyRuntimeLiveness()`，从 DSH session events 判断运行态。
+- [x] progress 回调同步 toolCalls 与 liveness。
+- [x] 增加回归守卫：`npm run test:dsh-runtime-trace-liveness`。
+
+## P91 — DSH liveness-aware assignment watchdog
+- [x] 看门狗优先读取 `assignment.runtimeTrace.liveness`。
+- [x] active phase 在 hard ceiling 内延长检测；terminal phase 不重复触发。
+- [x] stalled failure 保留 runtimeTrace 并使用 DSH liveness 停滞文案。
+- [x] 增加回归守卫：`npm run test:liveness-aware-watchdog`。
+
+## P92 — DSH-native tool event adapter
+- [x] 新增 `src/engine/dsh-tool-event-adapter.ts`。
+- [x] 统一适配 `tool/call`、`tool/result`、`tool/ptc-dispatch-start`、`tool/ptc-dispatch`。
+- [x] `agent-runtime.ts` 不再内联工具展示解析。
+- [x] 增加回归守卫：`npm run test:dsh-tool-event-adapter`。
+
+## P93 — HUD 底座能力诊断
+- [x] 新增 `GroupChatHudDiagnosticsPanel` 与 HUD `诊断 / Diagnostics` 标签。
+- [x] 前端接入 `/dsh-group-chat/api/compat`。
+- [x] 展示 ledger/watchdog/tool events/approval/workflow fact sources。
+- [x] 增加回归守卫：`npm run test:capability-diagnostics-ui`。
+
+## P94 — Approval / workflow bridge diagnostics
+- [x] 新增 `src/engine/dsh-approval-workflow-bridge.ts`。
+- [x] `/compat` 报告 native approval/workflow seam 与插件 source。
+- [x] HUD diagnostics 展示 approval/workflow source，不伪装 native。
+- [x] 增加回归守卫：`npm run test:approval-workflow-bridge`。
