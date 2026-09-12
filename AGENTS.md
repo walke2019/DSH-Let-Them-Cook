@@ -54,6 +54,7 @@
 - **DAG 阶段门禁与 verifyCommand 测试验收**：参见 [docs/tasks/phases/p2-workflow-task-dag-quality-gate/README.md](./docs/tasks/phases/p2-workflow-task-dag-quality-gate/README.md)
 - **对话防中断自愈与全主题别名解析**：参见 [docs/tasks/phases/p95-dialog-continuity-and-anti-stall/README.md](./docs/tasks/phases/p95-dialog-continuity-and-anti-stall/README.md)
 - **方案选项抉择人机交互与全量记录清空**：参见 [docs/tasks/phases/p96-user-decision-options-and-clear-history/README.md](./docs/tasks/phases/p96-user-decision-options-and-clear-history/README.md)
+- **官方同款提问接管输入框与交互式拍板卡片（P98）**：参见 [docs/tasks/phases/p98-official-question-composer-takeover/README.md](./docs/tasks/phases/p98-official-question-composer-takeover/README.md)
 
 ### 4. 🌐 国际化、主题化与工作区隔离 (i18n, Personas & Workspaces)
 > 领域专著索引：**[docs/agents/04-i18n-personas-workspaces.md](./docs/agents/04-i18n-personas-workspaces.md)**

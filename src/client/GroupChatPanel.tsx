@@ -10,6 +10,7 @@ import type {AssignmentEnvelope} from './group-chat-hud-types.js'
 import type {AgentProfile, AgentStatus, GroupMessage} from './group-chat-view-types.js'
 import {useCurrentGroupChatRoomId} from './current-room.js'
 import {GroupChatWarRoomBar} from './GroupChatWarRoomBar.js'
+import {GroupChatQuestionComposer} from './GroupChatQuestionComposer.js'
 import type {UserDecisionPrompt} from '../types.js'
 
 type ClientThemeKey = 'meme_comedy' | 'three_kingdoms' | 'genshin' | 'modern' | 'legends' | string
@@ -270,6 +271,15 @@ export function GroupChatPanel({mode='full'}:GroupChatPanelProps) {
     const timer=window.setTimeout(()=>setRetry(v=>v+1),5000)
     return()=>window.clearTimeout(timer)
   },[error,isEmptyState])
+  useEffect(() => {
+    const handleDecisionPrompt = (e: any) => {
+      if (e.detail?.prompt !== undefined) {
+        setAwaitingDecision(e.detail.prompt)
+      }
+    }
+    window.addEventListener('dsh-group-chat:set-decision-prompt', handleDecisionPrompt)
+    return () => window.removeEventListener('dsh-group-chat:set-decision-prompt', handleDecisionPrompt)
+  }, [])
   useLayoutEffect(()=>{
     const syncAvailableHeight=()=>{
       const el=root.current
@@ -639,96 +649,20 @@ export function GroupChatPanel({mode='full'}:GroupChatPanelProps) {
     <div className="gc-chat-bottom" ref={bottom}>
       {showLatest&&<button className="gc-latest" aria-label="滚动到底部" onClick={()=>{follow.current=true;setShowLatest(false);if(scroll.current)scroll.current.scrollTop=scroll.current.scrollHeight}}>↓ 回到最新</button>}
       {error&&!isEmptyState&&<div className="gc-chat-error" role="alert">{error} <button type="button" onClick={()=>setRetry(v=>v+1)}>{tx(locale,'重试加载','Retry loading')}</button></div>}
-      {awaitingDecision && (
-        <div data-dsh-gc-decision-card className="gc-decision-prompt-card" style={{
-          margin: '0 16px 12px',
-          padding: '14px 16px',
-          borderRadius: 12,
-          border: '1px solid rgba(77,107,254,0.45)',
-          background: 'linear-gradient(135deg, rgba(30,30,38,0.95), rgba(20,20,26,0.95))',
-          boxShadow: '0 4px 20px rgba(0,0,0,0.3)',
-          display: 'grid',
-          gap: 10,
-        }}>
-          <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',gap:8}}>
-            <div style={{display:'flex',alignItems:'center',gap:8,fontWeight:700,color:'#93c5fd',fontSize:13}}>
-              <span>🎯</span>
-              <span>{tx(locale, '总指挥官发起方案抉择（请您拍板）', 'Commander requested decision (Awaiting your choice)')}</span>
-            </div>
-            <button
-              type="button"
-              style={{
-                background: 'transparent',
-                border: 'none',
-                color: 'var(--dsw-alias-label-tertiary,#94a3b8)',
-                cursor: 'pointer',
-                fontSize: 14,
-                padding: '2px 6px'
-              }}
-              onClick={() => setAwaitingDecision(undefined)}
-              title={tx(locale, '暂时忽略', 'Dismiss')}
-            >
-              ✕
-            </button>
-          </div>
-          <div style={{fontSize:13,color:'var(--dsw-alias-label-primary,#f1f5f9)',lineHeight:1.5,whiteSpace:'pre-wrap'}}>
-            {awaitingDecision.question}
-          </div>
-          {awaitingDecision.options && awaitingDecision.options.length > 0 ? (
-            <div style={{display:'grid',gap:8,marginTop:4}}>
-              {awaitingDecision.options.map(opt => (
-                <button
-                  key={opt.key}
-                  type="button"
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
-                    padding: '8px 12px',
-                    borderRadius: 8,
-                    border: opt.isRecommended ? '1px solid #10b981' : '1px solid rgba(255,255,255,0.12)',
-                    background: opt.isRecommended ? 'rgba(16,185,129,0.12)' : 'rgba(255,255,255,0.04)',
-                    color: 'var(--dsw-alias-label-primary,#f8fafc)',
-                    fontSize: 12,
-                    fontWeight: 500,
-                    cursor: 'pointer',
-                    textAlign: 'left',
-                    transition: 'all 0.15s ease'
-                  }}
-                  onClick={() => {
-                    void send(locale === 'en-US' ? `I choose: ${opt.label}` : `我拍板选择：${opt.label}`)
-                  }}
-                >
-                  <span>{opt.isRecommended ? `⭐ ${opt.label}` : opt.label}</span>
-                  <span style={{fontSize:11,color:opt.isRecommended ? '#34d399' : '#60a5fa',fontWeight:600}}>
-                    {tx(locale, '直接采纳 ↵', 'Select ↵')}
-                  </span>
-                </button>
-              ))}
-            </div>
-          ) : (
-            <div style={{display:'flex',gap:8,marginTop:4}}>
-              <button
-                type="button"
-                className="gc-template-chip"
-                style={{borderColor:'#10b981',background:'rgba(16,185,129,0.15)',fontWeight:600}}
-                onClick={() => { void send(locale === 'en-US' ? 'Approved, proceed.' : '同意，按此方案推进。') }}
-              >
-                ✓ {tx(locale, '同意，按此方案推进', 'Approved, proceed')}
-              </button>
-              <button
-                type="button"
-                className="gc-template-chip"
-                style={{borderColor:'rgba(255,255,255,0.15)',background:'transparent'}}
-                onClick={() => { void send(locale === 'en-US' ? 'Need modification:' : '需要修改：') }}
-              >
-                ✎ {tx(locale, '需要补充/修改', 'Need modification')}
-              </button>
-            </div>
-          )}
-        </div>
+      {awaitingDecision ? (
+        <GroupChatQuestionComposer
+          prompt={awaitingDecision}
+          locale={locale}
+          sending={sending}
+          onDismiss={() => setAwaitingDecision(undefined)}
+          onSubmit={(answerText) => {
+            setAwaitingDecision(undefined)
+            void send(answerText)
+          }}
+        />
+      ) : (
+        <GroupChatComposer members={members} value={draft} onChange={setDraft} onSend={send} sending={sending} taskTier={taskTier} onTaskTierChange={setTaskTier} locale={locale}/>
       )}
-      <GroupChatComposer members={members} value={draft} onChange={setDraft} onSend={send} sending={sending} taskTier={taskTier} onTaskTierChange={setTaskTier} locale={locale}/>
     </div>
   </div>
 }

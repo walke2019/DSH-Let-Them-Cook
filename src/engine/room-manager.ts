@@ -74,7 +74,7 @@ export class RoomManager {
           level: 'admin',
           canWriteScratchpad: true,
           canApproveWorkflow: true,
-          allowedTools: ['read', 'glob', 'grep', 'group_chat_workflow_advance', 'group_chat_workflow_reject', 'group_chat_update_scratchpad', 'group_chat_export_summary', 'group_chat_room_status', 'group_chat_set_mode', 'group_chat_task_claim', 'group_chat_task_report', 'group_chat_task_close', 'group_chat_task_handoff', 'group_chat_transaction_create', 'group_chat_transaction_action'],
+          allowedTools: ['read', 'glob', 'grep', 'group_chat_workflow_advance', 'group_chat_workflow_reject', 'group_chat_update_scratchpad', 'group_chat_export_summary', 'group_chat_room_status', 'group_chat_set_mode', 'group_chat_task_claim', 'group_chat_task_report', 'group_chat_task_close', 'group_chat_task_handoff', 'group_chat_transaction_create', 'group_chat_transaction_action', 'group_chat_ask_user'],
         },
         groupChatRules: {
           mentionKeywords: ['@commander', '@指挥官', '@总指挥', `@${mappings.commander.name}`],

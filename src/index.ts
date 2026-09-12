@@ -657,6 +657,28 @@ export function apply(ctx: AppContext, config: Config): void {
           return
         }
 
+        if (method === 'POST' && pathname === '/room/decision') {
+          const body = await readJsonBody(req)
+          const roomId = body.roomId || 'dev-team-alpha'
+          const room = roomManager.getRoom(roomId)
+          if (!room) {
+            res.writeHead(404, { 'Content-Type': 'application/json' })
+            res.end(JSON.stringify({ success: false, error: 'Room not found' }))
+            return
+          }
+          if (body.action === 'clear' || body.action === 'dismiss') {
+            room.awaitingUserDecision = undefined
+          } else if (body.prompt) {
+            room.awaitingUserDecision = body.prompt
+          }
+          roomManager.saveRoom(room)
+          persistRoomState(roomId)
+          roomManager.broadcast({ type: 'room:updated', roomId, payload: room, timestamp: Date.now() })
+          res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' })
+          res.end(JSON.stringify({ success: true, awaitingUserDecision: room.awaitingUserDecision }))
+          return
+        }
+
         // Host plugin entry: REST API, message dispatch, workflow actions, and lifecycle-safe registration.
         if (method === 'POST' && pathname === '/auto-plan') {
           const body = await readJsonBody(req)

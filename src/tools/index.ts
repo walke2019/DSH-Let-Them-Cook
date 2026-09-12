@@ -434,6 +434,54 @@ export function registerGroupChatTools(
     }),
 
     defineTool({
+      name: 'group_chat_ask_user',
+      description: '向人类负责人发起方案抉择或提问，替换输入框呈现官方交互式卡片，等待用户拍板或填写自定义答案。',
+      parameters: {
+        roomId: { type: 'string', description: '群聊房间 ID' },
+        question: { type: 'string', required: true, description: '提问或决策问题标题' },
+        header: { type: 'string', description: '短标题或分类，如“方案抉择”' },
+        detail: { type: 'string', description: '方案背景与详细说明' },
+        options: {
+          type: 'array',
+          description: '可选方案列表，每个方案包含 label（如“方案 A：... (推荐)”）和可选的 description',
+        },
+        askedByRoleId: { type: 'string', description: '提问角色 ID，默认 commander' },
+        locale: { type: 'string', description: '输出语言：zh-CN 或 en-US' },
+      },
+      output: { schema: { type: 'string' }, render: (_args: unknown, value: unknown) => [{ type: 'text', text: String(value) }] },
+      async execute(args: { roomId?: string; question: string; header?: string; detail?: string; options?: Array<{ label: string; description?: string }>; askedByRoleId?: string; locale?: string }) {
+        const roomId = args.roomId || roomManager.getAllRooms()[0]?.roomId || 'dev-team-alpha'
+        const locale = normalizeToolLocale(args.locale)
+        const room = roomManager.getRoom(roomId)
+        if (!room) return locale === 'en-US' ? 'Room not found.' : '未找到房间。'
+
+        const parsedOptions = (args.options || []).map((opt, idx) => {
+          const key = String.fromCharCode(65 + idx)
+          const isRec = opt.label.includes('推荐') || opt.label.includes('Recommended')
+          return {
+            key,
+            label: opt.label,
+            description: opt.description,
+            isRecommended: isRec,
+          }
+        })
+
+        room.awaitingUserDecision = {
+          header: args.header || (locale === 'en-US' ? 'Decision Required' : '方案抉择'),
+          question: args.question,
+          detail: args.detail,
+          options: parsedOptions.length > 0 ? parsedOptions : undefined,
+          recommendedOptionKey: parsedOptions.find(o => o.isRecommended)?.key,
+          askedByRoleId: args.askedByRoleId || 'commander',
+          askedAt: Date.now(),
+        }
+        roomManager.saveRoom(room)
+        roomManager.broadcast({ type: 'room:updated', roomId, payload: room, timestamp: Date.now() })
+        return locale === 'en-US' ? 'Question card sent to user composer. Waiting for user decision.' : '交互式抉择卡片已下发至用户输入区，等待拍板决策。'
+      },
+    }),
+
+    defineTool({
       name: 'group_chat_export_summary',
       description: '导出群聊协作讨论纪要、工作流流转过程与消耗账本（Markdown 格式）。',
       parameters: {

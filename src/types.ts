@@ -426,9 +426,12 @@ export interface UserDecisionOption {
 }
 
 export interface UserDecisionPrompt {
+  header?: string
   question: string
+  detail?: string
   options?: UserDecisionOption[]
   recommendedOptionKey?: string
+  multiSelect?: boolean
   askedByRoleId: string
   askedAt: number
 }

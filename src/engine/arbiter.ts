@@ -524,26 +524,46 @@ export class DispatchArbiter {
     const lines = text.split('\n').map(l => l.trim()).filter(Boolean)
 
     for (const line of lines) {
-      const match = line.match(/^[-*•]?\s*(?:【?(?:选项|方案|option)\s*([A-Za-z0-9一二三四1-4])】?[:：]?\s*(.*?))$/i)
+      const match = line.match(/^[-*•]?\s*(?:(?:【?(?:选项|方案|option)\s*([A-Za-z0-9一二三四1-4])】?)|(?:([0-9]+|[A-Za-z])[.)、]))[:：]?\s*(.*?)$/i)
       if (match) {
-        const key = match[1].toUpperCase()
-        const label = match[2] || `选项 ${key}`
-        const isRec = label.includes('推荐') || label.includes('Recommended') || line.includes('推荐')
+        let key = (match[1] || match[2] || '').toUpperCase()
+        let textPart = (match[3] || '').trim()
+        const innerSub = textPart.match(/^(?:(?:【?(?:选项|方案|option)\s*([A-Za-z0-9一二三四1-4])】?)|(?:([0-9]+|[A-Za-z])[.)、]))[:：]?\s*(.*?)$/i)
+        if (innerSub) {
+          key = (innerSub[1] || innerSub[2] || key).toUpperCase()
+          textPart = (innerSub[3] || '').trim()
+        }
+        const isRec = textPart.includes('推荐') || textPart.includes('Recommended') || line.includes('推荐')
         if (isRec) recommendedKey = key
+        const cleaned = textPart.replace(/[（(]?(?:推荐|Recommended)[）)]?/g, '').trim()
+        let label = cleaned
+        let description: string | undefined = undefined
+        const descSplit = cleaned.split(/\s+[-—]\s+/)
+        if (descSplit.length > 1) {
+          label = descSplit[0].trim()
+          description = descSplit.slice(1).join(' - ').trim()
+        }
+        const fullLabel = (label.startsWith(`选项 ${key}`) || label.startsWith(`方案 ${key}`))
+          ? label
+          : `选项 ${key}：${label}`
         options.push({
           key,
-          label: `选项 ${key}：${label.replace(/[（(]?(?:推荐|Recommended)[）)]?/g, '').trim()}`,
+          label: fullLabel,
+          description,
           isRecommended: isRec,
         })
       }
     }
 
     const questionMatch = text.match(/【(?:需要您拍板|方案抉择|请您抉择|决策事项|Decision Needed)[^】]*】[：:]?\s*([^\n]+)/i)
-    const question = questionMatch ? questionMatch[1].trim() : (options.length > 0 ? '主 Agent 提出了如下方案，请您拍板选择：' : text.slice(0, 140))
+    const question = questionMatch ? questionMatch[1].replace(/^[：:]\s*/, '').trim() : (options.length > 0 ? '主 Agent 提出了如下方案，请您拍板选择：' : text.slice(0, 140))
+    const headerMatch = text.match(/【([^】]+)】/)
+    const header = headerMatch ? headerMatch[1].trim() : '方案抉择'
 
     return {
       isAwaiting: true,
       prompt: {
+        header,
         question,
         options: options.length > 0 ? options : undefined,
         recommendedOptionKey: recommendedKey,
