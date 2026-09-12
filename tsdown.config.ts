@@ -1,6 +1,6 @@
 import type { UserConfig } from 'tsdown'
 
-const PLUGIN_ID = '@dsh-external/dsh-group-chat'
+const PLUGIN_ID = '@dsh-external/dsh-let-them-cook'
 
 const CLIENT_EXTERNALS = [
   '@deepseek-ai/dsh-client-ui-primitives',

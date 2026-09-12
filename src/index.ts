@@ -24,7 +24,7 @@ import { inferAgentTaskStatus, parseStructuredAgentResult, stripStructuredAgentR
 import type {GroupChatLocale} from './client/i18n.js'
 import type { DispatchMode, GroupTaskTier, PersonaThemeKey } from './types.js'
 
-export const name = '@dsh-external/dsh-group-chat'
+export const name = '@dsh-external/dsh-let-them-cook'
 export const inject = ['tools', 'webServer', 'agents', 'systemPrompt', 'agentDefaultModel', 'llm']
 
 export interface Config {
