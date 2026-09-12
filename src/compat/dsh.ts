@@ -10,8 +10,11 @@ export interface DshCompatReport {
     toolRestrict: boolean
     webServer: boolean
     agents: boolean
+    sessionProjections: boolean
+    sessionProjectionStateOf: boolean
   }
   warnings: string[]
+  optimizations: string[]
 }
 
 export interface ToolScopeResult {
@@ -48,19 +51,28 @@ const SEMANTIC_TOOL_ALIASES: Record<string, string[]> = {
 
 export function detectDshCompat(ctx: any): DshCompatReport {
   const warnings: string[] = []
+  const optimizations: string[] = []
+  const projections = ctx?.get?.('sessionProjections', false) || ctx?.sessionProjections
   const features = {
     llmCatalog: !!ctx?.llm && typeof ctx.llm.listProviders === 'function' && typeof ctx.llm.listModels === 'function',
     currentModel: !!ctx?.agentDefaultModel && typeof ctx.agentDefaultModel.currentSelection === 'function',
     toolRestrict: !!ctx?.tools && typeof ctx.tools.restrict === 'function',
     webServer: !!ctx?.webServer && typeof ctx.webServer.register === 'function',
     agents: !!ctx?.agents && typeof ctx.agents.create === 'function',
+    sessionProjections: !!projections,
+    sessionProjectionStateOf: !!projections && typeof projections.stateOf === 'function',
   }
   if (!features.llmCatalog) warnings.push('DSH llm.listProviders/listModels 不可用，模型目录将降级为空列表。')
   if (!features.currentModel) warnings.push('DSH agentDefaultModel.currentSelection 不可用，将使用空默认模型。')
   if (!features.toolRestrict) warnings.push('DSH tools.restrict 不可用，角色工具白名单只能注入 Prompt，无法强制收口。')
   if (!features.webServer) warnings.push('DSH webServer.register 不可用，插件 API 无法挂载。')
   if (!features.agents) warnings.push('DSH agents.create 不可用，群聊角色无法执行独立 turn。')
-  return { ok: Object.values(features).every(Boolean), features, warnings }
+  if (features.sessionProjectionStateOf) optimizations.push('DSH sessionProjections.stateOf 可用：优先使用 tokenUsage/sessionStats 官方投影作为账本与延迟数据源。')
+  else warnings.push('DSH sessionProjections.stateOf 不可用：账本将降级为事件流 usage 深度解析。')
+  if (features.agents) optimizations.push('DSH agents.create 可用：群聊角色以独立 subagent session 运行，保留 DSH 原生事件、工具与计量能力。')
+  if (features.toolRestrict) optimizations.push('DSH tools.restrict 可用：角色工具白名单可由底座强制执行。')
+  const requiredOk = features.llmCatalog && features.currentModel && features.toolRestrict && features.webServer && features.agents
+  return { ok: requiredOk, features, warnings, optimizations }
 }
 
 export function getCurrentModel(ctx: any): ModelRef {

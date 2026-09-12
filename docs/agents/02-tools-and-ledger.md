@@ -18,12 +18,13 @@
 - 详见：[docs/tasks/phases/p77-central-live-execution-status/README.md](../tasks/phases/p77-central-live-execution-status/README.md)、[docs/tasks/phases/p82-official-like-central-execution/README.md](../tasks/phases/p82-official-like-central-execution/README.md)、[docs/tasks/phases/p86-native-tool-row-adapter/README.md](../tasks/phases/p86-native-tool-row-adapter/README.md)。
 
 ### 1.3 多网关 Prompt Cache 命中率解析与真实账本
-- 彻底解决官方缓存命中显示为 0% 的问题，对齐 DSH 官方 `TurnUsagePanel` 逻辑；
+- 最新 DSH 环境必须优先读取 `ctx.sessionProjections` 的官方 `tokenUsage` / `sessionStats` 投影，分别作为 Token 账本与首 Token/LLM/工具耗时的权威数据源；
+- 在投影不可用时，才降级扫描 `assistant/message` 或 `assistant/attempt` 的 `data.stream`，读取 `chunk.type === 'usage'`；
 - 兼容主流模型厂商的 Cache 计量字段：
-  - OpenAI / DeepSeek: `prompt_cache_hit_tokens`
-  - Anthropic / 标准兼容: `prompt_tokens_details.cached_tokens`
-  - AWS Bedrock / OpenClaw: `cache_read_input_tokens`
-- 缓存命中百分比公式：`cachePercentage = prompt_cache_hit_tokens / (prompt_tokens + prompt_cache_hit_tokens) * 100%`；
+  - OpenAI / DeepSeek: `prompt_cache_hit_tokens` 或 `prompt_tokens_details.cached_tokens`
+  - Anthropic / 标准兼容: `cache_read_input_tokens`
+  - Gemini / Google 兼容: `cached_tokens` / `total_cached_tokens`
+- 缓存命中百分比公式：`cachePercentage = cacheReadTokens / (uncachedInputTokens + cacheReadTokens + cacheWriteTokens) * 100%`；
 - 详见：[docs/tasks/phases/p88-official-tools-and-cache-metrics/README.md](../tasks/phases/p88-official-tools-and-cache-metrics/README.md)。
 
 ### 1.4 结构化交付卡片与确认后执行事务

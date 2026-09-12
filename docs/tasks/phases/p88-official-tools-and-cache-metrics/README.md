@@ -75,8 +75,27 @@
 
 ---
 
-## 三、验证与测试
+## 三、面向最新版 DSH 的原生优化目标
 
+当前验证环境为 DSH 0.1.5-rc.x 系列。该版本已经提供比插件自解析更稳定的底座能力，扩展侧必须优先接入官方 seam，再保留兼容回退：
+
+1. **优先使用 `ctx.sessionProjections` 官方会话投影**
+   - `tokenUsage` 是 DSH `dsh-token-meter` 的权威计量投影，字段包含 `uncachedInputTokens`、`outputTokens`、`cacheReadTokens`、`cacheWriteTokens`；
+   - `sessionStats` 是 DSH `dsh-session-stats` 的权威性能投影，字段包含 `llmMs`、`toolMs`、`ttftMs`、`ttftSteps`；
+   - 群聊账本应优先通过 `sessionProjections.stateOf(handle.agent.session, 'tokenUsage')` 和 `stateOf(..., 'sessionStats')` 读取，保证与 DSH 官方对话统计口径一致。
+2. **保留深度 `data.stream` usage 回退**
+   - 在未注册投影或轻量运行环境中，继续扫描 `assistant/message` / `assistant/attempt` 的 `data.stream`，读取 `chunk.type === 'usage'`；
+   - 同时兼容 `prompt_tokens_details.cached_tokens`、`prompt_cache_hit_tokens`、`cache_read_input_tokens`、`total_cached_tokens` 等跨网关字段。
+3. **使用 `assistant/live-chunk` 驱动活动心跳**
+   - 最新 DSH 的流式帧是 `assistant/live-chunk`，不仅用于 TTFT，还必须参与 assignment heartbeat；
+   - 只要子 Agent 正在吐字、推理、调用工具或回传工具结果，就应刷新 `assignment.updatedAt`，避免长推理被看门狗误判为僵死。
+4. **工具权限交由 DSH 原生 `tools.restrict` 强制执行**
+   - 插件只负责角色到工具白名单的语义映射；真正拦截必须尽量走 DSH `tools.restrict({ allow })`；
+   - 若底座工具服务缺少 scoped restrict，再降级为 Prompt 约束并在 `/compat` 中暴露 warning。
+
+## 四、验证与测试
+
+- **专项回归**：`npm run test:official-tools-cache-metrics` 验证官方投影、流式 usage、缓存公式和 live heartbeat；
 - **构建测试**：`npm run build:all` 顺利打包 `host` 与 `client`；
-- **矩阵回归**：执行 `npm run test:matrix`，全部 50 项集成测试 100% 通过（Exit Code: 0）；
+- **矩阵回归**：执行 `npm run test:matrix`，全量集成测试 100% 通过（Exit Code: 0）；
 - **生产发布预检**：`npm run preflight` 验证文档与制品规范全部达标。

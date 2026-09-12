@@ -95,6 +95,7 @@ const steps = [
   ['node', ['__tests__/test-p85-bilingual-role-coverage.cjs']],
   ['node', ['__tests__/test-p86-native-tool-row-adapter.cjs']],
   ['node', ['__tests__/test-p87-dialog-continuity.cjs']],
+  ['node', ['__tests__/test-p88-official-tools-and-cache-metrics.cjs']],
   ['node', ['__tests__/test-long-dialog-e2e.cjs']],
   ['node', ['scripts/e2e-no-llm.cjs']],
   ['npm', ['run', 'preflight']],

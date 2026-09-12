@@ -304,12 +304,16 @@ export async function runMemberTurn(ctx: RuntimeContext, model: ModelRef, prompt
         try {
           const events = asRuntimeEvents(handle?.agent.session?.events)
           const currentCalls = summarizeToolCalls(events)
-          if (currentCalls.length > 0) {
-            const key = JSON.stringify(currentCalls.map(c => ({ id: c.id, s: c.status, p: c.readWritePath })))
-            if (key !== lastReported) {
-              lastReported = key
-              options.onProgress?.(currentCalls)
-            }
+          const latestLiveEvent = findLastRuntimeEvent(events, e => ['assistant/live-chunk', 'assistant/chunk', 'assistant/message', 'assistant/attempt', 'tool/call', 'tool/result'].includes(e.type))
+          const key = JSON.stringify({
+            seq: latestLiveEvent?.seq,
+            time: latestLiveEvent?.time,
+            type: latestLiveEvent?.type,
+            calls: currentCalls.map(c => ({ id: c.id, s: c.status, p: c.readWritePath })),
+          })
+          if (latestLiveEvent && key !== lastReported) {
+            lastReported = key
+            options.onProgress?.(currentCalls)
           }
         } catch {}
       }, 250)
