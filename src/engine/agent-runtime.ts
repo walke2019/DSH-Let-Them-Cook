@@ -2,9 +2,10 @@ import { randomUUID } from 'node:crypto'
 import type { Context } from '@deepseek-ai/cordis'
 import type { AgentHandle, AgentRegistry } from '@deepseek-ai/dsh-agent'
 import type { SessionId, UserMessage } from '@deepseek-ai/dsh-session'
-import type { AgentRuntimeMetrics, ModelRef, ToolCallRecord } from '../types.js'
+import type { AgentRuntimeMetrics, DshRuntimeTrace, ModelRef, ToolCallRecord } from '../types.js'
 import type {GroupChatLocale} from '../client/i18n.js'
 import { getCurrentModel, restrictToolsCompat } from '../compat/dsh.js'
+import { classifyRuntimeLiveness, type RuntimeLivenessSnapshot } from './runtime-liveness.js'
 
 export type RuntimeContext = Context & { agents: AgentRegistry; tools: any; systemPrompt: any; agentDefaultModel: any }
 
@@ -233,7 +234,7 @@ export interface MemberTurnRuntimeOptions {
   roleId?: string
   allowedTools?: readonly string[]
   locale?: GroupChatLocale
-  onProgress?: (toolCalls: ToolCallRecord[]) => void
+  onProgress?: (toolCalls: ToolCallRecord[], liveness?: RuntimeLivenessSnapshot) => void
 }
 
 function normalizeAllowedTools(allowedTools?: readonly string[]): string[] {
@@ -298,16 +299,16 @@ export async function runMemberTurn(ctx: RuntimeContext, model: ModelRef, prompt
         try {
           const events = asRuntimeEvents(handle?.agent.session?.events)
           const currentCalls = summarizeToolCalls(events)
-          const latestLiveEvent = findLastRuntimeEvent(events, e => ['assistant/live-chunk', 'assistant/chunk', 'assistant/message', 'assistant/attempt', 'tool/call', 'tool/result'].includes(e.type))
+          const liveness = classifyRuntimeLiveness(events)
           const key = JSON.stringify({
-            seq: latestLiveEvent?.seq,
-            time: latestLiveEvent?.time,
-            type: latestLiveEvent?.type,
+            seq: liveness.lastEventSeq,
+            time: liveness.lastEventAt,
+            phase: liveness.phase,
             calls: currentCalls.map(c => ({ id: c.id, s: c.status, p: c.readWritePath })),
           })
-          if (latestLiveEvent && key !== lastReported) {
+          if (liveness.phase !== 'empty' && key !== lastReported) {
             lastReported = key
-            options.onProgress?.(currentCalls)
+            options.onProgress?.(currentCalls, liveness)
           }
         } catch {}
       }, 250)
@@ -333,6 +334,13 @@ export async function runMemberTurn(ctx: RuntimeContext, model: ModelRef, prompt
     }
     const durationMs = Date.now() - turnStartTime
     const metrics = summarizeRuntimeMetrics(events, prompt, content, durationMs)
+    const liveness = classifyRuntimeLiveness(events)
+    const runtimeTrace: DshRuntimeTrace = {
+      sourceSessionId: String((handle.agent.session as any)?.id || (handle.agent.session as any)?.sessionId || ''),
+      sourceEventSeqs: events.map(event => event?.seq).filter((seq): seq is number => typeof seq === 'number'),
+      projectionSource: 'event-stream-fallback',
+      liveness,
+    }
 
     // Leverage latest DSH native session projections (tokenUsage & sessionStats) if registered
     try {
@@ -344,6 +352,7 @@ export async function runMemberTurn(ctx: RuntimeContext, model: ModelRef, prompt
           metrics.outputTokens = usageState.totals.outputTokens ?? metrics.outputTokens
           metrics.cacheReadTokens = usageState.totals.cacheReadTokens ?? metrics.cacheReadTokens
           metrics.cacheWriteTokens = usageState.totals.cacheWriteTokens ?? metrics.cacheWriteTokens
+          runtimeTrace.projectionSource = 'dsh-session-projections'
         }
         const statsState = projections.stateOf?.(handle.agent.session, 'sessionStats')
         if (statsState) {
@@ -357,7 +366,7 @@ export async function runMemberTurn(ctx: RuntimeContext, model: ModelRef, prompt
       }
     } catch {}
 
-    return { content, reasoningContent: '', providerUsed: selected.provider, modelUsed: selected.model, metrics, toolCalls: summarizeToolCalls(events) }
+    return { content, reasoningContent: '', providerUsed: selected.provider, modelUsed: selected.model, metrics, toolCalls: summarizeToolCalls(events), runtimeTrace }
   } finally {
     signal.removeEventListener('abort', cancel)
     await handle?.dispose()

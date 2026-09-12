@@ -18,7 +18,7 @@ for (const marker of [
   "stateOf?.(handle.agent.session, 'sessionStats')",
   "usageState.totals.cacheReadTokens",
   "statsState.ttftMs",
-  "latestLiveEvent",
+  "classifyRuntimeLiveness(events)",
 ]) {
   if (!runtime.includes(marker)) errors.push(`runtime missing DSH-native marker: ${marker}`)
 }

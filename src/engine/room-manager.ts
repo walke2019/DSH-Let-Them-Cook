@@ -600,9 +600,9 @@ export class RoomManager {
     return this.updateAssignment(roomId, assignmentId, { status: 'running', startedAt: Date.now() })
   }
 
-  public completeAssignment(roomId: string, assignmentId: string | undefined, resultMessageId: string, error?: string): AssignmentEnvelope | undefined {
+  public completeAssignment(roomId: string, assignmentId: string | undefined, resultMessageId: string, error?: string, runtimeTrace?: import('../types.js').DshRuntimeTrace): AssignmentEnvelope | undefined {
     if (!assignmentId) return undefined
-    return this.updateAssignment(roomId, assignmentId, error ? { status: 'failed', error, finishedAt: Date.now(), resultMessageId } : { status: 'completed', finishedAt: Date.now(), resultMessageId })
+    return this.updateAssignment(roomId, assignmentId, error ? { status: 'failed', error, finishedAt: Date.now(), resultMessageId, runtimeTrace } : { status: 'completed', finishedAt: Date.now(), resultMessageId, runtimeTrace })
   }
 
   public addMailboxMessage(roomId: string, message: Omit<AgentMailboxMessage, 'mailboxMessageId' | 'roomId' | 'createdAt'>): AgentMailboxMessage | undefined {

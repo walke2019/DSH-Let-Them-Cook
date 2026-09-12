@@ -369,6 +369,20 @@ export interface ApprovalTransaction {
   resolvedAt?: number
 }
 
+export interface DshRuntimeTrace {
+  sourceSessionId?: string
+  sourceEventSeqs?: number[]
+  projectionSource?: 'dsh-session-projections' | 'event-stream-fallback'
+  liveness?: {
+    phase: string
+    lastEventSeq?: number
+    lastEventAt?: number
+    openToolCallIds: string[]
+    retryCount: number
+    terminalReason?: string
+  }
+}
+
 export interface AssignmentEnvelope {
   assignmentId: string
   roomId: string
@@ -389,6 +403,7 @@ export interface AssignmentEnvelope {
   startedAt?: number
   finishedAt?: number
   toolCalls?: ToolCallRecord[]
+  runtimeTrace?: DshRuntimeTrace
 }
 
 export interface AgentMailboxMessage {
@@ -536,6 +551,7 @@ export interface GroupMessageEnvelope {
     assignmentId?: string
     structuredResult?: StructuredAgentResultMetadata
     toolCalls?: ToolCallRecord[]
+    runtimeTrace?: DshRuntimeTrace
   }
   timestamp: number
 }

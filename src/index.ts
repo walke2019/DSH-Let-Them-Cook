@@ -238,6 +238,7 @@ export function apply(ctx: AppContext, config: Config): void {
     let isFallback = false
     let fallbackChain: string[] = []
     let runtimeMetrics: import('./types.js').AgentRuntimeMetrics | undefined
+    let runtimeTrace: import('./types.js').DshRuntimeTrace | undefined
     let toolCalls: import('./types.js').ToolCallRecord[] = []
 
     try {
@@ -249,13 +250,14 @@ export function apply(ctx: AppContext, config: Config): void {
         runMemberTurn(ctx, modelRef, systemPrompt, signal, {
           roleId: member.id,
           allowedTools: member.permissions.allowedTools, locale,
-          onProgress: (liveToolCalls) => {
+          onProgress: (liveToolCalls, liveness) => {
             toolCalls = liveToolCalls
             if (assignmentId) {
               const currentRoom = roomManager.getRoom(roomId)
               const assignment = currentRoom?.assignments?.find(a => a.assignmentId === assignmentId)
               if (assignment) {
                 assignment.toolCalls = liveToolCalls
+                assignment.runtimeTrace = { ...(assignment.runtimeTrace || {}), liveness }
                 assignment.updatedAt = Date.now()
                 roomManager.broadcast({ type: 'assignment:updated', roomId, payload: assignment, timestamp: Date.now() })
               }
@@ -268,6 +270,7 @@ export function apply(ctx: AppContext, config: Config): void {
       isFallback = execution.isFallback
       fallbackChain = execution.fallbackChain
       runtimeMetrics = execution.result.metrics
+      runtimeTrace = execution.result.runtimeTrace
       toolCalls = execution.result.toolCalls || []
       logger.info?.(`[GroupChat] ${member.name} completed with ${providerUsed}/${modelUsed}; elapsed=${execution.totalElapsedMs}ms; attempts=${execution.attempts.length}`)
       try{
@@ -355,12 +358,13 @@ export function apply(ctx: AppContext, config: Config): void {
         taskTier: room.assignments?.find(a=>a.assignmentId===assignmentId)?.taskTier,
         structuredResult: structuredResult ? {status: structuredResult.status, summary: structuredResult.summary, next: structuredResult.next, evidence: structuredResult.evidence} : undefined,
         toolCalls,
+        runtimeTrace,
         tokensConsumed: runtimeMetrics ? { promptTokens: runtimeMetrics.inputTokens + runtimeMetrics.cacheReadTokens + runtimeMetrics.cacheWriteTokens, completionTokens: runtimeMetrics.outputTokens, totalTokens: runtimeMetrics.inputTokens + runtimeMetrics.cacheReadTokens + runtimeMetrics.cacheWriteTokens + runtimeMetrics.outputTokens } : undefined,
 
       },
     })
 
-    const completedAssignment = roomManager.completeAssignment(roomId, assignmentId, envelope.messageId)
+    const completedAssignment = roomManager.completeAssignment(roomId, assignmentId, envelope.messageId, undefined, runtimeTrace)
     if (completedAssignment?.stageId && completedAssignment.workflowTaskId) {
       const current = roomManager.getRoom(roomId)
       if (current) {
