@@ -117,6 +117,7 @@
     "test:official-tools-cache-metrics": "node __tests__/test-p88-official-tools-and-cache-metrics.cjs",
     "test:dsh-native-foundation": "node __tests__/test-p89-dsh-native-foundation.cjs",
     "test:dsh-runtime-trace-liveness": "node __tests__/test-p90-dsh-runtime-trace-liveness.cjs",
+    "test:liveness-aware-watchdog": "node __tests__/test-p91-liveness-aware-watchdog.cjs",
     "test:long-dialog-e2e": "node __tests__/test-long-dialog-e2e.cjs",
     "test:browser:e2e": "node scripts/browser-e2e-debug.cjs"
   }

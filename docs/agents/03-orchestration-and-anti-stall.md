@@ -16,9 +16,10 @@
 - 识别成功后自动推进至下一阶段 DAG，避免严格模式造成的卡顿停滞；
 - 详见：[docs/tasks/phases/p87-dialog-continuity-and-stall-prevention/README.md](../tasks/phases/p87-dialog-continuity-and-stall-prevention/README.md)。
 
-### 1.3 任务看门狗超时机制与报警信自愈
-- 对每个 member turn 运行设置超时监控；
-- 超时后触发看门狗（Watchdog），自动向 Commander 发送报警信（Alarm Mailbox Message），并将任务标记为 `failed: timeout`，由 Commander 自主决策重试或降级；
+### 1.3 DSH Runtime Liveness Watchdog 与报警信自愈
+- 看门狗不得仅按 elapsed time 判断超时，必须优先读取 assignment 的 `runtimeTrace.liveness`；
+- `starting`、`llm_streaming`、`tool_running`、`retrying` 均视为 DSH 原生活跃运行态，在硬上限内自动延长检测窗口；
+- `completed` / `failed` 视为终态，不再重复触发超时；只有运行态停滞或缺失心跳并超过阈值时，才向 Commander 发送报警信并将任务标记为 `failed`；
 - 详见：[docs/tasks/phases/p62-runtime-agent-watchdog/README.md](../tasks/phases/p62-runtime-agent-watchdog/README.md)、[docs/tasks/phases/p63-assignment-watchdog-timeout/README.md](../tasks/phases/p63-assignment-watchdog-timeout/README.md)。
 
 ### 1.4 Agent turn surface fallback 兼容降级

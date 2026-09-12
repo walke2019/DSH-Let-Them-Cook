@@ -19,6 +19,7 @@ import { createThemeDraft, createWorkflowDraft } from './engine/theme-factory.js
 import { buildAutoSetupDraft, classifyAutoSetupIntent, formatAutoSetupApplied, formatAutoSetupCancelled, formatAutoSetupDraft, DEFAULT_ROLE_MODEL_HINTS } from './engine/auto-setup.js'
 import { recommendModelsForRoles } from './engine/model-recommender.js'
 import { detectDshCompat, getCurrentModel, safeListModelCatalog } from './compat/dsh.js'
+import { isRuntimeLivenessActive, isRuntimeLivenessTerminal } from './engine/runtime-liveness.js'
 import { inferAgentTaskStatus, parseStructuredAgentResult, stripStructuredAgentResult } from './engine/structured-result.js'
 import type {GroupChatLocale} from './client/i18n.js'
 import type { DispatchMode, GroupTaskTier, PersonaThemeKey } from './types.js'
@@ -119,28 +120,38 @@ export function apply(ctx: AppContext, config: Config): void {
           if (!latest || !live || (live.status !== 'queued' && live.status !== 'running')) return
 
           const now = Date.now()
-          const lastActivityAt = Math.max(live.updatedAt || 0, live.startedAt || 0, live.createdAt || 0)
+          const liveness = live.runtimeTrace?.liveness
+          const lastActivityAt = Math.max(liveness?.lastEventAt || 0, live.updatedAt || 0, live.startedAt || 0, live.createdAt || 0)
           const idleElapsed = now - lastActivityAt
           const totalElapsed = now - (live.startedAt || live.createdAt || now)
           const maxHardCeiling = expectedMs * 3
 
-          if (live.status === 'running' && idleElapsed < 90000 && totalElapsed < maxHardCeiling) {
+          if (live.status === 'running' && isRuntimeLivenessTerminal(liveness?.phase)) {
+            return
+          }
+
+          if (live.status === 'running' && isRuntimeLivenessActive(liveness?.phase) && totalElapsed < maxHardCeiling) {
+            scheduleWatchdogCheck(Math.max(45000, 120000 - Math.min(idleElapsed, 120000)))
+            return
+          }
+
+          if (live.status === 'running' && !liveness && idleElapsed < 90000 && totalElapsed < maxHardCeiling) {
             scheduleWatchdogCheck(Math.max(45000, 90000 - idleElapsed))
             return
           }
 
           const locale = normalizeApiLocale(roomManager.getMessages(roomId).find(item => item.messageId === sourceMessageId)?.metadata?.locale)
           const message = (effectiveTier === 'quick' || taskTier === 'quick')
-            ? (locale === 'en-US' ? 'Quick task exceeded its expected runtime and was stopped by the assignment watchdog.' : '快速任务超过预期执行时间，已由任务看门狗停止。')
-            : (locale === 'en-US' ? 'Long task exceeded its expected runtime and needs retry or user review.' : '长任务超过预期执行时间，需要重试或用户复核。')
+            ? (locale === 'en-US' ? 'Quick task stalled according to DSH runtime liveness and was stopped by the assignment watchdog.' : '快速任务根据 DSH 运行态存活检测已停滞，已由任务看门狗停止。')
+            : (locale === 'en-US' ? 'Long task stalled according to DSH runtime liveness and needs retry or user review.' : '长任务根据 DSH 运行态存活检测已停滞，需要重试或用户复核。')
           const timeoutMessage = roomManager.addMessage(roomId, {
             roomId,
             sender: groupSystemSender(locale),
             content: message,
             mentions: [],
-            metadata: { systemNotice: 'assignment-watchdog-timeout', assignmentId: assignment.assignmentId, taskTier: effectiveTier },
+            metadata: { systemNotice: 'assignment-watchdog-timeout', assignmentId: assignment.assignmentId, taskTier: effectiveTier, runtimeTrace: live.runtimeTrace },
           })
-          const failed = roomManager.completeAssignment(roomId, assignment.assignmentId, timeoutMessage.messageId, message)
+          const failed = roomManager.completeAssignment(roomId, assignment.assignmentId, timeoutMessage.messageId, message, live.runtimeTrace)
           if (failed?.stageId && failed.workflowTaskId) {
             WorkflowOrchestrator.updateTaskStatus(latest, failed.stageId, failed.workflowTaskId, 'failed', { assignmentId: failed.assignmentId, verificationOutput: message, verificationExitCode: 124 })
             roomManager.saveRoom(latest)

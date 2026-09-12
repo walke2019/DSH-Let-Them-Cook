@@ -24,6 +24,14 @@ function callIdFrom(event: any): string {
   return String(data.message?.source?.callId || data.callId || data.id || data.call?.id || '')
 }
 
+export function isRuntimeLivenessActive(phase: RuntimeLivenessPhase | string | undefined): boolean {
+  return phase === 'starting' || phase === 'llm_streaming' || phase === 'tool_running' || phase === 'retrying'
+}
+
+export function isRuntimeLivenessTerminal(phase: RuntimeLivenessPhase | string | undefined): boolean {
+  return phase === 'completed' || phase === 'failed'
+}
+
 export function classifyRuntimeLiveness(events: readonly any[], now = Date.now(), staleAfterMs = 120000): RuntimeLivenessSnapshot {
   if (!events.length) return { phase: 'empty', openToolCallIds: [], retryCount: 0 }
 
