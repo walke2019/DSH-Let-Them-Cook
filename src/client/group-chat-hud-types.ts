@@ -82,6 +82,13 @@ export interface CompatReport {
   ok: boolean
   version?: string
   features: Record<string, boolean>
+  bridge?: {
+    features: Record<string, boolean>
+    sources: Record<string, string>
+    warnings: string[]
+    optimizations: string[]
+  }
+  sources?: Record<string, string>
   warnings: string[]
   optimizations: string[]
 }

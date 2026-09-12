@@ -695,9 +695,11 @@ export function GroupChatSideDock() {
           {activeTab === 'diagnostics' && (
             <GroupChatHudDiagnosticsPanel
               compat={compat}
-              ledgerSource={compat?.features?.sessionProjectionStateOf ? 'dsh-session-projections' : 'event-stream-usage'}
-              watchdogSource="dsh-runtime-liveness"
-              toolEventSource="dsh-tool-event-adapter"
+              ledgerSource={compat?.sources?.ledger || (compat?.features?.sessionProjectionStateOf ? 'dsh-session-projections' : 'event-stream-usage')}
+              watchdogSource={compat?.sources?.watchdog || 'dsh-runtime-liveness'}
+              toolEventSource={compat?.sources?.toolEvents || 'dsh-tool-event-adapter'}
+              approvalSource={compat?.sources?.approval || 'plugin-transaction-card'}
+              workflowSource={compat?.sources?.workflow || 'plugin-workflow-dag'}
               locale={locale}
             />
           )}

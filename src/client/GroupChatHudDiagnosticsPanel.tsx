@@ -8,6 +8,8 @@ interface Props {
   ledgerSource?: string
   watchdogSource?: string
   toolEventSource?: string
+  approvalSource?: string
+  workflowSource?: string
   locale?: GroupChatLocale
 }
 
@@ -32,7 +34,7 @@ function SourcePill({label, value}: {label: string; value: string}) {
   return <div className="gc-diagnostics-source-pill"><span>{label}</span><b>{value}</b></div>
 }
 
-export function GroupChatHudDiagnosticsPanel({compat, ledgerSource = 'dsh-session-projections', watchdogSource = 'dsh-runtime-liveness', toolEventSource = 'dsh-tool-event-adapter', locale = 'zh-CN'}: Props) {
+export function GroupChatHudDiagnosticsPanel({compat, ledgerSource = compat?.sources?.ledger || 'dsh-session-projections', watchdogSource = compat?.sources?.watchdog || 'dsh-runtime-liveness', toolEventSource = compat?.sources?.toolEvents || 'dsh-tool-event-adapter', approvalSource = compat?.sources?.approval || 'plugin-transaction-card', workflowSource = compat?.sources?.workflow || 'plugin-workflow-dag', locale = 'zh-CN'}: Props) {
   const features = compat?.features || {}
   const warnings = compat?.warnings || []
   const optimizations = compat?.optimizations || []
@@ -66,6 +68,8 @@ export function GroupChatHudDiagnosticsPanel({compat, ledgerSource = 'dsh-sessio
       <CapabilityRow label="webServer.register" ok={!!features.webServer} detail={tx(locale,'插件 API 由 Cordis/DSH 挂载。','Plugin APIs are mounted through Cordis/DSH.')} />
       <CapabilityRow label="agentDefaultModel.currentSelection" ok={!!features.currentModel} detail={tx(locale,'读取官方当前模型选择。','Reads the official current model selection.')} />
       <CapabilityRow label="llm.listProviders/listModels" ok={!!features.llmCatalog} detail={tx(locale,'读取官方模型目录。','Reads the official model catalog.')} />
+      <CapabilityRow label="approval.request" ok={!!features.nativeApprovalRequest} detail={tx(locale,'可用时只记录 DSH 原生 approval seam 引用；不可用时保持插件事务卡，不伪装。','When available, records DSH-native approval seam references; otherwise stays as plugin transaction cards without pretending to be native.')} />
+      <CapabilityRow label="workflow.run" ok={!!features.nativeWorkflowRun} detail={tx(locale,'可用时为群聊阶段推进附加 native workflow run reference。','When available, attaches native workflow run references to group workflow stages.')} />
     </section>
 
     <section style={hudCardStyle}>
@@ -74,6 +78,8 @@ export function GroupChatHudDiagnosticsPanel({compat, ledgerSource = 'dsh-sessio
         <SourcePill label={tx(locale,'账本','Ledger')} value={ledgerSource} />
         <SourcePill label={tx(locale,'看门狗','Watchdog')} value={watchdogSource} />
         <SourcePill label={tx(locale,'工具事件','Tool events')} value={toolEventSource} />
+        <SourcePill label={tx(locale,'确认执行','Approval')} value={approvalSource} />
+        <SourcePill label={tx(locale,'工作流','Workflow')} value={workflowSource} />
       </div>
     </section>
 

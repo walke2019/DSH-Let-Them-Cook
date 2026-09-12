@@ -29,7 +29,7 @@ for (const marker of [
   "fetch('/dsh-group-chat/api/compat')",
   "{ id: 'diagnostics'",
   "activeTab === 'diagnostics'",
-  'ledgerSource={compat?.features?.sessionProjectionStateOf ? \'dsh-session-projections\' : \'event-stream-usage\'}',
+  "ledgerSource={compat?.sources?.ledger || (compat?.features?.sessionProjectionStateOf ? 'dsh-session-projections' : 'event-stream-usage')}",
 ]) {
   if (!dock.includes(marker)) errors.push(`side dock missing marker: ${marker}`)
 }

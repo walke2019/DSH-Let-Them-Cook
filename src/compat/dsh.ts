@@ -1,4 +1,5 @@
 import type { ModelRef } from '../types.js'
+import { detectDshApprovalWorkflowBridge, type DshApprovalWorkflowBridgeReport } from '../engine/dsh-approval-workflow-bridge.js'
 import type { CatalogProvider } from '../engine/model-recommender.js'
 
 export interface DshCompatReport {
@@ -12,6 +13,19 @@ export interface DshCompatReport {
     agents: boolean
     sessionProjections: boolean
     sessionProjectionStateOf: boolean
+    nativeApproval: boolean
+    nativeApprovalRequest: boolean
+    nativeApprovalPolicy: boolean
+    nativeWorkflow: boolean
+    nativeWorkflowRun: boolean
+  }
+  bridge: DshApprovalWorkflowBridgeReport
+  sources: {
+    ledger: 'dsh-session-projections' | 'event-stream-usage'
+    watchdog: 'dsh-runtime-liveness'
+    toolEvents: 'dsh-tool-event-adapter'
+    approval: 'dsh-user-approval' | 'plugin-transaction-card'
+    workflow: 'dsh-workflow-run' | 'plugin-workflow-dag'
   }
   warnings: string[]
   optimizations: string[]
@@ -53,6 +67,7 @@ export function detectDshCompat(ctx: any): DshCompatReport {
   const warnings: string[] = []
   const optimizations: string[] = []
   const projections = ctx?.get?.('sessionProjections', false) || ctx?.sessionProjections
+  const bridge = detectDshApprovalWorkflowBridge(ctx)
   const features = {
     llmCatalog: !!ctx?.llm && typeof ctx.llm.listProviders === 'function' && typeof ctx.llm.listModels === 'function',
     currentModel: !!ctx?.agentDefaultModel && typeof ctx.agentDefaultModel.currentSelection === 'function',
@@ -61,6 +76,7 @@ export function detectDshCompat(ctx: any): DshCompatReport {
     agents: !!ctx?.agents && typeof ctx.agents.create === 'function',
     sessionProjections: !!projections,
     sessionProjectionStateOf: !!projections && typeof projections.stateOf === 'function',
+    ...bridge.features,
   }
   if (!features.llmCatalog) warnings.push('DSH llm.listProviders/listModels 不可用，模型目录将降级为空列表。')
   if (!features.currentModel) warnings.push('DSH agentDefaultModel.currentSelection 不可用，将使用空默认模型。')
@@ -71,8 +87,23 @@ export function detectDshCompat(ctx: any): DshCompatReport {
   else warnings.push('DSH sessionProjections.stateOf 不可用：账本将降级为事件流 usage 深度解析。')
   if (features.agents) optimizations.push('DSH agents.create 可用：群聊角色以独立 subagent session 运行，保留 DSH 原生事件、工具与计量能力。')
   if (features.toolRestrict) optimizations.push('DSH tools.restrict 可用：角色工具白名单可由底座强制执行。')
+  warnings.push(...bridge.warnings)
+  optimizations.push(...bridge.optimizations)
   const requiredOk = features.llmCatalog && features.currentModel && features.toolRestrict && features.webServer && features.agents
-  return { ok: requiredOk, features, warnings, optimizations }
+  return {
+    ok: requiredOk,
+    features,
+    bridge,
+    sources: {
+      ledger: features.sessionProjectionStateOf ? 'dsh-session-projections' : 'event-stream-usage',
+      watchdog: 'dsh-runtime-liveness',
+      toolEvents: 'dsh-tool-event-adapter',
+      approval: bridge.sources.approval,
+      workflow: bridge.sources.workflow,
+    },
+    warnings,
+    optimizations,
+  }
 }
 
 export function getCurrentModel(ctx: any): ModelRef {
