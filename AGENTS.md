@@ -32,6 +32,7 @@
 - **输入框常驻底部与视口高度自适应**：参见 [docs/tasks/phases/p64-chat-ui-composer-progression/README.md](./docs/tasks/phases/p64-chat-ui-composer-progression/README.md)、[docs/tasks/phases/p79-composer-outside-scroll/README.md](./docs/tasks/phases/p79-composer-outside-scroll/README.md)
 - **HUD 顶部语言切换按钮独立化**：参见 [docs/tasks/phases/p76-hud-locale-toggle-header/README.md](./docs/tasks/phases/p76-hud-locale-toggle-header/README.md)
 - **长消息渐进式遮罩与双层抽屉折叠**：参见 [docs/tasks/phases/p84-collapsible-message-body/README.md](./docs/tasks/phases/p84-collapsible-message-body/README.md)
+- **作战室驾驶舱导航强化与中央区双输入框去重（P97）**：参见 [docs/tasks/phases/p97-war-room-nav-and-composer-deconfliction/README.md](./docs/tasks/phases/p97-war-room-nav-and-composer-deconfliction/README.md)
 
 ### 2. ⚡ 原生工具调用、流式状态机与计费审计 (Tools, Streaming & Ledger)
 > 领域专著索引：**[docs/agents/02-tools-and-ledger.md](./docs/agents/02-tools-and-ledger.md)**

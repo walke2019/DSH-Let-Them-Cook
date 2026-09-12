@@ -59,7 +59,17 @@ export function GroupChatSideDock() {
       const res = await fetch('/dsh-group-chat/api/rooms')
       if (res.ok) {
         const data = await res.json()
-        if (Array.isArray(data.rooms)) setAvailableRooms(data.rooms)
+        if (Array.isArray(data.rooms)) {
+          const sorted = [...data.rooms].sort((a: any, b: any) => {
+            const aTasks = a.assignments?.length || 0
+            const bTasks = b.assignments?.length || 0
+            if (aTasks !== bTasks) return bTasks - aTasks
+            if (a.roomId === 'dev-team-alpha') return -1
+            if (b.roomId === 'dev-team-alpha') return 1
+            return 0
+          })
+          setAvailableRooms(sorted)
+        }
       }
     } catch {}
     setRoomPickerOpen(prev => !prev)
@@ -502,12 +512,68 @@ export function GroupChatSideDock() {
             </button>
           </div>
         </div>
+
+        {/* Prominent War Room Banner Card */}
+        <div
+          className="dsh-gc-hud-warroom-card"
+          onClick={openRoomPicker}
+          title={tx(locale, '点击切换作战室 / 找回任务', 'Click to switch war room / recover tasks')}
+          style={{
+            margin: '6px 8px 4px',
+            padding: '8px 10px',
+            borderRadius: '8px',
+            background: 'linear-gradient(135deg, rgba(77,107,254,0.14), rgba(16,185,129,0.08))',
+            border: '1px solid rgba(77,107,254,0.32)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            cursor: 'pointer',
+            transition: 'all 0.18s ease',
+            boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
+          }}
+        >
+          <div style={{display:'flex', alignItems:'center', gap:'8px', minWidth:0, overflow:'hidden'}}>
+            <span style={{fontSize:'16px', flexShrink:0}}>🏛️</span>
+            <div style={{minWidth:0, overflow:'hidden'}}>
+              <div style={{fontSize:'10px', color:'var(--dsw-alias-label-tertiary,#94a3b8)', lineHeight:'1.2'}}>
+                {tx(locale, '当前作战室', 'Current War Room')}
+              </div>
+              <div style={{fontSize:'12px', fontWeight:600, color:'var(--dsw-alias-label-primary,#f8fafc)', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis'}}>
+                {displayRoomTitle}
+              </div>
+            </div>
+          </div>
+          <div style={{display:'flex', alignItems:'center', gap:'6px', flexShrink:0}}>
+            {room?.assignments && room.assignments.length > 0 && (
+              <span style={{background:'#ef4444', color:'#fff', fontSize:'10px', fontWeight:700, padding:'1px 6px', borderRadius:'10px'}}>
+                🔥 {room.assignments.length}
+              </span>
+            )}
+            <button
+              type="button"
+              style={{
+                background:'rgba(77,107,254,0.25)',
+                border:'1px solid rgba(77,107,254,0.45)',
+                color:'#fff',
+                fontSize:'10px',
+                fontWeight:600,
+                borderRadius:'6px',
+                padding:'3px 8px',
+                cursor:'pointer',
+                whiteSpace:'nowrap'
+              }}
+            >
+              {tx(locale, '切换 / 找回 ▾', 'Switch ▾')}
+            </button>
+          </div>
+        </div>
+
         {roomPickerOpen && (
           <div
             className="dsh-gc-room-picker"
             style={{
               position: 'absolute',
-              top: '46px',
+              top: '92px',
               left: '8px',
               right: '8px',
               background: 'var(--dsh-surface, #1e1e24)',

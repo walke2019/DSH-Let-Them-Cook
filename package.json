@@ -123,6 +123,7 @@
     "test:approval-workflow-bridge": "node __tests__/test-p94-approval-workflow-bridge.cjs",
     "test:dialog-anti-stall": "node __tests__/test-p95-dialog-continuity-and-anti-stall.cjs",
     "test:user-decision": "node __tests__/test-p96-user-decision-and-clear-history.cjs",
+    "test:war-room-nav": "node __tests__/test-p97-war-room-nav-and-composer-deconfliction.cjs",
     "test:long-dialog-e2e": "node __tests__/test-long-dialog-e2e.cjs",
     "test:browser:e2e": "node scripts/browser-e2e-debug.cjs"
   }

@@ -13,6 +13,9 @@ export function GroupChatConversationTab() {
     <style>{`
       .gc-conversation-tab{height:100%;min-height:0;width:100%;display:flex;flex-direction:column;background:transparent;overflow:hidden;}
       .gc-conversation-tab [data-dsh-group-chat-panel]{height:100%;min-height:0;}
+      body[data-dsh-group-chat-tab-active="true"] [data-composer-seat] {
+        display: none !important;
+      }
     `}</style>
     <GroupChatPanel mode="dock" />
   </div>

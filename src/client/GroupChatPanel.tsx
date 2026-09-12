@@ -9,6 +9,7 @@ import {detectGroupChatLocale, onGroupChatLocaleChange, tx, txRoleName, type Gro
 import type {AssignmentEnvelope} from './group-chat-hud-types.js'
 import type {AgentProfile, AgentStatus, GroupMessage} from './group-chat-view-types.js'
 import {useCurrentGroupChatRoomId} from './current-room.js'
+import {GroupChatWarRoomBar} from './GroupChatWarRoomBar.js'
 import type {UserDecisionPrompt} from '../types.js'
 
 type ClientThemeKey = 'meme_comedy' | 'three_kingdoms' | 'genshin' | 'modern' | 'legends' | string
@@ -501,6 +502,12 @@ export function GroupChatPanel({mode='full'}:GroupChatPanelProps) {
       @media(max-width:760px){body[data-dsh-group-chat-tab-active="true"][data-dsh-group-chat-hud-docked-open="true"] .gc-conversation,body[data-dsh-group-chat-hero-open="true"][data-dsh-group-chat-hud-docked-open="true"] .gc-conversation{padding-right:44px;}body[data-dsh-group-chat-tab-active="true"][data-dsh-group-chat-hud-docked-open="true"] .gc-chat-messages,body[data-dsh-group-chat-hero-open="true"][data-dsh-group-chat-hud-docked-open="true"] .gc-chat-messages{padding-left:12px;padding-right:12px;}body[data-dsh-group-chat-tab-active="true"][data-dsh-group-chat-hud-docked-open="true"] .gc-composer,body[data-dsh-group-chat-hero-open="true"][data-dsh-group-chat-hud-docked-open="true"] .gc-composer{padding-left:12px;padding-right:12px;}}
       @media(max-width:600px){.gc-chat-messages{padding:16px 12px calc(var(--gc-bottom-height,150px) + 20px);}.gc-message-user .gc-message-body{max-width:94%;}}
     `}</style>
+    <GroupChatWarRoomBar
+      roomId={roomId}
+      locale={locale}
+      room={room}
+      activeAssignments={activeAssignments}
+    />
     <div className="gc-agent-float" data-open={statusOpen} aria-label={tx(locale,'当前执行 Agent 状态','Current Agent status')} style={{left:statusPos.x,top:statusPos.y}} onPointerDown={startDrag} onPointerMove={moveDrag} onPointerUp={stopDrag} onPointerCancel={stopDrag}>
       <div className="gc-agent-head"><strong>{tx(locale,'Agent 状态','Agent status')} <span className="gc-agent-drag">{tx(locale,'拖动','drag')}</span></strong><button type="button" className="gc-agent-toggle" onClick={()=>setStatusOpen(v=>!v)}>{statusOpen?tx(locale,'隐藏','Hide'):tx(locale,'显示','Show')}</button></div>
       {statusOpen&&(Object.values(agentStatuses).length?<div className="gc-agent-list">{Object.values(agentStatuses).sort((a,b)=>(b.startedAt||b.finishedAt||0)-(a.startedAt||a.finishedAt||0)).slice(0,5).map(item=><div className="gc-agent-item" data-status={item.status} key={item.agentId}><AvatarBadge avatar={item.avatar} /><span className="gc-agent-name">{item.name}</span><span className="gc-agent-dot" title={item.status}/><span className="gc-agent-sub">{item.status==='running'?voice.runningText:item.status==='complete'?voice.completeText:voice.errorText}{item.taskTier?` · ${item.taskTier==='quick'?tx(locale,'快活','Quick'):tx(locale,'长活','Long')}`:''}{item.startedAt?` · ${Math.max(0,Math.round((now-item.startedAt)/1000))}s${item.expectedMs?`/${Math.round(item.expectedMs/1000)}s`:''}`:''}{item.modelUsed?` · ${item.providerUsed||''}/${item.modelUsed}`:''}{item.message?` · ${item.message}`:''}</span>{item.status==='running'&&item.expectedMs?<div className="gc-agent-progress" aria-label={tx(locale,'执行进度估计','Estimated progress')}><span style={{width:`${Math.min(96,Math.round(((now-(item.startedAt||now))/item.expectedMs)*100))}%`}} /></div>:null}</div>)}</div>:<div className="gc-agent-idle">{voice.idleStatusText}</div>)}
