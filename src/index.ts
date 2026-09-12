@@ -511,6 +511,10 @@ export function apply(ctx: AppContext, config: Config): void {
     }
 
     // Condition 3: Current stage has ready tasks waiting to be executed
+    // (Only auto-dispatch ready tasks if the room has ongoing work, not when freshly cleared/idle with 0 messages)
+    const messages = roomManager.getMessages(roomId)
+    if (!messages || messages.length === 0) return false
+
     const readyTasks = WorkflowOrchestrator.getReadyTasks(currentStage)
     if (readyTasks.length > 0) {
       const readyRoles = [...new Set(readyTasks.map(t => t.ownerRoleId))]
