@@ -8,6 +8,8 @@ import type {
   DispatchDecision,
   AgentProfile,
   WorkflowTask,
+  UserDecisionOption,
+  UserDecisionPrompt,
 } from '../types.js'
 import { WorkflowOrchestrator } from './workflow-orchestrator.js'
 import { THEME_CATALOG } from './themes.js'
@@ -200,6 +202,15 @@ export class DispatchArbiter {
             isTerminal: false,
           }
         }
+        // If room was awaiting user decision, or user message is an answer/confirmation, or at task onset:
+        if (room.awaitingUserDecision || (!room.assignments || room.assignments.length === 0) || /我拍板|我选|选项|方案|选择|确认|好的|行|可以|同意|ok|approve/i.test(latestMessage.content)) {
+          return {
+            nextSpeakerIds: [commanderId],
+            reason: `人类指令由总指挥官 [${commanderId}] 统筹把控与人机衔接。`,
+            mode: 'workflow_driven',
+            isTerminal: false,
+          }
+        }
         // Dispatch arbiter, anti-loop rules, mention extraction, workflow routing, and silence-token handling.
         return {
           nextSpeakerIds: currentStage.assignedRoleIds.length ? currentStage.assignedRoleIds : [commanderId],
@@ -236,6 +247,18 @@ export class DispatchArbiter {
       // If sender is commander:
       if (latestMessage.sender.id === (moderatorAgentId || 'commander')) {
         const commanderId = moderatorAgentId || 'commander'
+
+        // Check if commander is querying the user for decision or options
+        const decisionReq = DispatchArbiter.detectUserDecisionRequest(latestMessage.content)
+        if (decisionReq.isAwaiting) {
+          return {
+            nextSpeakerIds: [],
+            reason: '总指挥官向用户发起方案抉择与确认，等待用户拍板回复。',
+            mode: 'workflow_driven',
+            isTerminal: true,
+          }
+        }
+
         const isReject = latestMessage.content.includes('驳回') ||
           latestMessage.content.includes('重做') ||
           latestMessage.content.includes('整改') ||
@@ -475,6 +498,59 @@ export class DispatchArbiter {
           mode: dispatchMode,
           isTerminal: true,
         }
+    }
+  }
+
+  /**
+   * Detect if Commander is asking the user for confirmation or presenting options for decision.
+   */
+  public static detectUserDecisionRequest(text: string): { isAwaiting: boolean; prompt?: UserDecisionPrompt } {
+    if (!text || typeof text !== 'string') return { isAwaiting: false }
+    const lower = text.toLowerCase()
+
+    const hasUserAddress = lower.includes('@用户') || lower.includes('@人类') || lower.includes('@人类负责人') || lower.includes('@user') || lower.includes('@director')
+    const hasDecisionKeywords = lower.includes('请您抉择') || lower.includes('需要您拍板') || lower.includes('请用户选择') || lower.includes('方案抉择') || lower.includes('等待您确认') || lower.includes('请拍板') || lower.includes('如何抉择') || lower.includes('请您拍板') || lower.includes('请用户拍板')
+    const hasOptionsMention = /选项\s*[a-d1-4]|方案\s*[a-d1-4]|option\s*[a-d1-4]/i.test(text) || text.includes('【方案') || text.includes('【选项')
+
+    const isQuestioning = text.includes('？') || text.includes('?') || text.includes('请选择') || text.includes('请确认') || text.includes('拍板')
+
+    const isAwaiting = (hasUserAddress && (hasOptionsMention || hasDecisionKeywords || isQuestioning)) ||
+      (hasDecisionKeywords && (hasOptionsMention || isQuestioning)) ||
+      (hasOptionsMention && isQuestioning && hasUserAddress)
+
+    if (!isAwaiting) return { isAwaiting: false }
+
+    const options: UserDecisionOption[] = []
+    let recommendedKey: string | undefined
+    const lines = text.split('\n').map(l => l.trim()).filter(Boolean)
+
+    for (const line of lines) {
+      const match = line.match(/^[-*•]?\s*(?:【?(?:选项|方案|option)\s*([A-Za-z0-9一二三四1-4])】?[:：]?\s*(.*?))$/i)
+      if (match) {
+        const key = match[1].toUpperCase()
+        const label = match[2] || `选项 ${key}`
+        const isRec = label.includes('推荐') || label.includes('Recommended') || line.includes('推荐')
+        if (isRec) recommendedKey = key
+        options.push({
+          key,
+          label: `选项 ${key}：${label.replace(/[（(]?(?:推荐|Recommended)[）)]?/g, '').trim()}`,
+          isRecommended: isRec,
+        })
+      }
+    }
+
+    const questionMatch = text.match(/【(?:需要您拍板|方案抉择|请您抉择|决策事项|Decision Needed)[^】]*】[：:]?\s*([^\n]+)/i)
+    const question = questionMatch ? questionMatch[1].trim() : (options.length > 0 ? '主 Agent 提出了如下方案，请您拍板选择：' : text.slice(0, 140))
+
+    return {
+      isAwaiting: true,
+      prompt: {
+        question,
+        options: options.length > 0 ? options : undefined,
+        recommendedOptionKey: recommendedKey,
+        askedByRoleId: 'commander',
+        askedAt: Date.now(),
+      }
     }
   }
 }

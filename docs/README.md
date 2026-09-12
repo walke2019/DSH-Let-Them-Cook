@@ -179,3 +179,4 @@ DSH-Let-Them-Cook/
 - `docs/tasks/phases/p93-capability-diagnostics-ui/README.md` — HUD DSH 底座能力诊断面板
 - `docs/tasks/phases/p94-approval-workflow-bridge/README.md` — Approval / Workflow bridge 能力诊断
 - `docs/tasks/phases/p95-dialog-continuity-and-anti-stall/README.md` — 对话防中断自愈引擎与全主题别名解析
+- `docs/tasks/phases/p96-user-decision-options-and-clear-history/README.md` — 方案选项抉择人机交互与全量记录清空

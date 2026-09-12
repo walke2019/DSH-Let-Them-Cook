@@ -77,6 +77,38 @@ export function GroupChatHudTopControls({selectedTheme, selectedMode, management
         <SelectChevron />
       </span>
       <button type="button" className="dsh-gc-help-button" aria-label={tx(locale,'查看调度模式 QA 说明','View mode QA guide')} title={tx(locale,'调度模式 QA','Mode QA')} onClick={()=>setModeHelpOpen(true)}>?</button>
+      <button
+        type="button"
+        className="dsh-gc-clear-button"
+        aria-label={tx(locale,'清空对话记录','Clear history')}
+        title={tx(locale,'清空当前群聊对话与执行记录','Clear all messages and execution history')}
+        style={{
+          border: '1px solid var(--dsw-alias-border-l2,rgba(255,255,255,0.14))',
+          borderRadius: '8px',
+          background: 'var(--dsw-alias-bg-layer-2,#202025)',
+          color: 'var(--dsw-alias-label-secondary,#cbd5e1)',
+          cursor: 'pointer',
+          fontSize: '11px',
+          padding: '2px 7px',
+          height: '24px',
+          lineHeight: '20px',
+        }}
+        onClick={async () => {
+          if (window.confirm(tx(locale, '确定清空当前群聊对话与执行记录吗？', 'Are you sure you want to clear conversation records?'))) {
+            try {
+              await fetch('/dsh-group-chat/api/room/clear', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ roomId }),
+              })
+            } catch (err) {
+              console.error(err)
+            }
+          }
+        }}
+      >
+        🧹 {tx(locale, '清空', 'Clear')}
+      </button>
       {managementError&&<div className="dsh-gc-top-error" role="alert">{managementError}</div>}
     </div>
     {modeHelpOpen && <div className="dsh-gc-help-backdrop" role="dialog" aria-modal="true" aria-label={tx(locale,'调度模式 QA 说明','Mode QA guide')} onClick={()=>setModeHelpOpen(false)}>

@@ -551,3 +551,11 @@ pm run test:hero-entry-self-click-guard 并接入 matrix/preflight。
 - [x] 邮箱闭环已读流转：Commander 审阅发言自动将收件箱待审报告标记为已读，驱动闭环质量从“待收口”顺畅流转为“闭环通过”。
 - [x] 一键唤醒收口与恢复 API：HUD 待收口状态展示一键“唤醒主控收口”按钮，后端提供 `/workflow/resume` 恢复接口。
 - [x] 增加回归守卫：`npm run test:dialog-anti-stall`。
+
+## P96 — 方案选项抉择人机交互与全量记录清空 (User Decision Options & History Reset Engine)
+- [x] 全量记录清空机制：`RoomManager.clearRoom` / `clearAllRooms` 与 `WorkspaceRoomStateStore.clearRoom` / `clearAll` 清空消息、信封、事件与邮箱，重置工作流阶段至 0。
+- [x] 清空接口与 HUD 按钮：提供 `POST /room/clear` 与 `POST /rooms/clear` API，HUD 顶部添加 `🧹 清空 / Clear` 快捷按钮。
+- [x] 主管主动人机交互协议：`projection.ts` 强化总指挥官在有疑问或需抉择时，主动以结构化选项（选项 A、选项 B、推荐）向用户发起拍板提问。
+- [x] 方案抉择识别与调度熔断：`DispatchArbiter.detectUserDecisionRequest` 结构化解析选项并挂起调度，自愈看门狗避让。
+- [x] 前端可点击决策卡片：`GroupChatPanel.tsx` 在用户输入框上方渲染 `gc-decision-prompt-card`，支持一键点击选项回复。
+- [x] 增加回归守卫：`npm run test:user-decision`。

@@ -52,6 +52,7 @@
 - **长任务动态 24 轮交互预算与快速任务分层**：参见 [docs/tasks/phases/p51-task-tier-progress/README.md](./docs/tasks/phases/p51-task-tier-progress/README.md)、[docs/tasks/phases/p87-dialog-continuity-and-stall-prevention/README.md](./docs/tasks/phases/p87-dialog-continuity-and-stall-prevention/README.md)
 - **DAG 阶段门禁与 verifyCommand 测试验收**：参见 [docs/tasks/phases/p2-workflow-task-dag-quality-gate/README.md](./docs/tasks/phases/p2-workflow-task-dag-quality-gate/README.md)
 - **对话防中断自愈与全主题别名解析**：参见 [docs/tasks/phases/p95-dialog-continuity-and-anti-stall/README.md](./docs/tasks/phases/p95-dialog-continuity-and-anti-stall/README.md)
+- **方案选项抉择人机交互与全量记录清空**：参见 [docs/tasks/phases/p96-user-decision-options-and-clear-history/README.md](./docs/tasks/phases/p96-user-decision-options-and-clear-history/README.md)
 
 ### 4. 🌐 国际化、主题化与工作区隔离 (i18n, Personas & Workspaces)
 > 领域专著索引：**[docs/agents/04-i18n-personas-workspaces.md](./docs/agents/04-i18n-personas-workspaces.md)**

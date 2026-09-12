@@ -103,6 +103,7 @@ const steps = [
   ['node', ['__tests__/test-p93-capability-diagnostics-ui.cjs']],
   ['node', ['__tests__/test-p94-approval-workflow-bridge.cjs']],
   ['node', ['__tests__/test-p95-dialog-continuity-and-anti-stall.cjs']],
+  ['node', ['__tests__/test-p96-user-decision-and-clear-history.cjs']],
   ['node', ['__tests__/test-long-dialog-e2e.cjs']],
   ['node', ['scripts/e2e-no-llm.cjs']],
   ['npm', ['run', 'preflight']],

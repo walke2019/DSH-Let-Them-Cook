@@ -60,6 +60,21 @@ export class WorkspaceRoomStateStore {
     this.data = next
   }
 
+  clearRoom(roomId: string): void {
+    if (this.data.messages) delete this.data.messages[roomId]
+    if (this.data.ledgers) delete this.data.ledgers[roomId]
+    mkdirSync(dirname(this.path), {recursive: true})
+    writeFileSync(this.path + '.tmp', JSON.stringify(this.data, null, 2))
+    renameSync(this.path + '.tmp', this.path)
+  }
+
+  clearAll(): void {
+    this.data = {rooms: {}, messages: {}, ledgers: {}}
+    mkdirSync(dirname(this.path), {recursive: true})
+    writeFileSync(this.path + '.tmp', JSON.stringify(this.data, null, 2))
+    renameSync(this.path + '.tmp', this.path)
+  }
+
   location(): string {
     return this.path
   }

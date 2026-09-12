@@ -418,6 +418,21 @@ export interface AgentMailboxMessage {
   readAt?: number
 }
 
+export interface UserDecisionOption {
+  key: string
+  label: string
+  description?: string
+  isRecommended?: boolean
+}
+
+export interface UserDecisionPrompt {
+  question: string
+  options?: UserDecisionOption[]
+  recommendedOptionKey?: string
+  askedByRoleId: string
+  askedAt: number
+}
+
 export interface GroupChatRoom {
   /**
  * Core public contract type field.
@@ -482,6 +497,7 @@ export interface GroupChatRoom {
  * Core public contract type field.
  */
   safetyPolicy: SafetyPolicy
+  awaitingUserDecision?: UserDecisionPrompt
   /**
  * Core public contract type field.
  */
@@ -646,6 +662,7 @@ export type GroupChatEventType =
   | 'mailbox:updated'
   | 'coordination:updated'
   | 'transaction:updated'
+  | 'room:cleared'
 
 export interface GroupChatEvent {
   type: GroupChatEventType

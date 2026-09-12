@@ -382,6 +382,47 @@ export class RoomManager {
     return this.roomLedgers.get(roomId)
   }
 
+  public clearRoom(roomId: string): GroupChatRoom | undefined {
+    this.roomMessageLists.set(roomId, [])
+    this.initLedger(roomId)
+    const room = this.rooms.get(roomId)
+    if (room) {
+      room.assignments = []
+      room.approvalTransactions = []
+      room.coordinationEvents = []
+      room.mailboxes = {}
+      room.scratchpad = ''
+      room.interactionRound = 0
+      room.awaitingUserDecision = undefined
+      if (room.workflow) {
+        room.workflow.currentStageIndex = 0
+        for (let i = 0; i < room.workflow.stages.length; i++) {
+          const s = room.workflow.stages[i]
+          s.status = i === 0 ? 'in_progress' : 'pending'
+          s.deliverableSummary = undefined
+          s.approvedBy = undefined
+          s.approvedAt = undefined
+          for (const t of s.tasks || []) {
+            t.status = 'pending'
+            t.verification = undefined
+            t.assignmentId = undefined
+          }
+        }
+      }
+      this.broadcast({ type: 'room:cleared', roomId, payload: { roomId }, timestamp: Date.now() })
+      this.broadcast({ type: 'room:updated', roomId, payload: room, timestamp: Date.now() })
+      return room
+    }
+    return undefined
+  }
+
+  public clearAllRooms(): void {
+    const roomIds = Array.from(this.rooms.keys())
+    for (const id of roomIds) {
+      this.clearRoom(id)
+    }
+  }
+
   /**
  * Room coordinator: roster, messages, workflow state, assignments, mailbox, ledger, persistence, and events.
  */

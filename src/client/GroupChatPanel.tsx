@@ -9,6 +9,7 @@ import {detectGroupChatLocale, onGroupChatLocaleChange, tx, txRoleName, type Gro
 import type {AssignmentEnvelope} from './group-chat-hud-types.js'
 import type {AgentProfile, AgentStatus, GroupMessage} from './group-chat-view-types.js'
 import {useCurrentGroupChatRoomId} from './current-room.js'
+import type {UserDecisionPrompt} from '../types.js'
 
 type ClientThemeKey = 'meme_comedy' | 'three_kingdoms' | 'genshin' | 'modern' | 'legends' | string
 
@@ -171,6 +172,7 @@ export function GroupChatPanel({mode='full'}:GroupChatPanelProps) {
   const [liveAssignments,setLiveAssignments]=useState<Record<string,AssignmentEnvelope>>({})
   const [statusOpen,setStatusOpen]=useState(()=>localStorage.getItem('dsh-group-chat.status-open')!=='false')
   const [statusPos,setStatusPos]=useState(()=>{try{return JSON.parse(localStorage.getItem('dsh-group-chat.status-pos')||'{"x":18,"y":18}')}catch{return {x:18,y:18}}})
+  const [awaitingDecision, setAwaitingDecision] = useState<UserDecisionPrompt | undefined>(undefined)
   const drag=useRef<{dx:number;dy:number}|null>(null)
   const roomId = useCurrentGroupChatRoomId()
   const voice = getThemeVoice(activeTheme as any, locale)
@@ -219,6 +221,7 @@ export function GroupChatPanel({mode='full'}:GroupChatPanelProps) {
         setMembers(data.room.members)
         setActiveTheme(data.room.activeTheme || 'meme_comedy')
         setLiveAssignments(Object.fromEntries((data.room.assignments||[]).map((assignment: AssignmentEnvelope) => [assignment.assignmentId, assignment])))
+        setAwaitingDecision(data.room.awaitingUserDecision)
         upsert(data.messages || [])
         setError('')
       } catch (e) {
@@ -240,7 +243,15 @@ export function GroupChatPanel({mode='full'}:GroupChatPanelProps) {
         const event=JSON.parse(e.data)
         if(event.roomId&&event.roomId!==roomId)return
         if(event.type==='message:new')upsert([event.payload])
-        if(event.type==='room:updated'&&event.payload){if(event.payload.members)setMembers(event.payload.members); if(event.payload.activeTheme)setActiveTheme(event.payload.activeTheme); if(event.payload.assignments)setLiveAssignments(Object.fromEntries(event.payload.assignments.map((assignment:AssignmentEnvelope)=>[assignment.assignmentId,assignment])))}
+        if(event.type==='room:cleared'){
+          setMessages([]);setAgentStatuses({});setLiveAssignments({});setAwaitingDecision(undefined)
+        }
+        if(event.type==='room:updated'&&event.payload){
+          if(event.payload.members)setMembers(event.payload.members);
+          if(event.payload.activeTheme)setActiveTheme(event.payload.activeTheme);
+          if(event.payload.assignments)setLiveAssignments(Object.fromEntries(event.payload.assignments.map((assignment:AssignmentEnvelope)=>[assignment.assignmentId,assignment])));
+          setAwaitingDecision(event.payload.awaitingUserDecision);
+        }
         if(event.type==='assignment:updated'&&event.payload?.assignmentId){
           setLiveAssignments(prev=>({...prev,[event.payload.assignmentId]:event.payload}))
         }
@@ -619,6 +630,49 @@ export function GroupChatPanel({mode='full'}:GroupChatPanelProps) {
     <div className="gc-chat-bottom" ref={bottom}>
       {showLatest&&<button className="gc-latest" aria-label="滚动到底部" onClick={()=>{follow.current=true;setShowLatest(false);if(scroll.current)scroll.current.scrollTop=scroll.current.scrollHeight}}>↓ 回到最新</button>}
       {error&&!isEmptyState&&<div className="gc-chat-error" role="alert">{error} <button type="button" onClick={()=>setRetry(v=>v+1)}>{tx(locale,'重试加载','Retry loading')}</button></div>}
+      {awaitingDecision && (
+        <div data-dsh-gc-decision-card className="gc-decision-prompt-card" style={{
+          margin: '0 16px 10px',
+          padding: '10px 14px',
+          borderRadius: 12,
+          border: '1px solid rgba(77,107,254,0.4)',
+          background: 'linear-gradient(135deg, rgba(77,107,254,0.14), rgba(16,185,129,0.08))',
+          display: 'grid',
+          gap: 6,
+        }}>
+          <div style={{display:'flex',alignItems:'center',gap:8,fontWeight:700,color:'#93c5fd',fontSize:12}}>
+            <span>🎯</span>
+            <span>{tx(locale, '总指挥官发起方案抉择（等待您拍板）', 'Commander requested decision (Awaiting your choice)')}</span>
+          </div>
+          <div style={{fontSize:12,color:'var(--dsw-alias-label-primary,#eee)',lineHeight:1.4}}>
+            {awaitingDecision.question}
+          </div>
+          {awaitingDecision.options && awaitingDecision.options.length > 0 && (
+            <div style={{display:'flex',gap:8,flexWrap:'wrap',marginTop:4}}>
+              {awaitingDecision.options.map(opt => (
+                <button
+                  key={opt.key}
+                  type="button"
+                  className="gc-template-chip"
+                  style={{
+                    borderColor: opt.isRecommended ? '#10b981' : 'rgba(77,107,254,0.4)',
+                    background: opt.isRecommended ? 'rgba(16,185,129,0.18)' : 'rgba(77,107,254,0.12)',
+                    fontWeight: 600,
+                    fontSize: 12,
+                    padding: '5px 12px',
+                    cursor: 'pointer',
+                  }}
+                  onClick={() => {
+                    void send(locale === 'en-US' ? `I choose: ${opt.label}` : `我拍板选择：${opt.label}`)
+                  }}
+                >
+                  {opt.isRecommended ? `⭐ ${opt.label}` : opt.label}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
       <GroupChatComposer members={members} value={draft} onChange={setDraft} onSend={send} sending={sending} taskTier={taskTier} onTaskTierChange={setTaskTier} locale={locale}/>
     </div>
   </div>

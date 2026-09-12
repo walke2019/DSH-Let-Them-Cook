@@ -421,6 +421,11 @@ export function apply(ctx: AppContext, config: Config): void {
           roomManager.markMailboxRead(roomId, item.mailboxMessageId, masterId)
         }
       }
+      const decisionReq = DispatchArbiter.detectUserDecisionRequest(visibleReplyContent)
+      if (decisionReq.isAwaiting && decisionReq.prompt) {
+        room.awaitingUserDecision = decisionReq.prompt
+        roomManager.saveRoom(room)
+      }
     }
     persistRoomState(roomId)
 
@@ -451,6 +456,7 @@ export function apply(ctx: AppContext, config: Config): void {
     const room = roomManager.getRoom(roomId)
     if (!room || room.dispatchMode !== 'workflow_driven' || !room.workflow) return false
     if (room.workflow.currentStageIndex >= room.workflow.stages.length) return false
+    if (room.awaitingUserDecision) return false
 
     // Check if any assignment is currently running or queued
     const activeAssignments = (room.assignments || []).filter(a => a.status === 'running' || a.status === 'queued')
@@ -704,6 +710,10 @@ export function apply(ctx: AppContext, config: Config): void {
 
           roomManager.resetInteractionRound(roomId)
           roomManager.createCaptainTaskProtocol(roomId, envelope.messageId, content, taskTier)
+          if (room.awaitingUserDecision) {
+            room.awaitingUserDecision = undefined
+            roomManager.saveRoom(room)
+          }
           persistRoomState(roomId)
 
           // Host plugin entry: REST API, message dispatch, workflow actions, and lifecycle-safe registration.
@@ -1039,6 +1049,27 @@ export function apply(ctx: AppContext, config: Config): void {
           const current = roomManager.getRoom(roomId)
           res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' })
           res.end(JSON.stringify({ success: true, healed, room: current }))
+          return
+        }
+
+        if (method === 'POST' && (pathname === '/room/clear' || pathname === '/rooms/clear')) {
+          const body = await readJsonBody(req)
+          const roomId = body.roomId || 'dev-team-alpha'
+          const clearAll = body.all === true || pathname === '/rooms/clear' || roomId === 'all'
+
+          if (clearAll) {
+            roomManager.clearAllRooms()
+            workspaceStore.clearAll()
+            res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' })
+            res.end(JSON.stringify({ success: true, clearedAll: true }))
+            return
+          }
+
+          const cleared = roomManager.clearRoom(roomId)
+          workspaceStore.clearRoom(roomId)
+          if (cleared) workspaceStore.saveSnapshot(cleared, [], roomManager.getLedger(roomId))
+          res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' })
+          res.end(JSON.stringify({ success: !!cleared, roomId, room: cleared }))
           return
         }
 
