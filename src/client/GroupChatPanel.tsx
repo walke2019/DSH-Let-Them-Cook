@@ -173,6 +173,7 @@ export function GroupChatPanel({mode='full'}:GroupChatPanelProps) {
   const [liveAssignments,setLiveAssignments]=useState<Record<string,AssignmentEnvelope>>({})
   const [statusOpen,setStatusOpen]=useState(()=>localStorage.getItem('dsh-group-chat.status-open')!=='false')
   const [statusPos,setStatusPos]=useState(()=>{try{return JSON.parse(localStorage.getItem('dsh-group-chat.status-pos')||'{"x":18,"y":18}')}catch{return {x:18,y:18}}})
+  const [currentRoom, setCurrentRoom] = useState<any>(null)
   const [awaitingDecision, setAwaitingDecision] = useState<UserDecisionPrompt | undefined>(undefined)
   const drag=useRef<{dx:number;dy:number}|null>(null)
   const roomId = useCurrentGroupChatRoomId()
@@ -221,6 +222,7 @@ export function GroupChatPanel({mode='full'}:GroupChatPanelProps) {
         if (!active || controller.signal.aborted) return
         setMembers(data.room.members)
         setActiveTheme(data.room.activeTheme || 'meme_comedy')
+        setCurrentRoom(data.room)
         setLiveAssignments(Object.fromEntries((data.room.assignments||[]).map((assignment: AssignmentEnvelope) => [assignment.assignmentId, assignment])))
         setAwaitingDecision(data.room.awaitingUserDecision)
         upsert(data.messages || [])
@@ -505,7 +507,7 @@ export function GroupChatPanel({mode='full'}:GroupChatPanelProps) {
     <GroupChatWarRoomBar
       roomId={roomId}
       locale={locale}
-      room={room}
+      room={currentRoom}
       activeAssignments={activeAssignments}
     />
     <div className="gc-agent-float" data-open={statusOpen} aria-label={tx(locale,'当前执行 Agent 状态','Current Agent status')} style={{left:statusPos.x,top:statusPos.y}} onPointerDown={startDrag} onPointerMove={moveDrag} onPointerUp={stopDrag} onPointerCancel={stopDrag}>
