@@ -10,5 +10,5 @@ assert(preflight.includes('root document must live under docs'), 'root docs puri
 assert(preflight.includes('temporary patch docs remain'), 'temporary patch cleanup checked')
 assert(preflight.includes('compat must not access ctx.version directly'), 'compat guard checked')
 assert(preflight.includes('layout must not squeeze official center view'), 'layout squeeze regression checked')
-assert(preflight.includes('layout composer hiding must be scoped to active extension tab'), 'composer scoped regression checked')
+assert(preflight.includes('layout must not patch DSH host DOM internals'), 'zero-pollution host DOM regression checked')
 console.log('P11_PREFLIGHT_DEFINITION_EXIT:0')

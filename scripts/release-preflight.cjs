@@ -38,7 +38,7 @@ if (/ctx\.version/.test(read('src/compat/dsh.ts'))) errors.push('compat must not
 const layout = read('src/client/layout-push.ts')
 if (layout.includes('padding-right: var(--dsh-group-chat-width')) errors.push('layout must not squeeze official center view')
 if (layout.includes('body[data-dsh-group-chat-active="true"]')) errors.push('layout must not use legacy global full-view body takeover')
-if (layout.includes('display: none !important') && !layout.includes('body[data-dsh-group-chat-tab-active="true"] [data-composer-seat]')) errors.push('layout composer hiding must be scoped to active extension tab')
+if (layout.includes('[data-composer-seat]') || layout.includes('[data-conversation-scroll]') || layout.includes('#root [data-dsh-frame]')) errors.push('layout must not patch DSH host DOM internals')
 
 const clientEntry = read('src/client/index.ts')
 const safeTab = read('src/client/GroupChatConversationTab.tsx')
@@ -48,7 +48,8 @@ if (clientEntry.includes('GroupChatPanel')) errors.push('client entry must not i
 if (!clientEntry.includes('prepare: GroupChatConversationView.prepare') || !safeTab.includes('prepare: () => ({})')) errors.push('safe conversation.view adapter missing prepare')
 if (!clientEntry.includes('component: () => createElement(GroupChatConversationView)')) errors.push('safe conversation.view adapter missing component factory')
 if (!safeTab.includes('<GroupChatPanel mode="dock" />') || safeTab.includes('mode="full"')) errors.push('safe middle tab must mount GroupChatPanel in dock mode only')
-if (!safeTab.includes('data-dsh-group-chat-tab-active') || !layout.includes('body[data-dsh-group-chat-tab-active="true"] [data-composer-seat]')) errors.push('official composer hiding must be scoped to active extension tab')
+if (!safeTab.includes('data-dsh-group-chat-tab-active')) errors.push('safe conversation tab must expose plugin active state for HUD coordination')
+if (layout.includes('[data-composer-seat]') || layout.includes('[data-conversation-scroll]')) errors.push('official conversation internals must remain untouched by layout CSS')
 
 const dock = read('src/client/GroupChatSideDock.tsx')
 const topControls = read('src/client/GroupChatHudTopControls.tsx')

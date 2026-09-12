@@ -489,26 +489,6 @@ export function apply(ctx: AppContext, config: Config): void {
           }
           const messages = roomManager.getMessages(roomId)
           const ledger = roomManager.getLedger(roomId)
-          if (ledger && ledger.totalTokens === 0 && messages.length > 0) {
-            for (const m of messages) {
-              if (m.sender.kind === 'agent') {
-                const consumed = m.metadata?.tokensConsumed || {
-                  promptTokens: Math.max(150, Math.ceil(m.content.length * 2.5)),
-                  completionTokens: Math.max(40, Math.ceil(m.content.length * 0.7)),
-                  totalTokens: Math.max(190, Math.ceil(m.content.length * 3.2)),
-                }
-                ledger.totalTokens += consumed.totalTokens
-                const stat = ledger.agentStats[m.sender.id]
-                if (stat) {
-                  stat.promptTokens += consumed.promptTokens
-                  stat.completionTokens += consumed.completionTokens
-                  stat.totalTokens += consumed.totalTokens
-                  ledger.metrics.inputTokens += consumed.promptTokens
-                  ledger.metrics.outputTokens += consumed.completionTokens
-                }
-              }
-            }
-          }
           if ((!room.scratchpad || room.scratchpad.includes('等待本会话的新任务')) && messages.length > 0) {
             const notes: string[] = []
             for (const m of messages) {

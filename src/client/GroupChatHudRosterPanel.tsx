@@ -99,37 +99,8 @@ export function GroupChatHudRosterPanel({
 
   const computedMetrics = useMemo(() => {
     const raw = ledger?.metrics || mergeMetrics(Object.values(agentStats).map(s=>s.metrics))
-    if ((raw.inputTokens > 0 || raw.outputTokens > 0) && raw.llmMs > 0) return raw
-
-    let inTok = 0
-    let outTok = 0
-    let llmTime = 0
-    let steps = 0
-    for (const msg of (messages || [])) {
-      if (msg.sender?.kind === 'agent') {
-        steps += 1
-        const consumed = msg.metadata?.tokensConsumed
-        if (consumed && (consumed.promptTokens > 0 || consumed.completionTokens > 0)) {
-          inTok += consumed.promptTokens
-          outTok += consumed.completionTokens
-        } else {
-          inTok += Math.max(120, Math.ceil((msg.content?.length || 100) * 2.2))
-          outTok += Math.max(35, Math.ceil((msg.content?.length || 100) * 0.75))
-        }
-        llmTime += Math.max(1200, Math.ceil(((msg.content?.length || 100) / 50) * 1000))
-      }
-    }
-    const cacheRead = raw.cacheReadTokens || 0
-    return {
-      ...raw,
-      stepCount: Math.max(raw.stepCount, steps),
-      llmMs: Math.max(raw.llmMs, llmTime),
-      inputTokens: Math.max(raw.inputTokens, inTok),
-      outputTokens: Math.max(raw.outputTokens, outTok),
-      cacheReadTokens: Math.max(raw.cacheReadTokens, cacheRead),
-      turnCount: Math.max(raw.turnCount, ledger?.totalCalls || steps),
-    }
-  }, [ledger, agentStats, messages])
+    return raw
+  }, [ledger, agentStats])
   const filteredAssignments = assignmentRecords.filter(item => {
     if (ledgerFilter === 'active' && item.status !== 'queued' && item.status !== 'running') return false
     if (ledgerFilter === 'unread') return false
@@ -212,23 +183,12 @@ export function GroupChatHudRosterPanel({
 
         <div style={{display:'grid',gap:8}}>
           {Object.entries(agentStats).map(([agentId,stat])=>{
-            const agentMsgs = (messages || []).filter(m => m.sender?.id === agentId)
-            const estInput = agentMsgs.reduce((sum, m) => sum + (m.metadata?.tokensConsumed?.promptTokens || Math.max(120, Math.ceil((m.content?.length || 100) * 2.2))), 0)
-            const estOutput = agentMsgs.reduce((sum, m) => sum + (m.metadata?.tokensConsumed?.completionTokens || Math.max(35, Math.ceil((m.content?.length || 100) * 0.75))), 0)
-            const estTotal = stat.totalTokens > 0 ? stat.totalTokens : (estInput + estOutput)
-            const statMetrics = (stat.metrics.inputTokens > 0 || stat.metrics.outputTokens > 0) ? stat.metrics : {
-              ...stat.metrics,
-              stepCount: Math.max(stat.metrics.stepCount, agentMsgs.length),
-              llmMs: Math.max(stat.metrics.llmMs, agentMsgs.length * 1500),
-              inputTokens: estInput,
-              outputTokens: estOutput,
-              cacheReadTokens: stat.metrics.cacheReadTokens || 0,
-              turnCount: Math.max(stat.metrics.turnCount, stat.callCount || agentMsgs.length),
-            }
+            const statMetrics = stat.metrics
+            const estTotal = stat.totalTokens
             return (
             <div key={agentId} style={{padding:'8px 9px',borderRadius:8,background:hudTokens.bgLayer1,border:`1px solid ${hudTokens.borderL1}`}}>
               <div style={{display:'flex',justifyContent:'space-between',gap:8,fontSize:11,fontWeight:700,color:hudTokens.labelPrimary}}><span>{stat.agentName}</span><span>{formatTokens(estTotal)} tok</span></div>
-              <div style={{fontSize:10,color:hudTokens.labelTertiary,marginTop:4}}>{metricLine(stat.callCount || agentMsgs.length || 0, statMetrics)}</div>
+              <div style={{fontSize:10,color:hudTokens.labelTertiary,marginTop:4}}>{metricLine(stat.callCount || 0, statMetrics)}</div>
               {Object.values(stat.modelStats || {}).map(ms=>(
                 <div key={`${ms.provider}/${ms.model}`} style={{marginTop:6,paddingTop:6,borderTop:'1px dashed var(--dsw-alias-border-l1, rgba(255,255,255,0.08))',fontSize:10,color:hudTokens.labelSecondary}}>
                   <div style={{fontWeight:600,color:hudTokens.labelPrimary,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{ms.provider} / {ms.model}</div>

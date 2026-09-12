@@ -170,7 +170,7 @@ async function run() {
           bodyActiveTab: document.body.getAttribute('data-dsh-group-chat-tab-active'),
           hasSidebar: !!document.querySelector('.dsh-gc-sidebar-host'),
           hasChatPanel: !!document.querySelector('.gc-chat-panel, .gc-conversation-tab, [data-dsh-gc-chat-panel]'),
-          composerHidden: !!document.querySelector('body[data-dsh-group-chat-tab-active="true"] [data-composer-seat]')
+          ownsComposer: !!document.querySelector('.gc-conversation-tab .gc-chat-bottom, .gc-hero-main .gc-chat-bottom')
         }
       })
       addCheck('Agent 群聊 tab activates correctly and marks body', agentActive.bodyActiveTab === 'true', agentActive)
@@ -232,13 +232,13 @@ async function run() {
             bodyHudOpen: document.body.getAttribute('data-dsh-group-chat-hud-docked-open'),
             hasSidebarHost: !!document.querySelector('.dsh-gc-sidebar-host'),
             hasConversationTab: !!document.querySelector('.gc-conversation-tab'),
-            hasOfficialComposer: !!document.querySelector('[data-composer-seat]'),
+            officialCenterStillPresent: !!document.querySelector('[data-slot="root"], #root'),
             centerText: document.querySelector('[class*="centerCol"]')?.textContent?.slice(0, 100).replace(/\s+/g, ' ') || ''
           }
         })
         addCheck('body active tab attribute cleaned up on exit', cleanState.bodyActiveTab === null, cleanState)
         addCheck('Plugin conversation tab unmounted without trace', !cleanState.hasConversationTab)
-        addCheck('Official composer seat restored', cleanState.hasOfficialComposer)
+        addCheck('Official center remains available after plugin unmount', cleanState.officialCenterStillPresent)
       }
     }
 

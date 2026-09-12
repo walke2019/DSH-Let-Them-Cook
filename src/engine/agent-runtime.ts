@@ -9,7 +9,7 @@ import { getCurrentModel, restrictToolsCompat } from '../compat/dsh.js'
 export type RuntimeContext = Context & { agents: AgentRegistry; tools: any; systemPrompt: any; agentDefaultModel: any }
 
 
-function emptyRuntimeMetrics(): AgentRuntimeMetrics {
+export function emptyRuntimeMetrics(): AgentRuntimeMetrics {
   return {turnCount:0,stepCount:0,llmMs:0,toolMs:0,firstTokenMsTotal:0,firstTokenCount:0,inputTokens:0,outputTokens:0,cacheReadTokens:0,cacheWriteTokens:0}
 }
 
@@ -212,13 +212,7 @@ function summarizeRuntimeMetrics(events: readonly any[], promptText = '', replyC
     }
   }
 
-  // Token fallback estimation if provider emitted no usage metrics
-  if (metrics.inputTokens === 0 && promptText) {
-    metrics.inputTokens = Math.max(12, Math.ceil(promptText.length * 0.7))
-  }
-  if (metrics.outputTokens === 0 && replyContent) {
-    metrics.outputTokens = Math.max(12, Math.ceil(replyContent.length * 0.7))
-  }
+  // Do not estimate tokens from text length: DSH-native metrics must come from usage chunks or sessionProjections.
   if (metrics.llmMs === 0 && durationMs > 0) {
     metrics.llmMs = durationMs
   }

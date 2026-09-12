@@ -3,17 +3,7 @@
  */
 
 export const LAYOUT_PUSH_CSS = `
-/* Keep the official main view clean: do not add AppFrame padding; hide the official composer only while the Agent Chat tab is active. */
-body[data-dsh-group-chat-tab-active="true"] #root [data-dsh-frame],
-body[data-dsh-group-chat-tab-active="true"] #root > [data-slot="root"] > div {
-  box-sizing: border-box !important;
-}
-
-/* Keep legacy selectors compatible, but never push details or the main conversation into a narrow column. */
-body[data-dsh-group-chat-tab-active="true"] #root [data-dsh-frame] > [data-side="details"],
-body[data-dsh-group-chat-tab-active="true"] #root > [data-slot="root"] > div > [data-side="details"] {
-  transform: none !important;
-}
+/* Zero-pollution rule: this stylesheet targets only plugin-owned roots and never hides/resizes DSH host internals. */
 
 /* Companion sidebar host: lightweight overlay that does not alter the official layout flow. */
 .dsh-gc-sidebar-host {
@@ -49,16 +39,10 @@ body[data-dsh-group-chat-tab-active="true"] #root > [data-slot="root"] > div > [
   box-shadow: var(--dsw-shadow-lv3, 0 20px 60px rgba(0, 0, 0, 0.45));
 }
 
-/* Hide the official composer only while the Agent Chat tab is active; unmounting restores the official Dialog tab. */
-body[data-dsh-group-chat-tab-active="true"] [data-composer-seat] {
-  display: none !important;
-}
-
-body[data-dsh-group-chat-tab-active="true"] [data-conversation-scroll] {
-  height: 100% !important;
-  max-height: 100% !important;
-  overflow: hidden !important;
-  padding-bottom: 0 !important;
+.gc-conversation-tab,
+.gc-hero-main,
+.gc-conversation {
+  box-sizing: border-box;
 }
 
 `

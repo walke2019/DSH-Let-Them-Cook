@@ -115,6 +115,7 @@
     "test:native-tool-row-adapter": "node __tests__/test-p86-native-tool-row-adapter.cjs",
     "test:dialog-continuity": "node __tests__/test-p87-dialog-continuity.cjs",
     "test:official-tools-cache-metrics": "node __tests__/test-p88-official-tools-and-cache-metrics.cjs",
+    "test:dsh-native-foundation": "node __tests__/test-p89-dsh-native-foundation.cjs",
     "test:long-dialog-e2e": "node __tests__/test-long-dialog-e2e.cjs",
     "test:browser:e2e": "node scripts/browser-e2e-debug.cjs"
   }

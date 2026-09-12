@@ -839,15 +839,20 @@ export class RoomManager {
       if (ledger) {
         let consumed = envelope.metadata?.tokensConsumed
         if (!consumed || consumed.totalTokens === 0) {
-          const promptLen = envelope.metadata?.runtimeMetrics?.inputTokens || Math.max(120, Math.ceil(envelope.content.length * 2))
-          const outLen = envelope.metadata?.runtimeMetrics?.outputTokens || Math.max(30, Math.ceil(envelope.content.length * 0.7))
-          consumed = {
-            promptTokens: promptLen,
-            completionTokens: outLen,
-            totalTokens: promptLen + outLen,
-          }
-          if (envelope.metadata) {
-            envelope.metadata.tokensConsumed = consumed
+          const runtimeMetrics = envelope.metadata?.runtimeMetrics
+          if (runtimeMetrics && (runtimeMetrics.inputTokens > 0 || runtimeMetrics.outputTokens > 0 || runtimeMetrics.cacheReadTokens > 0 || runtimeMetrics.cacheWriteTokens > 0)) {
+            const promptLen = runtimeMetrics.inputTokens + runtimeMetrics.cacheReadTokens + runtimeMetrics.cacheWriteTokens
+            const outLen = runtimeMetrics.outputTokens
+            consumed = {
+              promptTokens: promptLen,
+              completionTokens: outLen,
+              totalTokens: promptLen + outLen,
+            }
+            if (envelope.metadata) {
+              envelope.metadata.tokensConsumed = consumed
+            }
+          } else {
+            consumed = { promptTokens: 0, completionTokens: 0, totalTokens: 0 }
           }
         }
         ledger.totalCalls += 1
@@ -871,7 +876,7 @@ export class RoomManager {
         stat.completionTokens += consumed.completionTokens
         stat.totalTokens += consumed.totalTokens
         const runtimeMetrics = envelope.metadata?.runtimeMetrics || {
-          turnCount: 1, stepCount: 1, llmMs: 1200, toolMs: 0, firstTokenMsTotal: 200, firstTokenCount: 1,
+          turnCount: consumed.totalTokens > 0 ? 1 : 0, stepCount: 0, llmMs: 0, toolMs: 0, firstTokenMsTotal: 0, firstTokenCount: 0,
           inputTokens: consumed.promptTokens, outputTokens: consumed.completionTokens, cacheReadTokens: 0, cacheWriteTokens: 0
         }
         this.addRuntimeMetrics(ledger.metrics, runtimeMetrics)
