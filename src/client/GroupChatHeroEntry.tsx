@@ -200,23 +200,5 @@ export function GroupChatHeroEntry() {
 
 /** Official-composer entry: a small in-row shortcut once the DSH session chrome is available. */
 export function GroupChatInputEntry() {
-  const [locale, setLocale] = useState<GroupChatLocale>(() => detectGroupChatLocale())
-  useEffect(() => {
-    installHeroStyle()
-    const onLocale = (event: Event) => {
-      const detail = (event as CustomEvent<GroupChatLocale>).detail
-      if (detail === 'zh-CN' || detail === 'en-US') setLocale(detail)
-    }
-    window.addEventListener('dsh-group-chat:locale-changed', onLocale as EventListener)
-    return () => window.removeEventListener('dsh-group-chat:locale-changed', onLocale as EventListener)
-  }, [])
-  const activate = () => {
-    if (clickVisibleGroupChatTab()) return
-    openHeroMain()
-  }
-  return <span className="gc-input-entry-root" data-dsh-group-chat-input-entry-root>
-    <button type="button" className="gc-input-entry-button" onClick={activate} title={tx(locale, '打开 Agent 群聊主界面', 'Open Agent group chat main panel')}>
-      <span aria-hidden="true">💬</span><span>{tx(locale, 'Agent 群聊', 'Agent chat')}</span>
-    </button>
-  </span>
+  return <span className="gc-input-entry-root" data-dsh-group-chat-input-entry-root style={{display:'none'}} />
 }

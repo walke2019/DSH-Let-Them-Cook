@@ -513,11 +513,19 @@ export function GroupChatSideDock() {
           </div>
         </div>
 
-        {/* Prominent War Room Banner Card */}
+        {/* Prominent War Room Banner Card (Linked to Central Cockpit) */}
         <div
           className="dsh-gc-hud-warroom-card"
-          onClick={openRoomPicker}
-          title={tx(locale, '点击切换作战室 / 找回任务', 'Click to switch war room / recover tasks')}
+          onClick={() => {
+            // Smoothly activate the central Agent group chat tab and trigger its War Room switcher
+            const tabs = Array.from(document.querySelectorAll('*'))
+            const agentTab = tabs.find(el => el.textContent?.trim() === 'Agent 群聊' && el.tagName === 'BUTTON') as HTMLElement | undefined
+            if (agentTab) {
+              agentTab.click()
+            }
+            window.dispatchEvent(new CustomEvent('dsh-group-chat:open-war-room-picker'))
+          }}
+          title={tx(locale, '点击联动中央作战室驾驶舱 / 找回任务', 'Click to focus Central War Room Cockpit / recover tasks')}
           style={{
             margin: '6px 8px 4px',
             padding: '8px 10px',
@@ -563,7 +571,7 @@ export function GroupChatSideDock() {
                 whiteSpace:'nowrap'
               }}
             >
-              {tx(locale, '切换 / 找回 ▾', 'Switch ▾')}
+              {tx(locale, '联动驾驶舱 ↗', 'Cockpit ↗')}
             </button>
           </div>
         </div>

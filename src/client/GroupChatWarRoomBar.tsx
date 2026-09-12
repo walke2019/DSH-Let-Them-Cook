@@ -69,7 +69,15 @@ export function GroupChatWarRoomBar({
     setPickerOpen(false)
   }
 
-  // Dismiss when clicking outside
+  // Dismiss when clicking outside & listen to external open trigger
+  useEffect(() => {
+    const handleExternalOpen = () => {
+      openPicker()
+    }
+    window.addEventListener('dsh-group-chat:open-war-room-picker', handleExternalOpen)
+    return () => window.removeEventListener('dsh-group-chat:open-war-room-picker', handleExternalOpen)
+  }, [])
+
   useEffect(() => {
     if (!pickerOpen) return
     const handleClickOutside = (e: MouseEvent) => {
