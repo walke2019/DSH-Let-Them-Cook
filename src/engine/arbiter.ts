@@ -10,6 +10,7 @@ import type {
   WorkflowTask,
 } from '../types.js'
 import { WorkflowOrchestrator } from './workflow-orchestrator.js'
+import { THEME_CATALOG } from './themes.js'
 
 export class DispatchArbiter {
   /**
@@ -40,8 +41,7 @@ export class DispatchArbiter {
     let isAll = false
     let isCommander = false
 
-    // Dispatch arbiter, anti-loop rules, mention extraction, workflow routing, and silence-token handling.
-    if (text.includes('@全员') || text.includes('@all') || text.includes('@全员争鸣')) {
+    if (text.includes('@全员') || text.includes('@all') || text.includes('@全员争鸣') || text.includes('@everyone')) {
       isAll = true
       for (const m of members) {
         targetAgentIds.add(m.id)
@@ -49,52 +49,61 @@ export class DispatchArbiter {
       return { targetAgentIds: Array.from(targetAgentIds), isAll, isCommander }
     }
 
-    if (
-      text.includes('@指挥官') ||
-      text.includes('@总指挥') ||
-      text.includes('@commander') ||
-      text.includes('@主持人') ||
-      text.includes('@诸葛亮') ||
-      text.includes('@孔明') ||
-      text.includes('@乔布斯') ||
-      text.includes('@jobs') ||
-      text.includes('@steve jobs') ||
-      text.includes('@steve') ||
-      text.includes('@史蒂夫')
-    ) {
-      isCommander = true
-      const cmdAgent = members.find(m => m.id === 'commander')
-      if (cmdAgent) targetAgentIds.add(cmdAgent.id)
+    const universalRoleAliases: Record<string, string[]> = {
+      commander: [
+        '@commander', '@总指挥', '@总指挥官', '@指挥官', '@总导演', '@主持人', '@主agent', '@主控',
+        '@master', '@lead', '@leader', '@导演', '@离谱总导演', '@诸葛亮', '@孔明', '@乔布斯', '@jobs',
+        '@steve jobs', '@steve', '@史蒂夫', '@琴', '@代理团长', '@阿尔法总指挥官', '@首席技术官', '@cto',
+      ],
+      researcher: [
+        '@researcher', '@调研', '@调研员', '@搜索', '@搜索员', '@情报', '@资料', '@侦探', '@专家', '@分析师',
+        '@瓜田侦探', '@马斯克', '@elon', '@musk', '@elon musk', '@埃隆', '@司马徽', '@水镜先生', '@丽莎',
+        '@深潜情报调研员', '@搜索分析师',
+      ],
+      backend: [
+        '@backend', '@后端', '@架构', '@架构师', '@api', '@底座', '@锅王', '@服务端', '@后端锅王',
+        '@黄仁勋', '@老黄', '@nvidia', '@jensen', '@jensen huang', '@关羽', '@云长', '@阿贝多',
+        '@核心后端架构师', '@后端架构师',
+      ],
+      frontend: [
+        '@frontend', '@前端', '@ui', '@交互', '@设计师', '@门面', '@显眼包', '@界面', '@像素显眼包',
+        '@雷布斯', '@雷军', '@leijun', '@lei jun', '@周瑜', '@公瑾', '@可莉', '@宵宫',
+        '@交互体验设计师', '@前端工程师',
+      ],
+      qa: [
+        '@qa', '@测试', '@红队', '@质检', '@审计', '@审计官', '@质量', '@挑刺', '@阴间测试', '@阴间测试员',
+        '@架构杠精', '@比尔盖茨', '@比尔·盖茨', '@盖茨', '@gates', '@bill', '@bill gates', '@魏延', '@文长',
+        '@刻晴', '@砂糖', '@红队质量审计官', '@质量保证专家',
+      ],
+      writer: [
+        '@writer', '@文档', '@文案', '@写手', '@记录', '@记录官', '@总结', '@压缩师', '@秘书', '@废话压缩师',
+        '@张小龙', '@allen', '@allen zhang', '@陈琳', '@孔璋', '@闲云', '@诺艾尔',
+        '@首席文案记录官', '@技术文案专家',
+      ],
     }
 
-    const legendAliasMap: Record<string, string> = {
-      '@马斯克': 'researcher',
-      '@musk': 'researcher',
-      '@elon': 'researcher',
-      '@elon musk': 'researcher',
-      '@埃隆': 'researcher',
-      '@黄仁勋': 'backend',
-      '@老黄': 'backend',
-      '@nvidia': 'backend',
-      '@jensen': 'backend',
-      '@jensen huang': 'backend',
-      '@雷布斯': 'frontend',
-      '@雷军': 'frontend',
-      '@leijun': 'frontend',
-      '@lei jun': 'frontend',
-      '@比尔盖茨': 'qa',
-      '@盖茨': 'qa',
-      '@gates': 'qa',
-      '@bill gates': 'qa',
-      '@bill': 'qa',
-      '@张小龙': 'writer',
-      '@allen': 'writer',
-      '@allen zhang': 'writer',
+    for (const [roleId, aliases] of Object.entries(universalRoleAliases)) {
+      for (const alias of aliases) {
+        if (text.includes(alias.toLowerCase())) {
+          if (roleId === 'commander') isCommander = true
+          const target = members.find(m => m.id === roleId)
+          if (target) targetAgentIds.add(target.id)
+        }
+      }
     }
-    for (const [alias, roleId] of Object.entries(legendAliasMap)) {
-      if (text.includes(alias)) {
-        const agent = members.find(m => m.id === roleId)
-        if (agent) targetAgentIds.add(agent.id)
+
+    for (const theme of Object.values(THEME_CATALOG)) {
+      for (const [roleId, item] of Object.entries(theme)) {
+        if (item.name && text.includes(`@${item.name.toLowerCase()}`)) {
+          if (roleId === 'commander') isCommander = true
+          const target = members.find(m => m.id === roleId)
+          if (target) targetAgentIds.add(target.id)
+        }
+        if (item.nameEn && text.includes(`@${item.nameEn.toLowerCase()}`)) {
+          if (roleId === 'commander') isCommander = true
+          const target = members.find(m => m.id === roleId)
+          if (target) targetAgentIds.add(target.id)
+        }
       }
     }
 
@@ -109,6 +118,7 @@ export class DispatchArbiter {
 
       for (const candidate of matchCandidates) {
         if (text.includes(candidate)) {
+          if (member.id === 'commander') isCommander = true
           targetAgentIds.add(member.id)
           break
         }
@@ -320,6 +330,31 @@ export class DispatchArbiter {
           return {
             nextSpeakerIds: readyRoleIds,
             reason: `阶段 [${currentStage.name}] 仍有就绪任务未完成，指派责任人 [${readyRoleIds.join(', ')}] 继续执行。`,
+            mode: 'workflow_driven',
+            isTerminal: false,
+          }
+        }
+
+        // Anti-stall fallback: if stage still has incomplete tasks, dispatch pending task owners
+        const pendingTasks = (currentStage.tasks || []).filter(t => t.status !== 'passed')
+        if (pendingTasks.length > 0) {
+          const pendingRoleIds = [...new Set(pendingTasks.map(t => t.ownerRoleId).filter(id => id !== commanderId))]
+          if (pendingRoleIds.length > 0) {
+            return {
+              nextSpeakerIds: pendingRoleIds.slice(0, 2),
+              reason: `阶段 [${currentStage.name}] 仍有未放行任务，防中断指派责任人 [${pendingRoleIds.slice(0, 2).join(', ')}] 继续推进。`,
+              mode: 'workflow_driven',
+              isTerminal: false,
+            }
+          }
+        }
+
+        // Anti-stall fallback: if stage assigned subagents have not completed, awaken them
+        const subagentRoles = currentStage.assignedRoleIds.filter(id => id !== commanderId)
+        if (subagentRoles.length > 0) {
+          return {
+            nextSpeakerIds: subagentRoles,
+            reason: `阶段 [${currentStage.name}] 协作推进中，唤醒本阶段责任人 [${subagentRoles.join(', ')}] 继续执行。`,
             mode: 'workflow_driven',
             isTerminal: false,
           }

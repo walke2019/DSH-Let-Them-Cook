@@ -414,6 +414,13 @@ export function apply(ctx: AppContext, config: Config): void {
         assignmentId,
         content: visibleReplyContent,
       })
+    } else {
+      const inbox = roomManager.getMailbox(roomId, masterId)
+      for (const item of inbox) {
+        if (!item.readAt) {
+          roomManager.markMailboxRead(roomId, item.mailboxMessageId, masterId)
+        }
+      }
     }
     persistRoomState(roomId)
 
@@ -421,7 +428,15 @@ export function apply(ctx: AppContext, config: Config): void {
     const decision = DispatchArbiter.decideNextSpeakers(room, envelope)
     if (!decision.isTerminal && decision.nextSpeakerIds.length > 0) {
       for (const nextId of decision.nextSpeakerIds) {
-        const nextAssignment = createTurnAssignment(roomId, nextId, `接续 ${member.name} 的阶段汇报：${visibleReplyContent.slice(0, 180)}`, envelope.messageId, member.id, envelope.metadata.stageId, envelope.metadata.taskTier)
+        if (nextId === masterId) {
+          const liveRoom = roomManager.getRoom(roomId)
+          const isMasterRunningOrQueued = (liveRoom?.assignments || []).some(a => a.ownerRoleId === masterId && (a.status === 'running' || a.status === 'queued'))
+          if (isMasterRunningOrQueued) {
+            logger.info?.(`[GroupChat] Master Agent ${masterId} is already queued/running, skipping duplicate assignment.`)
+            continue
+          }
+        }
+        const nextAssignment = createTurnAssignment(roomId, nextId, `接续 ${member.name} 的阶段汇报：${visibleReplyContent.slice(0, 180)}`, envelope.messageId, member.id, envelope.metadata?.stageId, envelope.metadata?.taskTier)
         schedule(() => {
           void triggerAgentTurn(roomId, nextId, nextAssignment?.assignmentId).catch(err => {
             logger.warn?.(`[GroupChat] Turn error for ${nextId}:`, err)
@@ -431,9 +446,99 @@ export function apply(ctx: AppContext, config: Config): void {
     }
   }
 
+  const selfHealRoom = (roomId: string): boolean => {
+    if (lifetime.signal.aborted) return false
+    const room = roomManager.getRoom(roomId)
+    if (!room || room.dispatchMode !== 'workflow_driven' || !room.workflow) return false
+    if (room.workflow.currentStageIndex >= room.workflow.stages.length) return false
+
+    // Check if any assignment is currently running or queued
+    const activeAssignments = (room.assignments || []).filter(a => a.status === 'running' || a.status === 'queued')
+    if (activeAssignments.length > 0) return false
+
+    // Check if pending approval transactions exist
+    const pendingTx = (room.approvalTransactions || []).filter(t => t.status === 'pending')
+    if (pendingTx.length > 0) return false
+
+    const currentStage = room.workflow.stages[room.workflow.currentStageIndex]
+    if (!currentStage) return false
+
+    const masterId = room.orchestration?.masterAgentId || room.moderatorAgentId || 'commander'
+    const commanderInbox = room.mailboxes?.[masterId] || []
+    const unreadReports = commanderInbox.filter(item => !item.readAt && item.fromRoleId !== masterId)
+
+    // Condition 1: SubAgents have reported unread deliverables to Commander (needs review), but Commander is not running
+    if (unreadReports.length > 0) {
+      logger.info?.(`[GroupChat Anti-Stall] Room ${roomId} stalled in 待收口 (${unreadReports.length} unread reports). Waking up ${masterId}...`)
+      const brief = `[自愈流转] 汇总 ${unreadReports.length} 份 SubAgent 交付汇报，请总指挥官审阅并收口阶段 [${currentStage.name}]。`
+      const assignment = createTurnAssignment(roomId, masterId, brief, undefined, 'system-healer', currentStage.id, 'long')
+      schedule(() => {
+        void triggerAgentTurn(roomId, masterId, assignment?.assignmentId).catch(err => {
+          logger.warn?.(`[GroupChat Anti-Stall] Turn error for ${masterId}:`, err)
+        })
+      }, 500)
+      return true
+    }
+
+    // Condition 2: All tasks in current stage passed, but stage was not advanced
+    const tasks = currentStage.tasks || []
+    const allTasksPassed = tasks.length > 0 && tasks.every(t => t.status === 'passed')
+    if (allTasksPassed) {
+      logger.info?.(`[GroupChat Anti-Stall] Room ${roomId} stage [${currentStage.name}] all tasks passed. Advancing...`)
+      const result = WorkflowOrchestrator.advanceStage(room, masterId, '阶段任务全数通过质量门禁，自愈引擎自动推进至下一阶段。')
+      roomManager.saveRoom(room)
+      persistRoomState(roomId)
+      roomManager.broadcast({ type: 'room:updated', roomId, payload: room, timestamp: Date.now() })
+      if (result.stage) {
+        const readyTasks = WorkflowOrchestrator.getReadyTasks(result.stage)
+        const targetRoles = readyTasks.length > 0
+          ? [...new Set(readyTasks.map(t => t.ownerRoleId))]
+          : (result.stage.assignedRoleIds.filter(id => id !== masterId).length ? result.stage.assignedRoleIds.filter(id => id !== masterId) : result.stage.assignedRoleIds)
+        for (const role of targetRoles) {
+          const assignment = createTurnAssignment(roomId, role, `接续推进阶段 [${result.stage.name}]：${result.stage.description}`, undefined, masterId, result.stage.id, 'long')
+          schedule(() => {
+            void triggerAgentTurn(roomId, role, assignment?.assignmentId).catch(console.error)
+          }, 600)
+        }
+      }
+      return true
+    }
+
+    // Condition 3: Current stage has ready tasks waiting to be executed
+    const readyTasks = WorkflowOrchestrator.getReadyTasks(currentStage)
+    if (readyTasks.length > 0) {
+      const readyRoles = [...new Set(readyTasks.map(t => t.ownerRoleId))]
+      logger.info?.(`[GroupChat Anti-Stall] Room ${roomId} stage [${currentStage.name}] has ready tasks for [${readyRoles.join(', ')}]. Dispatched.`)
+      for (const role of readyRoles) {
+        const assignment = createTurnAssignment(roomId, role, `[自愈流转] 继续执行阶段 [${currentStage.name}] 待办任务`, undefined, masterId, currentStage.id, 'long')
+        schedule(() => {
+          void triggerAgentTurn(roomId, role, assignment?.assignmentId).catch(console.error)
+        }, 500)
+      }
+      return true
+    }
+
+    return false
+  }
+
   // Host plugin entry: REST API, message dispatch, workflow actions, and lifecycle-safe registration.
   ctx.effect(() => {
-    return ctx.webServer.register({
+    for (const room of roomManager.getAllRooms()) {
+      if (room.dispatchMode === 'workflow_driven') {
+        schedule(() => selfHealRoom(room.roomId), 1500)
+      }
+    }
+
+    const healInterval = setInterval(() => {
+      if (lifetime.signal.aborted) return
+      for (const room of roomManager.getAllRooms()) {
+        if (room.dispatchMode === 'workflow_driven') {
+          selfHealRoom(room.roomId)
+        }
+      }
+    }, 3500)
+
+    const unregister = ctx.webServer.register({
       kind: 'prefix',
       path: '/dsh-group-chat/api',
       handler: async (req: any, res: any) => {
@@ -488,7 +593,7 @@ export function apply(ctx: AppContext, config: Config): void {
 
         // Host plugin entry: REST API, message dispatch, workflow actions, and lifecycle-safe registration.
         if (method === 'GET' && pathname === '/room') {
-          const roomId = url.searchParams.get('id') || 'dev-team-alpha'
+          const roomId = url.searchParams.get('id') || url.searchParams.get('roomId') || 'dev-team-alpha'
           const shouldEnsure = url.searchParams.get('ensure') === '1'
           const room = shouldEnsure ? roomManager.ensureRoomForSession(roomId, roomId.replace(/^dsh-/, '')) : roomManager.getRoom(roomId)
           if (!room) {
@@ -521,6 +626,9 @@ export function apply(ctx: AppContext, config: Config): void {
             }
           }
           if (shouldEnsure) persistRoomState(roomId)
+          if (room.dispatchMode === 'workflow_driven') {
+            schedule(() => selfHealRoom(roomId), 400)
+          }
           res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' })
           res.end(JSON.stringify({ room, messages, ledger }))
           return
@@ -924,6 +1032,16 @@ export function apply(ctx: AppContext, config: Config): void {
           }
         }
 
+        if (method === 'POST' && pathname === '/workflow/resume') {
+          const body = await readJsonBody(req)
+          const roomId = body.roomId || 'dev-team-alpha'
+          const healed = selfHealRoom(roomId)
+          const current = roomManager.getRoom(roomId)
+          res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' })
+          res.end(JSON.stringify({ success: true, healed, room: current }))
+          return
+        }
+
         // Host plugin entry: REST API, message dispatch, workflow actions, and lifecycle-safe registration.
         if (method === 'POST' && pathname === '/mode') {
           const body = await readJsonBody(req)
@@ -1019,6 +1137,11 @@ export function apply(ctx: AppContext, config: Config): void {
         res.end(JSON.stringify({ error: 'Endpoint not found' }))
       },
     })
+
+    return () => {
+      clearInterval(healInterval)
+      if (typeof unregister === 'function') unregister()
+    }
   }, '@dsh-external/dsh-group-chat: webServer API')
 
   // Host plugin entry: REST API, message dispatch, workflow actions, and lifecycle-safe registration.

@@ -543,3 +543,11 @@ pm run test:hero-entry-self-click-guard 并接入 matrix/preflight。
 - [x] `/compat` 报告 native approval/workflow seam 与插件 source。
 - [x] HUD diagnostics 展示 approval/workflow source，不伪装 native。
 - [x] 增加回归守卫：`npm run test:approval-workflow-bridge`。
+
+## P95 — 对话防中断自愈与全主题别名解析 (Dialog Continuity & Anti-Stall Engine)
+- [x] 全主题与通用角色别名解析：`extractMentions` 支持跨主题（meme_comedy、legends、three_kingdoms、genshin、modern、default）及通用角色关键词（@总指挥、@调研、@后端、@前端、@架构师、@测试、@红队、@文档等）。
+- [x] 主管发言防死锁兜底：Commander 发言未带放行关键词且未显式点名时，优先指派当前阶段 ready/pending 待办任务，杜绝误报 terminal。
+- [x] 待收口自主巡检与唤醒：后台 3.5s 心跳与 API 加载时扫描 `unreadCommanderReports > 0 && activeAssignments === 0`，自动唤醒 Commander 审阅收口并推进。
+- [x] 邮箱闭环已读流转：Commander 审阅发言自动将收件箱待审报告标记为已读，驱动闭环质量从“待收口”顺畅流转为“闭环通过”。
+- [x] 一键唤醒收口与恢复 API：HUD 待收口状态展示一键“唤醒主控收口”按钮，后端提供 `/workflow/resume` 恢复接口。
+- [x] 增加回归守卫：`npm run test:dialog-anti-stall`。

@@ -178,3 +178,4 @@ DSH-Let-Them-Cook/
 - `docs/tasks/phases/p92-dsh-tool-event-adapter/README.md` — DSH-native 工具事件适配器
 - `docs/tasks/phases/p93-capability-diagnostics-ui/README.md` — HUD DSH 底座能力诊断面板
 - `docs/tasks/phases/p94-approval-workflow-bridge/README.md` — Approval / Workflow bridge 能力诊断
+- `docs/tasks/phases/p95-dialog-continuity-and-anti-stall/README.md` — 对话防中断自愈引擎与全主题别名解析

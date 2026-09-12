@@ -92,14 +92,52 @@ export function GroupChatHudWorkflowPanel({room, messages, onApproveStage, onUpd
     <style>{`.dsh-gc-workflow-panel,.dsh-gc-workflow-panel *{box-sizing:border-box;min-width:0}.dsh-gc-stage-dot{width:18px;height:18px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:#fff;flex-shrink:0}.dsh-gc-advanced-details>summary{list-style:none}.dsh-gc-advanced-details>summary::-webkit-details-marker{display:none}`}</style>
 
     <div data-dsh-gc-director-card style={{boxSizing:'border-box',width:'100%',maxWidth:'100%',minWidth:0,overflow:'hidden',padding:'10px 12px',borderRadius:12,background:'linear-gradient(135deg, rgba(77,107,254,0.14), rgba(16,185,129,0.08))',border:'1px solid rgba(77,107,254,0.28)',display:'grid',gap:8}}>
-      <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',gap:8,minWidth:0}}><div style={{fontSize:12,fontWeight:800,color:hudTokens.labelPrimary}}>{tx(locale,'执行导演台','Execution director')}</div><span style={{fontSize:10,color:hudTokens.labelTertiary,minWidth:0,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{tx(locale,'主 Agent 控场 · SubAgent 干活','Master Agent coordinates · SubAgents execute')}</span></div>
+      <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',gap:8,minWidth:0}}>
+        <div style={{fontSize:12,fontWeight:800,color:hudTokens.labelPrimary}}>{tx(locale,'执行导演台','Execution director')}</div>
+        {unreadCommanderReports > 0 && !runningAssignments.length ? (
+          <span style={{fontSize:10,color:'#fbbf24',fontWeight:700}}>{tx(locale,'待收口 · 唤醒中','Needs review · Resuming')}</span>
+        ) : (
+          <span style={{fontSize:10,color:hudTokens.labelTertiary,minWidth:0,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{tx(locale,'主 Agent 控场 · SubAgent 干活','Master Agent coordinates · SubAgents execute')}</span>
+        )}
+      </div>
       <div style={{display:'grid',gridTemplateColumns:'24px minmax(0,1fr)',gap:8,alignItems:'center',minWidth:0}}><AvatarBadge avatar={focusMember?.avatar || '🎬'} className="gc-roster-avatar" /><div style={{minWidth:0}}><div style={{fontSize:11,fontWeight:700,color:hudTokens.labelPrimary,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{tx(locale,'当前：','Current: ')}{statusLabel}</div><div style={{fontSize:10,color:hudTokens.labelSecondary,marginTop:2,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{focusAssignment?.brief || focusTask?.description || tx(locale,'还没有执行任务；中间 Agent 群聊里一句话丢任务即可。','No active task yet. Drop one sentence into the Agent chat in the center.')}</div></div></div>
     </div>
 
     <div style={{display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:6}}><MiniStat label={tx(locale,'执行中','Running')} value={runningAssignments.length}/><MiniStat label={tx(locale,'待处理','Queued')} value={queuedAssignments.length}/><MiniStat label={tx(locale,'邮箱','Mailbox')} value={allMailboxCount}/></div>
 
     <div data-dsh-gc-loop-quality style={{...hudCardStyle,display:'grid',gap:6,padding:'8px 10px',border:`1px solid ${failedAssignments.length?'rgba(248,113,113,0.32)':unreadCommanderReports?'rgba(234,179,8,0.30)':'rgba(16,185,129,0.18)'}`}}>
-      <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',gap:8}}><span style={{fontSize:11,fontWeight:800,color:hudTokens.labelPrimary}}>{tx(locale,'闭环质量','Loop quality')}</span><span style={{fontSize:10,fontWeight:800,color:qualityState.tone}}>{qualityState.label}</span></div>
+      <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',gap:8}}>
+        <span style={{fontSize:11,fontWeight:800,color:hudTokens.labelPrimary}}>{tx(locale,'闭环质量','Loop quality')}</span>
+        <div style={{display:'flex',alignItems:'center',gap:6}}>
+          {unreadCommanderReports > 0 && !runningAssignments.length && (
+            <button
+              onClick={async () => {
+                try {
+                  await fetch('/dsh-group-chat/api/workflow/resume', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ roomId: room?.roomId || 'dev-team-alpha' }),
+                  })
+                } catch (e) {
+                  console.error(e)
+                }
+              }}
+              style={{
+                ...hudPrimaryButtonStyle,
+                backgroundColor: '#3b82f6',
+                borderRadius: '6px',
+                padding: '2px 7px',
+                fontSize: 10,
+                fontWeight: 700,
+                cursor: 'pointer',
+              }}
+            >
+              {tx(locale, '唤醒主控收口', 'Review Now')}
+            </button>
+          )}
+          <span style={{fontSize:10,fontWeight:800,color:qualityState.tone}}>{qualityState.label}</span>
+        </div>
+      </div>
       <div style={{display:'grid',gridTemplateColumns:'repeat(3,minmax(0,1fr))',gap:6}}><MiniStat label={tx(locale,'已完成','Done')} value={completedAssignments.length}/><MiniStat label={tx(locale,'失败','Failed')} value={failedAssignments.length}/><MiniStat label={tx(locale,'上报','Reports')} value={subagentReportCount}/></div>
       <div style={{fontSize:10,lineHeight:1.45,color:hudTokens.labelSecondary}}>{qualityState.detail}</div>
     </div>
