@@ -475,6 +475,19 @@ export function apply(ctx: AppContext, config: Config): void {
 
     // Condition 1: SubAgents have reported unread deliverables to Commander (needs review), but Commander is not running
     if (unreadReports.length > 0) {
+      // Guard against infinite self-heal loop if circuit breaker has tripped
+      const effectiveMaxTurns = (room.dispatchMode === 'workflow_driven' || room.assignments?.some(a => a.taskTier === 'long'))
+        ? Math.max(room.safetyPolicy.maxTurnsPerPrompt || 6, 24)
+        : (room.safetyPolicy.maxTurnsPerPrompt || 6)
+      if (room.interactionRound >= effectiveMaxTurns) {
+        // Circuit breaker tripped; mark unread inbox reports as read or stalled to stop perpetual retries
+        for (const r of unreadReports) {
+          roomManager.markMailboxRead(roomId, r.mailboxMessageId, masterId)
+        }
+        persistRoomState(roomId)
+        return false
+      }
+
       logger.info?.(`[GroupChat Anti-Stall] Room ${roomId} stalled in 待收口 (${unreadReports.length} unread reports). Waking up ${masterId}...`)
       const brief = `[自愈流转] 汇总 ${unreadReports.length} 份 SubAgent 交付汇报，请总指挥官审阅并收口阶段 [${currentStage.name}]。`
       const assignment = createTurnAssignment(roomId, masterId, brief, undefined, 'system-healer', currentStage.id, 'long')
