@@ -10,6 +10,20 @@ export interface GroupChatQuestionComposerProps {
   onSubmit: (answerText: string) => void
 }
 
+/**
+ * Split the conventional recommendation suffix without changing the answer value.
+ */
+function parseRecommendedLabel(label: string) {
+  const suffix = /\s*(?:\((?:recommended|推荐)\)|（(?:recommended|推荐)）)\s*$/i
+  return suffix.test(label) ? {
+    label: label.replace(suffix, '').trim(),
+    recommended: true,
+  } : {
+    label: label.trim(),
+    recommended: false,
+  }
+}
+
 export function GroupChatQuestionComposer({
   prompt,
   locale = 'zh-CN',
@@ -17,108 +31,181 @@ export function GroupChatQuestionComposer({
   onDismiss,
   onSubmit,
 }: GroupChatQuestionComposerProps) {
-  const [selectedKey, setSelectedKey] = useState<string | null>(prompt.recommendedOptionKey || prompt.options?.[0]?.key || null)
+  // Determine initial selection
+  const initialSelected = prompt.recommendedOptionKey
+    ? [prompt.recommendedOptionKey]
+    : prompt.options?.[0]?.key
+      ? [prompt.options[0].key]
+      : []
+
+  const [selectedKeys, setSelectedKeys] = useState<string[]>(initialSelected)
   const [customText, setCustomText] = useState<string>('')
   const [minimized, setMinimized] = useState<boolean>(false)
   const [error, setError] = useState<string | null>(null)
 
-  const hasOptions = Array.isArray(prompt.options) && prompt.options.length > 0
+  const multiSelect = prompt.multiSelect === true
+  const options = prompt.options || []
+  const hasOptions = options.length > 0
 
-  const handleSubmit = (chosenKey: string | null, customVal: string) => {
+  const handleSelectOption = (optLabel: string, optKey: string) => {
     if (sending) return
-    const trimmedCustom = customVal.trim()
+    setError(null)
+    if (multiSelect) {
+      if (selectedKeys.includes(optKey)) {
+        setSelectedKeys(selectedKeys.filter(k => k !== optKey))
+      } else {
+        setSelectedKeys([...selectedKeys, optKey])
+      }
+    } else {
+      setSelectedKeys([optKey])
+      setCustomText('')
+    }
+  }
+
+  const handleSubmit = () => {
+    if (sending) return
+    const trimmedCustom = customText.trim()
     if (trimmedCustom) {
       onSubmit(trimmedCustom)
       return
     }
-    if (chosenKey && hasOptions) {
-      const opt = prompt.options!.find(o => o.key === chosenKey)
-      if (opt) {
-        onSubmit(locale === 'en-US' ? `I choose: ${opt.label}` : `我拍板选择：${opt.label}`)
+    if (selectedKeys.length > 0 && hasOptions) {
+      const selectedOpts = options.filter(o => selectedKeys.includes(o.key))
+      if (selectedOpts.length > 0) {
+        if (selectedOpts.length === 1) {
+          const opt = selectedOpts[0]
+          onSubmit(locale === 'en-US' ? `I choose: ${opt.label}` : `我拍板选择：${opt.label}`)
+        } else {
+          const labels = selectedOpts.map(o => o.label).join('、')
+          onSubmit(locale === 'en-US' ? `I choose: ${labels}` : `我拍板选择：${labels}`)
+        }
         return
       }
     }
-    setError(tx(locale, '请选择一个方案或输入自定义回答', 'Please select an option or enter a custom answer'))
+    setError(tx(locale, '请选择一个选项或填写自定义答案。', 'Please select an option or enter a custom answer.'))
   }
 
+  const eyebrowText = prompt.header || tx(locale, '方案抉择', 'Decision Required')
+
   return (
-    <div className="gc-qc-frame" data-dsh-gc-question-composer="true" data-dsh-gc-decision-card="true">
+    <div
+      className="Mbwy4a_frame gc-question-composer-frame"
+      data-dsh-gc-question-composer="true"
+      data-dsh-gc-decision-card="true"
+    >
       <style>{`
-        .gc-qc-frame {
-          padding: 6px calc(var(--dsh-composer-side-clearance, 0px) + 16px) 12px;
+        .Mbwy4a_frame {
+          padding: 6px calc(var(--dsh-composer-side-clearance, 0px) + 16px) 10px;
           justify-content: center;
           display: flex;
           width: 100%;
           box-sizing: border-box;
         }
-        .gc-qc-card {
+        .Mbwy4a_card {
           width: 100%;
           max-width: var(--dsh-chat-content-width, 960px);
+          --dsw-elevation-stroke-color: var(--dsw-alias-border-l2-darkmode-thin, rgba(255,255,255,0.08));
           background: var(--dsw-specific-input-major, #18181c);
-          border: 1px solid var(--dsw-alias-border-l2, #34343a);
-          border-radius: 20px;
+          max-height: min(60vh, 520px);
           box-shadow: var(--dsw-elevation-panel, 0 8px 30px rgba(0,0,0,0.35));
           color: var(--dsw-alias-label-primary, #f8fafc);
+          --dsh-scrollbar-thumb: var(--dsw-alias-scrollbar-bg-l2, rgba(255,255,255,0.15));
+          --dsh-scrollbar-thumb-hover: var(--dsw-alias-scrollbar-hover-l2, rgba(255,255,255,0.25));
+          border: 0;
+          border-radius: 20px;
           flex-direction: column;
+          padding: 0 0 10px;
           display: flex;
           overflow: hidden;
-          max-height: min(60vh, 520px);
-          font-family: inherit;
           box-sizing: border-box;
         }
-        .gc-qc-card-minimized {
+        .Mbwy4a_card, .Mbwy4a_card * {
+          box-sizing: border-box;
+        }
+        .Mbwy4a_cardMinimized {
           max-height: none;
         }
-        .gc-qc-header {
-          flex-shrink: 0;
-          justify-content: space-between;
-          align-items: flex-start;
-          gap: 16px;
-          padding: 16px 16px 0 20px;
-          display: flex;
+        .Mbwy4a_cardMinimized .Mbwy4a_header {
+          padding-bottom: 14px;
         }
-        .gc-qc-headingBlock {
-          min-width: 0;
-          flex: 1;
-        }
-        .gc-qc-eyebrow {
-          color: var(--dsw-alias-label-tertiary, #94a3b8);
-          margin-bottom: 4px;
-          font-size: 11px;
-          font-weight: 500;
-          line-height: 16px;
-        }
-        .gc-qc-title {
-          margin: 0;
-          font-size: 15px;
-          font-weight: 600;
-          line-height: 22px;
-          color: var(--dsw-alias-label-primary, #f8fafc);
-        }
-        .gc-qc-headerActions {
+        .Mbwy4a_headerActions {
           flex-shrink: 0;
           align-items: center;
           gap: 4px;
           display: flex;
         }
-        .gc-qc-iconButton {
+        .Mbwy4a_header {
+          flex-shrink: 0;
+          justify-content: space-between;
+          align-items: flex-start;
+          gap: 16px;
+          padding: 20px 16px 0 24px;
+          display: flex;
+        }
+        .Mbwy4a_headingBlock {
+          min-width: 0;
+        }
+        .Mbwy4a_eyebrow {
+          color: var(--dsw-alias-label-tertiary, #94a3b8);
+          margin-bottom: 5px;
+          font-size: 11px;
+          line-height: 16px;
+        }
+        .Mbwy4a_title {
+          margin: 0;
+          font-size: 16px;
+          font-weight: 500;
+          line-height: 22px;
+          color: var(--dsw-alias-label-primary, #f8fafc);
+        }
+        .Mbwy4a_detail {
+          margin: 0 24px 8px;
+          font-size: 13px;
+          line-height: 20px;
+          color: var(--dsw-alias-label-secondary, #cbd5e1);
+        }
+        .Mbwy4a_footerActions {
+          flex-shrink: 0;
+          align-items: center;
+          gap: 12px;
+          display: flex;
+        }
+        .Mbwy4a_pager {
+          flex-shrink: 0;
+          align-items: center;
+          gap: 6px;
+          display: flex;
+        }
+        .Mbwy4a_progress {
+          color: var(--dsw-alias-label-secondary, #94a3b8);
+          white-space: nowrap;
+          word-spacing: -2px;
+          padding: 0 4px;
+          font-size: 14px;
+          font-weight: 500;
+          line-height: 24px;
+        }
+        .Mbwy4a_iconButton {
           width: 24px;
           height: 24px;
           color: var(--dsw-alias-label-tertiary, #94a3b8);
           cursor: pointer;
-          background: transparent;
+          background: 0 0;
           border: none;
           border-radius: 999px;
           place-items: center;
           padding: 0;
           display: grid;
-          transition: background 0.12s, color 0.12s;
         }
-        .gc-qc-iconButton:hover:not(:disabled) {
-          background: var(--dsw-alias-interactive-bg-hover, rgba(255,255,255,0.08));
+        .Mbwy4a_iconButton:hover:not(:disabled) {
+          background: var(--dsw-alias-interactive-bg-hover, rgba(255,255,255,0.06));
           color: var(--dsw-alias-label-primary, #f8fafc);
         }
-        .gc-qc-body {
+        .Mbwy4a_iconButton:disabled {
+          color: var(--dsw-alias-label-dimmed, rgba(255,255,255,0.25));
+          cursor: default;
+        }
+        .Mbwy4a_body {
           overscroll-behavior: contain;
           flex-direction: column;
           flex: auto;
@@ -126,26 +213,20 @@ export function GroupChatQuestionComposer({
           display: flex;
           overflow-y: auto;
         }
-        .gc-qc-detail {
-          margin: 4px 20px 6px;
-          font-size: 13px;
-          line-height: 1.5;
-          color: var(--dsw-alias-label-secondary, #cbd5e1);
-        }
-        .gc-qc-options {
+        .Mbwy4a_options {
           flex-direction: column;
-          gap: 2px;
-          margin: 4px 0 0;
+          gap: 1px;
+          margin: 8px 0 0;
           padding: 4px 12px;
           display: flex;
         }
-        .gc-qc-option {
+        .Mbwy4a_option {
           width: 100%;
           min-height: 40px;
           color: inherit;
           text-align: left;
           cursor: pointer;
-          background: transparent;
+          background: 0 0;
           border: 1px solid transparent;
           border-radius: 12px;
           flex-shrink: 0;
@@ -154,16 +235,18 @@ export function GroupChatQuestionComposer({
           padding: 8px 12px 8px 8px;
           transition: background-color .12s, border-color .12s;
           display: flex;
-          font: inherit;
+          font-family: inherit;
         }
-        .gc-qc-option:hover:not(:disabled) {
+        .Mbwy4a_option:hover:not(:disabled), .Mbwy4a_optionSelected {
           background: var(--dsw-alias-interactive-bg-hover, rgba(255,255,255,0.06));
         }
-        .gc-qc-optionSelected {
-          background: var(--dsw-alias-interactive-bg-hover, rgba(77,107,254,0.12)) !important;
-          border-color: var(--dsw-alias-state-business-primary, #4d6bfe) !important;
+        .Mbwy4a_optionSelected {
+          border-color: var(--dsw-alias-border-l2, rgba(255,255,255,0.18));
         }
-        .gc-qc-number {
+        .Mbwy4a_option:disabled {
+          cursor: default;
+        }
+        .Mbwy4a_number {
           background: var(--dsw-alias-bg-overlay, rgba(255,255,255,0.08));
           width: 20px;
           height: 20px;
@@ -173,337 +256,381 @@ export function GroupChatQuestionComposer({
           place-items: center;
           margin-top: 2px;
           font-size: 12px;
-          font-weight: 600;
+          font-weight: 500;
           line-height: 18px;
           display: grid;
         }
-        .gc-qc-numberSelected {
-          background: var(--dsw-alias-state-business-primary, #4d6bfe);
-          color: white;
+        .Mbwy4a_checkbox {
+          flex: 0 0 20px;
+          place-items: center;
+          width: 20px;
+          height: 20px;
+          margin-top: 2px;
+          display: grid;
         }
-        .gc-qc-optionCopy {
+        .Mbwy4a_checkbox:before {
+          content: "";
+          border: .5px solid var(--dsw-alias-border-l4, rgba(255,255,255,0.25));
+          border-radius: 4px;
+          grid-area: 1/1;
+          width: 14px;
+          height: 14px;
+          transition: background-color .12s, border-color .12s;
+        }
+        .Mbwy4a_checkbox > svg {
+          grid-area: 1/1;
+        }
+        .Mbwy4a_checkboxChecked {
+          color: var(--dsw-alias-label-primary-foreground, #ffffff);
+        }
+        .Mbwy4a_checkboxChecked:before {
+          border-color: var(--dsw-alias-label-primary, #ffffff);
+          background: var(--dsw-alias-label-primary, #ffffff);
+        }
+        .Mbwy4a_optionCopy {
           flex: 1;
           min-width: 0;
         }
-        .gc-qc-optionLine {
+        .Mbwy4a_optionLine {
           flex-wrap: wrap;
           align-items: baseline;
-          gap: 4px 6px;
+          gap: 2px 6px;
           display: flex;
         }
-        .gc-qc-optionLabel {
+        .Mbwy4a_optionLabel {
           font-size: 14px;
           font-weight: 500;
-          line-height: 22px;
+          line-height: 24px;
+          color: var(--dsw-alias-label-primary, #f8fafc);
         }
-        .gc-qc-badge {
-          background: rgba(16,185,129,0.18);
-          color: #34d399;
+        .Mbwy4a_badge {
+          background: var(--dsw-specific-sidebar-nav-item-active-accent, rgba(16,185,129,0.15));
+          color: var(--dsw-alias-button-info-fill, #10b981);
           border-radius: 6px;
-          padding: 0 5px;
+          padding: 0 4px;
           font-size: 11px;
           font-weight: 600;
           line-height: 18px;
         }
-        .gc-qc-description {
+        .Mbwy4a_description {
           color: var(--dsw-alias-label-tertiary, #94a3b8);
-          font-size: 12px;
+          font-size: 14px;
           font-weight: 400;
-          line-height: 18px;
-          margin-top: 2px;
+          line-height: 24px;
         }
-        .gc-qc-customRow {
+        .Mbwy4a_customRow {
           border: 1px solid transparent;
           border-radius: 12px;
           flex-shrink: 0;
-          align-items: center;
+          align-items: flex-start;
           gap: 8px;
           width: 100%;
           min-height: 40px;
-          padding: 6px 12px 6px 8px;
+          padding: 8px 12px 8px 8px;
           transition: background-color .12s, border-color .12s;
           display: flex;
-          box-sizing: border-box;
         }
-        .gc-qc-customRow:hover, .gc-qc-customRow:focus-within, .gc-qc-customRowActive {
+        .Mbwy4a_customRow:hover, .Mbwy4a_customRow:focus-within, .Mbwy4a_customRowActive {
           background: var(--dsw-alias-interactive-bg-hover, rgba(255,255,255,0.06));
         }
-        .gc-qc-customRow:focus-within, .gc-qc-customRowActive {
-          border-color: var(--dsw-alias-border-l2, #44444e);
+        .Mbwy4a_customRow:focus-within, .Mbwy4a_customRowActive {
+          border-color: var(--dsw-alias-border-l2, rgba(255,255,255,0.18));
         }
-        .gc-qc-field {
-          flex: 1;
+        .Mbwy4a_field {
+          --dsh-answer-field-padding: 0;
+          min-width: 0;
           display: grid;
         }
-        .gc-qc-fieldInput {
+        .Mbwy4a_field > * {
+          min-width: 0;
+          padding: var(--dsh-answer-field-padding);
+          font: inherit;
+          white-space: pre-wrap;
+          word-break: break-word;
+          overflow-wrap: anywhere;
+          grid-area: 1/1;
+          font-size: 14px;
+          line-height: 24px;
+        }
+        .Mbwy4a_fieldMirror {
+          box-sizing: content-box;
+          visibility: hidden;
+          max-height: 144px;
+          overflow: hidden;
+        }
+        .Mbwy4a_fieldInput {
           resize: none;
           color: var(--dsw-alias-label-primary, #f8fafc);
-          caret-color: var(--dsw-alias-state-business-primary, #4d6bfe);
-          background: transparent;
+          caret-color: var(--dsw-alias-state-business-primary, #3b82f6);
+          background: 0 0;
           border: none;
           outline: none;
-          width: 100%;
-          font: inherit;
-          font-size: 13px;
-          line-height: 20px;
+          overflow-y: auto;
+          font-family: inherit;
         }
-        .gc-qc-customBlock {
-          border: 1px solid var(--dsw-alias-border-l2, #34343a);
-          background: var(--dsw-alias-bg-layer-2, rgba(255,255,255,0.03));
-          border-radius: 10px;
-          margin: 8px 16px;
-          padding: 10px 12px;
+        .Mbwy4a_fieldInput::placeholder {
+          color: var(--dsw-alias-label-caption, #64748b);
         }
-        .gc-qc-blockInput {
-          width: 100%;
-          min-height: 60px;
-          max-height: 140px;
-          resize: none;
-          border: none;
-          outline: none;
-          background: transparent;
-          color: var(--dsw-alias-label-primary, #f8fafc);
-          font: inherit;
-          font-size: 13px;
-          line-height: 1.5;
+        .Mbwy4a_customInline {
+          flex: 1;
         }
-        .gc-qc-footer {
+        .Mbwy4a_footer {
           flex-shrink: 0;
           justify-content: space-between;
           align-items: center;
           gap: 12px;
-          margin-top: 6px;
-          padding: 8px 14px 10px 18px;
-          border-top: 1px solid var(--dsw-alias-border-l1, rgba(255,255,255,0.06));
+          margin-top: 12px;
+          padding: 0 10px 0 18px;
           display: flex;
         }
-        .gc-qc-pager {
-          flex-shrink: 0;
-          align-items: center;
-          gap: 4px;
-          display: flex;
-        }
-        .gc-qc-progress {
-          color: var(--dsw-alias-label-secondary, #cbd5e1);
-          white-space: nowrap;
-          padding: 0 4px;
-          font-size: 13px;
-          font-weight: 500;
-          line-height: 20px;
-        }
-        .gc-qc-feedback {
-          flex: 1;
-          font-size: 12px;
-          color: #ef4444;
+        .Mbwy4a_feedback {
+          min-height: 16px;
+          color: var(--dsw-alias-state-error-primary, #ef4444);
           text-align: right;
+          flex: 1;
+          font-size: 11px;
+          line-height: 16px;
         }
-        .gc-qc-footerActions {
-          flex-shrink: 0;
+        ._button_cfgyt_4 {
+          display: inline-flex;
           align-items: center;
-          gap: 10px;
-          display: flex;
-        }
-        .gc-qc-btn-outline {
-          padding: 6px 14px;
-          font-size: 13px;
-          border-radius: 8px;
-          border: 1px solid var(--dsw-alias-border-l2, rgba(255,255,255,0.18));
-          background: transparent;
-          color: var(--dsw-alias-label-secondary, #cbd5e1);
+          justify-content: center;
+          gap: 4px;
+          border: none;
+          border-radius: 18px;
           cursor: pointer;
-          transition: all .12s;
+          font-size: 14px;
+          line-height: 22px;
+          color: var(--dsw-alias-label-primary, #f8fafc);
+          background: transparent;
+          padding: 0 14px;
+          font-family: inherit;
+          font-weight: 500;
+          transition: background-color .12s, border-color .12s, opacity .12s;
         }
-        .gc-qc-btn-outline:hover {
-          background: var(--dsw-alias-interactive-bg-hover, rgba(255,255,255,0.08));
+        ._md_cfgyt_24 {
+          height: 36px;
+        }
+        ._outline_cfgyt_56 {
+          border: .5px solid var(--dsw-alias-border-l3, rgba(255,255,255,0.18));
+          background: transparent;
           color: var(--dsw-alias-label-primary, #f8fafc);
         }
-        .gc-qc-btn-primary {
-          padding: 6px 18px;
-          font-size: 13px;
-          font-weight: 500;
-          border-radius: 8px;
-          border: none;
-          background: var(--dsw-alias-state-business-primary, #4d6bfe);
-          color: white;
-          cursor: pointer;
-          transition: all .12s;
+        ._outline_cfgyt_56:hover:not(:disabled) {
+          background: var(--dsw-alias-interactive-bg-hover, rgba(255,255,255,0.06));
         }
-        .gc-qc-btn-primary:hover:not(:disabled) {
-          background: #3b5bdb;
+        ._primary_cfgyt_38 {
+          background: var(--dsw-alias-button-primary-fill, #ffffff);
+          color: var(--dsw-alias-label-primary-foreground, #000000);
         }
-        .gc-qc-btn-primary:disabled {
-          opacity: 0.45;
+        ._primary_cfgyt_38:hover:not(:disabled) {
+          opacity: 0.9;
+        }
+        ._button_cfgyt_4:disabled {
+          opacity: 0.35;
           cursor: not-allowed;
         }
+        @media (max-width: 720px) {
+          .Mbwy4a_card { border-radius: 16px; }
+          .Mbwy4a_header { padding: 10px 12px 0 18px; }
+          .Mbwy4a_options { padding: 4px 8px; }
+          .Mbwy4a_title { font-size: 15px; line-height: 21px; }
+          .Mbwy4a_option, .Mbwy4a_customRow { padding: 8px 6px; }
+          .Mbwy4a_footer { align-items: flex-end; padding: 0 10px; }
+          .Mbwy4a_footerActions { flex-shrink: 0; }
+        }
       `}</style>
-      <section className={`gc-qc-card ${minimized ? 'gc-qc-card-minimized' : ''}`} aria-label={prompt.question}>
-        <header className="gc-qc-header">
-          <div className="gc-qc-headingBlock">
-            <div className="gc-qc-eyebrow">
-              <span>🎯 </span>
-              {prompt.header || tx(locale, '方案抉择 / 请您拍板', 'Decision Required / Awaiting Your Choice')}
-              {prompt.askedByRoleId && <span style={{ marginLeft: 6, opacity: 0.8 }}>· @{prompt.askedByRoleId}</span>}
-            </div>
-            <h2 className="gc-qc-title">{prompt.question}</h2>
+
+      <div className={`Mbwy4a_card ${minimized ? 'Mbwy4a_cardMinimized' : ''}`}>
+        <header className="Mbwy4a_header">
+          <div className="Mbwy4a_headingBlock">
+            {eyebrowText && (
+              <div className="Mbwy4a_eyebrow">{eyebrowText}</div>
+            )}
+            <h2 className="Mbwy4a_title">{prompt.question}</h2>
           </div>
-          <div className="gc-qc-headerActions">
+          <div className="Mbwy4a_headerActions">
             <button
               type="button"
-              className="gc-qc-iconButton"
-              aria-label={minimized ? tx(locale, '展开', 'Expand') : tx(locale, '收起', 'Minimize')}
-              title={minimized ? tx(locale, '展开', 'Expand') : tx(locale, '收起', 'Minimize')}
-              onClick={() => setMinimized(!minimized)}
+              className="Mbwy4a_iconButton"
+              aria-label={minimized ? tx(locale, '展开问题卡片', 'Expand the question card') : tx(locale, '收起问题卡片', 'Collapse the question card')}
+              title={minimized ? tx(locale, '展开问题卡片', 'Expand the question card') : tx(locale, '收起问题卡片', 'Collapse the question card')}
+              disabled={sending}
+              onClick={() => setMinimized(curr => !curr)}
             >
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ transform: minimized ? 'rotate(180deg)' : 'none', transition: 'transform 0.15s' }}>
-                <path d="m6 9 6 6 6-6" />
-              </svg>
+              {minimized ? (
+                <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
+                  <path d="M4 10l4-4 4 4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+              ) : (
+                <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
+                  <path d="M4 6l4 4 4-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+              )}
             </button>
             <button
               type="button"
-              className="gc-qc-iconButton"
-              aria-label={tx(locale, '取消 / 关闭', 'Dismiss')}
-              title={tx(locale, '取消 / 关闭', 'Dismiss')}
+              className="Mbwy4a_iconButton"
+              aria-label={tx(locale, '放弃整组问题', 'Dismiss all questions')}
+              title={tx(locale, '放弃整组问题', 'Dismiss all questions')}
+              disabled={sending}
               onClick={onDismiss}
             >
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="M18 6 6 18M6 6l12 12" />
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                <path d="M4 4l8 8M12 4l-8 8" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
               </svg>
             </button>
           </div>
         </header>
 
         {!minimized && (
-          <div className="gc-qc-body">
-            {prompt.detail && (
-              <div className="gc-qc-detail">
-                {prompt.detail}
-              </div>
-            )}
-            {hasOptions ? (
-              <div className="gc-qc-options" role={prompt.multiSelect ? "group" : "radiogroup"}>
-                {prompt.options!.map((opt, idx) => {
-                  const isSelected = selectedKey === opt.key && !customText.trim()
+          <>
+            <div className="Mbwy4a_body" data-question-scroll="true">
+              {prompt.detail && (
+                <div className="Mbwy4a_detail">
+                  {prompt.detail}
+                </div>
+              )}
+
+              <div
+                className="Mbwy4a_options"
+                role={multiSelect ? 'group' : 'radiogroup'}
+              >
+                {options.map((opt, idx) => {
+                  const selected = selectedKeys.includes(opt.key)
+                  const display = parseRecommendedLabel(opt.label)
                   return (
                     <button
-                      key={opt.key}
+                      key={opt.key || idx}
                       type="button"
-                      className={`gc-qc-option ${isSelected ? 'gc-qc-optionSelected' : ''}`}
-                      role={prompt.multiSelect ? "checkbox" : "radio"}
-                      aria-checked={isSelected}
-                      onClick={() => {
-                        setSelectedKey(opt.key)
-                        setCustomText('')
-                        setError(null)
-                      }}
-                      onKeyDown={(e) => {
+                      className={`Mbwy4a_option ${selected && !multiSelect ? 'Mbwy4a_optionSelected' : ''}`}
+                      role={multiSelect ? 'checkbox' : 'radio'}
+                      aria-checked={selected}
+                      aria-label={display.label}
+                      disabled={sending}
+                      onClick={() => handleSelectOption(opt.label, opt.key)}
+                      onKeyDown={e => {
                         if (e.key === 'Enter') {
                           e.preventDefault()
-                          handleSubmit(opt.key, '')
+                          handleSubmit()
                         }
                       }}
                     >
-                      <span className={`gc-qc-number ${isSelected ? 'gc-qc-numberSelected' : ''}`}>
-                        {idx + 1}
-                      </span>
-                      <span className="gc-qc-optionCopy">
-                        <span className="gc-qc-optionLine">
-                          <span className="gc-qc-optionLabel">{opt.label}</span>
-                          {opt.isRecommended && (
-                            <span className="gc-qc-badge">{tx(locale, '推荐', 'Recommended')}</span>
+                      {multiSelect ? (
+                        <span
+                          className={`Mbwy4a_checkbox ${selected ? 'Mbwy4a_checkboxChecked' : ''}`}
+                          aria-hidden="true"
+                        >
+                          {selected && (
+                            <svg width="12" height="12" viewBox="0 0 16 16" fill="none">
+                              <path d="M3.5 8.5l3 3 6-7" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+                            </svg>
                           )}
                         </span>
-                        {opt.description && (
-                          <div className="gc-qc-description">{opt.description}</div>
-                        )}
+                      ) : (
+                        <span className="Mbwy4a_number">{idx + 1}</span>
+                      )}
+                      <span className="Mbwy4a_optionCopy">
+                        <span className="Mbwy4a_optionLine">
+                          <span className="Mbwy4a_optionLabel">{display.label}</span>
+                          {display.recommended && (
+                            <span className="Mbwy4a_badge">{tx(locale, '推荐', 'Recommended')}</span>
+                          )}
+                          {opt.description && (
+                            <span className="Mbwy4a_description">{opt.description}</span>
+                          )}
+                        </span>
                       </span>
                     </button>
                   )
                 })}
-                <div className={`gc-qc-customRow ${customText.trim() ? 'gc-qc-customRowActive' : ''}`}>
-                  <span className="gc-qc-number" style={{ background: customText.trim() ? 'var(--dsw-alias-state-business-primary, #4d6bfe)' : undefined, color: customText.trim() ? '#fff' : undefined }}>
-                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                      <path d="M12 20h9" /><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" />
-                    </svg>
-                  </span>
-                  <div className="gc-qc-field">
+
+                {/* Inline custom answer row — official layout */}
+                <div className={`Mbwy4a_customRow ${customText.trim() !== '' ? 'Mbwy4a_customRowActive' : ''}`}>
+                  {multiSelect ? (
+                    <span
+                      className={`Mbwy4a_checkbox ${customText.trim() !== '' ? 'Mbwy4a_checkboxChecked' : ''}`}
+                      aria-hidden="true"
+                    >
+                      {customText.trim() !== '' && (
+                        <svg width="12" height="12" viewBox="0 0 16 16" fill="none">
+                          <path d="M3.5 8.5l3 3 6-7" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+                        </svg>
+                      )}
+                    </span>
+                  ) : (
+                    <span className="Mbwy4a_number">{(options.length) + 1}</span>
+                  )}
+                  <div className="Mbwy4a_field Mbwy4a_customInline">
+                    <div aria-hidden="true" className="Mbwy4a_fieldMirror">
+                      {`${customText}\n`}
+                    </div>
                     <textarea
-                      className="gc-qc-fieldInput"
-                      rows={1}
-                      placeholder={tx(locale, '其他… 输入自定义答案并按回车提交', 'Other… Type a custom answer and press Enter')}
+                      className="Mbwy4a_fieldInput"
                       value={customText}
-                      onChange={(e) => {
+                      disabled={sending}
+                      rows={1}
+                      placeholder={tx(locale, '输入你的答案', 'Type your answer')}
+                      onChange={e => {
                         setCustomText(e.target.value)
-                        if (e.target.value) setSelectedKey(null)
+                        if (e.target.value && !multiSelect) {
+                          setSelectedKeys([])
+                        }
                         setError(null)
                       }}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter' && !e.shiftKey) {
+                      onKeyDown={e => {
+                        if (e.key === 'Enter' && !e.shiftKey && !e.nativeEvent.isComposing) {
                           e.preventDefault()
-                          if (customText.trim()) {
-                            handleSubmit(null, customText.trim())
-                          }
+                          handleSubmit()
                         }
                       }}
                     />
                   </div>
                 </div>
               </div>
-            ) : (
-              <div className="gc-qc-customBlock">
-                <textarea
-                  autoFocus
-                  className="gc-qc-blockInput"
-                  placeholder={tx(locale, '请输入您的回答或拍板意见，按 Enter 提交…', 'Type your answer or decision, press Enter to submit…')}
-                  value={customText}
-                  onChange={(e) => {
-                    setCustomText(e.target.value)
-                    setError(null)
-                  }}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter' && !e.shiftKey) {
-                      e.preventDefault()
-                      if (customText.trim()) {
-                        handleSubmit(null, customText.trim())
-                      }
-                    }
-                  }}
-                />
-              </div>
-            )}
-            <footer className="gc-qc-footer">
-              <div className="gc-qc-pager">
-                <button type="button" className="gc-qc-iconButton" disabled style={{ opacity: 0.4 }}>
-                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="m15 18-6-6 6-6" /></svg>
+            </div>
+
+            <footer className="Mbwy4a_footer">
+              <div className="Mbwy4a_pager">
+                <button type="button" className="Mbwy4a_iconButton" disabled>
+                  <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
+                    <path d="M10 4l-4 4 4 4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                  </svg>
                 </button>
-                <span className="gc-qc-progress">1 / 1</span>
-                <button type="button" className="gc-qc-iconButton" disabled style={{ opacity: 0.4 }}>
-                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="m9 18 6-6-6-6" /></svg>
+                <span className="Mbwy4a_progress">1 / 1</span>
+                <button type="button" className="Mbwy4a_iconButton" disabled>
+                  <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
+                    <path d="M6 4l4 4-4 4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                  </svg>
                 </button>
               </div>
-              <div className="gc-qc-feedback">
+
+              <div className="Mbwy4a_feedback" role="status">
                 {error}
               </div>
-              <div className="gc-qc-footerActions">
+
+              <div className="Mbwy4a_footerActions">
                 <button
                   type="button"
-                  className="gc-qc-btn-outline"
+                  className="_button_cfgyt_4 _md_cfgyt_24 _outline_cfgyt_56 dsw-button dsw-button--outline"
+                  disabled={sending}
                   onClick={onDismiss}
                 >
-                  {tx(locale, '跳过', 'Skip')}
+                  {tx(locale, '跳过本题', 'Skip this question')}
                 </button>
                 <button
                   type="button"
-                  className="gc-qc-btn-primary"
-                  disabled={sending || (!selectedKey && !customText.trim())}
-                  onClick={() => handleSubmit(selectedKey, customText.trim())}
+                  className="_button_cfgyt_4 _md_cfgyt_24 _primary_cfgyt_38 dsw-button dsw-button--primary"
+                  disabled={sending || (!selectedKeys.length && !customText.trim())}
+                  onClick={handleSubmit}
                 >
                   {sending ? tx(locale, '提交中…', 'Submitting…') : tx(locale, '提交', 'Submit')}
                 </button>
               </div>
             </footer>
-          </div>
+          </>
         )}
-      </section>
+      </div>
     </div>
   )
 }

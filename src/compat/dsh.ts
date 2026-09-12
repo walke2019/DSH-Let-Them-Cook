@@ -13,6 +13,7 @@ export interface DshCompatReport {
     agents: boolean
     sessionProjections: boolean
     sessionProjectionStateOf: boolean
+    userQuestions?: boolean
     nativeApproval: boolean
     nativeApprovalRequest: boolean
     nativeApprovalPolicy: boolean
@@ -67,6 +68,7 @@ export function detectDshCompat(ctx: any): DshCompatReport {
   const warnings: string[] = []
   const optimizations: string[] = []
   const projections = typeof ctx?.get === 'function' ? ctx.get('sessionProjections', false) : undefined
+  const userQuestions = typeof ctx?.get === 'function' ? ctx.get('userQuestions', false) : undefined
   const bridge = detectDshApprovalWorkflowBridge(ctx)
   const features = {
     llmCatalog: !!ctx?.llm && typeof ctx.llm.listProviders === 'function' && typeof ctx.llm.listModels === 'function',
@@ -76,6 +78,7 @@ export function detectDshCompat(ctx: any): DshCompatReport {
     agents: !!ctx?.agents && typeof ctx.agents.create === 'function',
     sessionProjections: !!projections,
     sessionProjectionStateOf: !!projections && typeof projections.stateOf === 'function',
+    userQuestions: !!userQuestions,
     ...bridge.features,
   }
   if (!features.llmCatalog) warnings.push('DSH llm.listProviders/listModels 不可用，模型目录将降级为空列表。')
