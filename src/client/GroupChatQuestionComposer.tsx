@@ -570,7 +570,7 @@ export function GroupChatQuestionComposer({
                       value={customText}
                       disabled={sending}
                       rows={1}
-                      placeholder={tx(locale, '输入你的答案', 'Type your answer')}
+                      placeholder={hasOptions ? tx(locale, '其他… 输入你的自定义答案', 'Other… Type your custom answer') : tx(locale, '输入你的答案', 'Type your answer')}
                       onChange={e => {
                         setCustomText(e.target.value)
                         if (e.target.value && !multiSelect) {

@@ -521,11 +521,22 @@ export class DispatchArbiter {
 
     const options: UserDecisionOption[] = []
     let recommendedKey: string | undefined
-    const lines = text.split('\n').map(l => l.trim()).filter(Boolean)
+    const rawLines = text.split('\n')
+    let currentOpt: { key: string; label: string; isRecommended: boolean; description?: string; subPoints: string[] } | null = null
 
-    for (const line of lines) {
-      const match = line.match(/^[-*•]?\s*(?:(?:【?(?:选项|方案|option)\s*([A-Za-z0-9一二三四1-4])】?)|(?:([0-9]+|[A-Za-z])[.)、]))[:：]?\s*(.*?)$/i)
+    for (let i = 0; i < rawLines.length; i++) {
+      const line = rawLines[i].trim()
+      if (!line) continue
+      const stripped = line.replace(/\*\*/g, '')
+      const match = stripped.match(/^[-*•]?\s*(?:(?:【?(?:选项|方案|option)\s*([A-Za-z0-9一二三四1-4])】?)|(?:([0-9]+|[A-Za-z])[.)、]))[:：]?\s*(.*?)$/i)
       if (match) {
+        if (currentOpt) {
+          if (currentOpt.subPoints.length > 0 && !currentOpt.description) {
+            currentOpt.description = currentOpt.subPoints.join('；')
+          }
+          const { subPoints, ...rest } = currentOpt
+          options.push(rest)
+        }
         let key = (match[1] || match[2] || '').toUpperCase()
         let textPart = (match[3] || '').trim()
         const innerSub = textPart.match(/^(?:(?:【?(?:选项|方案|option)\s*([A-Za-z0-9一二三四1-4])】?)|(?:([0-9]+|[A-Za-z])[.)、]))[:：]?\s*(.*?)$/i)
@@ -535,7 +546,7 @@ export class DispatchArbiter {
         }
         const isRec = textPart.includes('推荐') || textPart.includes('Recommended') || line.includes('推荐')
         if (isRec) recommendedKey = key
-        const cleaned = textPart.replace(/[（(]?(?:推荐|Recommended)[）)]?/g, '').trim()
+        const cleaned = textPart.replace(/[（(]?(?:推荐|Recommended|指挥官推荐)[）)]?/g, '').trim()
         let label = cleaned
         let description: string | undefined = undefined
         const descSplit = cleaned.split(/\s+[-—]\s+/)
@@ -546,19 +557,36 @@ export class DispatchArbiter {
         const fullLabel = (label.startsWith(`选项 ${key}`) || label.startsWith(`方案 ${key}`))
           ? label
           : `选项 ${key}：${label}`
-        options.push({
+        currentOpt = {
           key,
           label: fullLabel,
           description,
           isRecommended: isRec,
-        })
+          subPoints: []
+        }
+      } else if (currentOpt && (line.startsWith('-') || line.startsWith('*') || line.startsWith('•'))) {
+        const subClean = line.replace(/^[-*•]\s*/, '').replace(/\*\*/g, '').trim()
+        currentOpt.subPoints.push(subClean)
       }
     }
+    if (currentOpt) {
+      if (currentOpt.subPoints.length > 0 && !currentOpt.description) {
+        currentOpt.description = currentOpt.subPoints.join('；')
+      }
+      const { subPoints, ...rest } = currentOpt
+      options.push(rest)
+    }
+
+    const headerMatch = text.match(/【(?:需要您拍板|方案抉择|请您抉择|决策事项|Decision Needed)[^】]*】/i)
+      || text.match(/【(方案[^】]+|抉择[^】]+)】/i)
+    const header = headerMatch ? headerMatch[0].replace(/[【】]/g, '').trim() : '方案抉择'
 
     const questionMatch = text.match(/【(?:需要您拍板|方案抉择|请您抉择|决策事项|Decision Needed)[^】]*】[：:]?\s*([^\n]+)/i)
-    const question = questionMatch ? questionMatch[1].replace(/^[：:]\s*/, '').trim() : (options.length > 0 ? '主 Agent 提出了如下方案，请您拍板选择：' : text.slice(0, 140))
-    const headerMatch = text.match(/【([^】]+)】/)
-    const header = headerMatch ? headerMatch[1].trim() : '方案抉择'
+      || text.match(/关于[*]{0,2}([^*：:\n]+)[*]{0,2}的(?:两|三|四|\d+)个方向/i)
+      || text.match(/(?:拍板确认|拍板选择|请拍板)[：:]?\s*([^。！!\n]+)/i)
+    const question = questionMatch
+      ? (questionMatch[1].startsWith('关于') ? questionMatch[1] : `请拍板：${questionMatch[1]}`).replace(/^[：:]\s*/, '').replace(/[*_]/g, '').trim()
+      : (options.length > 0 ? '主 Agent 提出了如下方案，请您拍板选择：' : text.slice(0, 140))
 
     return {
       isAwaiting: true,
