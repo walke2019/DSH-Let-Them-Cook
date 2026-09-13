@@ -485,15 +485,14 @@ export function GroupChatSideDock() {
         <div
           className="dsh-gc-hud-warroom-card"
           onClick={() => {
-            // Smoothly activate the central Agent group chat tab and trigger its War Room switcher
+            // Smoothly activate the central Agent group chat tab
             const tabs = Array.from(document.querySelectorAll('*'))
             const agentTab = tabs.find(el => el.textContent?.trim() === 'Agent 群聊' && el.tagName === 'BUTTON') as HTMLElement | undefined
             if (agentTab) {
               agentTab.click()
             }
-            window.dispatchEvent(new CustomEvent('dsh-group-chat:open-war-room-picker'))
           }}
-          title={tx(locale, '点击联动中央作战室驾驶舱 / 找回任务', 'Click to focus Central War Room Cockpit / recover tasks')}
+          title={tx(locale, '点击联动中央 Agent 群聊', 'Click to focus Central Agent Chat')}
           style={{
             margin: '6px 8px 4px',
             padding: '8px 10px',
@@ -514,7 +513,7 @@ export function GroupChatSideDock() {
               <div style={{fontSize:'10px', color:'var(--dsw-alias-label-tertiary,#94a3b8)', lineHeight:'1.2'}}>
                 {tx(locale, '当前作战室', 'Current War Room')}
               </div>
-              <div style={{fontSize:'12px', fontWeight:600, color:'var(--dsw-alias-label-primary,#f8fafc)', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis'}}>
+              <div style={{fontSize: '12px', fontWeight: 600, color: 'var(--dsw-alias-label-primary,#f8fafc)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis'}}>
                 {displayRoomTitle}
               </div>
             </div>

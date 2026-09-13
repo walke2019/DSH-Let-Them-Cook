@@ -1,5 +1,5 @@
 {
-  "timestamp": "2026-09-13T10:53:55.162Z",
+  "timestamp": "2026-09-13T11:01:18.951Z",
   "checks": [
     {
       "name": "Page loads with HTTP 200",
@@ -107,7 +107,7 @@
         "hasSidebarHost": false,
         "hasConversationTab": false,
         "officialCenterStillPresent": true,
-        "centerText": "浏览器扩展修复与测试标准模式对话轨迹Agent 群聊加载更早编辑package.json+7 -6BashRun test:matrix with test-long-dialog-e2e inclu"
+        "centerText": "浏览器扩展修复与测试标准模式对话轨迹Agent 群聊加载更早读取src/client/GroupChatSideDock.tsx编辑src/client/GroupChatSideDock.tsx+6"
       }
     },
     {

@@ -14,11 +14,10 @@ assert.ok(barContent.includes('data-dsh-gc-warroom-bar'), 'War Room Bar must hav
 assert.ok(barContent.includes('切换作战室 / 找回任务') || barContent.includes('Switch Room / Recover Tasks'), 'War Room Bar must have prominent action button')
 console.log('PASS: GroupChatWarRoomBar component is properly implemented and exported.')
 
-console.log('--- TEST 2: Central GroupChatPanel Mounts War Room Bar ---')
+console.log('--- TEST 2: Central GroupChatPanel Mounts Clean Layout ---')
 const panelContent = read('src/client/GroupChatPanel.tsx')
-assert.ok(panelContent.includes('GroupChatWarRoomBar'), 'GroupChatPanel must import and mount GroupChatWarRoomBar')
-assert.ok(panelContent.includes('<GroupChatWarRoomBar'), 'GroupChatPanel must render <GroupChatWarRoomBar />')
-console.log('PASS: Central panel displays the War Room Bar at the top.')
+assert.ok(!panelContent.includes('<GroupChatWarRoomBar'), 'GroupChatPanel must keep center area clean without duplicate War Room Bar')
+console.log('PASS: Central panel keeps center layout clean with HUD cockpit linkage.')
 
 console.log('--- TEST 3: Composer Deconfliction in GroupChatConversationTab ---')
 const tabContent = read('src/client/GroupChatConversationTab.tsx')
