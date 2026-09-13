@@ -381,6 +381,7 @@ export function GroupChatPanel({mode='full'}:GroupChatPanelProps) {
   }
   return <div ref={root} data-dsh-group-chat-panel className="gc-conversation">
     <style>{`
+      body[data-dsh-group-chat-tab-active="true"] [data-composer-seat],body[data-dsh-group-chat-hero-open="true"] [data-composer-seat]{display:none !important;}
       .gc-conversation{position:relative;display:flex;flex-direction:column;flex:1;min-height:0;height:var(--gc-available-height,100%);max-height:var(--gc-available-height,100%);width:100%;overflow:hidden;color:var(--dsw-alias-label-primary,#eee);font-family:inherit;background:transparent;box-sizing:border-box;transition:padding-right .18s ease;}
       body[data-dsh-group-chat-tab-active="true"][data-dsh-group-chat-hud-docked-open="true"] .gc-conversation,body[data-dsh-group-chat-hero-open="true"][data-dsh-group-chat-hud-docked-open="true"] .gc-conversation{padding-right:min(var(--dsh-group-chat-hud-overlay-width,360px),max(0px,calc(100% - 320px)));}
       body[data-dsh-group-chat-tab-active="true"][data-dsh-group-chat-hud-docked-open="true"] .gc-chat-messages,body[data-dsh-group-chat-hero-open="true"][data-dsh-group-chat-hud-docked-open="true"] .gc-chat-messages{padding-left:24px;padding-right:24px;}
