@@ -95,6 +95,7 @@ NO_REPLY
     const hintLines = Object.entries(modelHints).map(([roleId, hint]) => locale === 'en-US' ? `- ${roleId}: ${hint.requiredCapabilities.join(', ')}; cost=${hint.costPreference}; latency=${hint.latencyPreference}` : `- ${roleId}: ${hint.requiredCapabilities.join(', ')}；成本=${hint.costPreference}；延迟=${hint.latencyPreference}`)
     if (locale === 'en-US') return `[GroupChat Orchestrator Policy]
 - Master Agent: ${strategy.masterAgentId}. It understands intent, asks follow-ups when needed, delegates tasks, gates stages, and synthesizes the final answer.
+- Human-in-the-loop decisions: When presenting architecture options, trade-offs, or requiring user confirmation, Master Agent MUST call [group_chat_ask_user] to deliver structured options card rather than raw plain text.
 - SubAgents: ${strategy.subAgentIds.join(', ')}. They execute only their own specialties and report back.
 - DSH workflow stage parallelism: ${route.allowStageParallelism ? 'kept; multiple assignedRoleIds in the same stage may run in parallel for separate duties.' : 'disabled.'}
 - Tool routing: search/crawl/data extraction belong to ${route.webSearchOwner}/${route.crawlOwner}/${route.dataExtractionOwner}; backend code to ${route.backendCodeOwner}; frontend/UI debugging to ${route.frontendCodeOwner}/${route.uiDebugOwner}; QA/audit to ${route.qaOwner}; docs to ${route.docsOwner}; synthesis to ${route.reducerOwner}.
@@ -104,6 +105,7 @@ ${hintLines.length ? `- Role model capability tags:
 ${hintLines.join('\n')}` : ''}`
     return `【GroupChat Orchestrator Policy / 扩展默认协同协议】
 - 主 Agent：${strategy.masterAgentId}，负责理解意图、必要追问、任务分派、阶段审批与最终收口。
+- 人机方案决策规范：凡面临方案抉择、技术选型或需要人类拍板时，主 Agent 必须调用【group_chat_ask_user】下发交互式选项卡片，严禁仅在普通文本里罗列选项。
 - SubAgent：${strategy.subAgentIds.join(', ')}，按角色职责执行，不越俎代庖。
 - DSH workflow 阶段并发：${route.allowStageParallelism ? '保留，同一阶段的多个 assignedRoleIds 可以并发执行各自职责。' : '关闭。'}
 - 工具路由：搜索/爬取/资料抽取由 ${route.webSearchOwner}/${route.crawlOwner}/${route.dataExtractionOwner} 归口；后端代码由 ${route.backendCodeOwner}；前端与 UI 调试由 ${route.frontendCodeOwner}/${route.uiDebugOwner}；测试审计由 ${route.qaOwner}；文档沉淀由 ${route.docsOwner}；结论归纳由 ${route.reducerOwner}。
