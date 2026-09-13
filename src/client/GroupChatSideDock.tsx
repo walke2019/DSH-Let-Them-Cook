@@ -1,6 +1,7 @@
 import {subscribeGroupChat} from './group-chat-events.js'
 import React, { useState, useEffect, useRef } from 'react'
 import {GroupChatRoleEditor} from './GroupChatRoleEditor.js'
+import {GroupChatCockpitModal} from './GroupChatCockpitModal.js'
 import {GroupChatHudTopControls} from './GroupChatHudTopControls.js'
 import {GroupChatHudWorkflowPanel} from './GroupChatHudWorkflowPanel.js'
 import {GroupChatHudRosterPanel} from './GroupChatHudRosterPanel.js'
@@ -22,6 +23,7 @@ const SIDEBAR_MAX_WIDTH = 520
  */
 export function GroupChatSideDock() {
   const [isOpen, setIsOpen] = useState(false)
+  const [cockpitModalOpen, setCockpitModalOpen] = useState(false)
   const [editingAgent,setEditingAgent] = useState<AgentProfile|null>(null)
   const [managementError,setManagementError] = useState('')
   const [room, setRoom] = useState<RoomData | null>(null)
@@ -60,8 +62,13 @@ export function GroupChatSideDock() {
   useEffect(() => {
     if (typeof document === 'undefined') return
     const refresh = () => {
-      setExtensionTabActive(document.body.getAttribute('data-dsh-group-chat-tab-active') === 'true')
-      setHeroMainActive(document.body.getAttribute('data-dsh-group-chat-hero-open') === 'true')
+      const tabActive = document.body.getAttribute('data-dsh-group-chat-tab-active') === 'true'
+      const heroActive = document.body.getAttribute('data-dsh-group-chat-hero-open') === 'true'
+      setExtensionTabActive(tabActive)
+      setHeroMainActive(heroActive)
+      if (tabActive || heroActive) {
+        setIsOpen(true)
+      }
     }
     refresh()
     const observer = new MutationObserver(refresh)
@@ -342,6 +349,13 @@ export function GroupChatSideDock() {
       {hudSurfaceActive && <>
       <style>{`.gc-roster-avatar{width:22px;height:22px;border-radius:7px;display:inline-grid;place-items:center;flex-shrink:0;font-size:14px;color:var(--dsw-alias-state-business-primary,#4d6bfe);background:var(--dsw-alias-bg-layer-3,rgba(255,255,255,0.06));}`}</style>
       {editingAgent&&<GroupChatRoleEditor editingAgent={editingAgent} roomId={room?.roomId || roomId || DEFAULT_GROUP_CHAT_ROOM_ID} onClose={()=>setEditingAgent(null)} onSaved={()=>void fetchRoomData()}/>}
+      <GroupChatCockpitModal
+        isOpen={cockpitModalOpen}
+        onClose={() => setCockpitModalOpen(false)}
+        roomId={roomId}
+        locale={locale}
+        room={room}
+      />
       {/**
  * Companion HUD: status, configuration, scratchpad, team, workflow, and ledger without duplicating the central chat input.
  */}
@@ -485,14 +499,10 @@ export function GroupChatSideDock() {
         <div
           className="dsh-gc-hud-warroom-card"
           onClick={() => {
-            // Smoothly activate the central Agent group chat tab
-            const tabs = Array.from(document.querySelectorAll('*'))
-            const agentTab = tabs.find(el => el.textContent?.trim() === 'Agent 群聊' && el.tagName === 'BUTTON') as HTMLElement | undefined
-            if (agentTab) {
-              agentTab.click()
-            }
+            // Open the linked cockpit modal
+            setCockpitModalOpen(true)
           }}
-          title={tx(locale, '点击联动中央 Agent 群聊', 'Click to focus Central Agent Chat')}
+          title={tx(locale, '点击呼出联动驾驶舱 / 找回任务', 'Click to open Linked Cockpit / recover tasks')}
           style={{
             margin: '6px 8px 4px',
             padding: '8px 10px',
@@ -526,6 +536,10 @@ export function GroupChatSideDock() {
             )}
             <button
               type="button"
+              onClick={(e) => {
+                e.stopPropagation()
+                setCockpitModalOpen(true)
+              }}
               style={{
                 background:'rgba(77,107,254,0.25)',
                 border:'1px solid rgba(77,107,254,0.45)',

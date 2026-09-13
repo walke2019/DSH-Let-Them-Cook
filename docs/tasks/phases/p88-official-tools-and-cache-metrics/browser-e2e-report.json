@@ -1,5 +1,5 @@
 {
-  "timestamp": "2026-09-13T11:01:18.951Z",
+  "timestamp": "2026-09-13T11:08:23.349Z",
   "checks": [
     {
       "name": "Page loads with HTTP 200",
@@ -107,7 +107,7 @@
         "hasSidebarHost": false,
         "hasConversationTab": false,
         "officialCenterStillPresent": true,
-        "centerText": "浏览器扩展修复与测试标准模式对话轨迹Agent 群聊加载更早读取src/client/GroupChatSideDock.tsx编辑src/client/GroupChatSideDock.tsx+6"
+        "centerText": "浏览器扩展修复与测试标准模式对话轨迹Agent 群聊加载更早GrepisOpen读取src/client/GroupChatSideDock.tsx失败读取Error: offset 80 is ou"
       }
     },
     {
