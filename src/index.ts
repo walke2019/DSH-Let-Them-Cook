@@ -1091,6 +1091,35 @@ export function apply(ctx: AppContext, config: Config): void {
           return
         }
 
+        if (method === 'POST' && (pathname === '/room/archive' || pathname === '/room/delete')) {
+          const body = await readJsonBody(req)
+          const roomId = String(body.roomId || '').trim()
+          if (!roomId || roomId === 'dev-team-alpha') {
+            res.writeHead(400, { 'Content-Type': 'application/json' })
+            res.end(JSON.stringify({ success: false, error: 'Cannot archive default room' }))
+            return
+          }
+          const success = roomManager.archiveRoom(roomId)
+          workspaceStore.clearRoom(roomId)
+          res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' })
+          res.end(JSON.stringify({ success, archivedRoomId: roomId }))
+          return
+        }
+
+        if (method === 'POST' && (pathname === '/rooms/prune' || pathname === '/room/prune')) {
+          const body = await readJsonBody(req)
+          const keepRoomId = body.keepRoomId || body.roomId || 'dev-team-alpha'
+          const remaining = roomManager.pruneOtherRooms(keepRoomId)
+          workspaceStore.clearAll()
+          const current = roomManager.getRoom(keepRoomId)
+          if (current) {
+            workspaceStore.saveSnapshot(current, roomManager.getMessages(keepRoomId), roomManager.getLedger(keepRoomId))
+          }
+          res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' })
+          res.end(JSON.stringify({ success: true, remainingRooms: remaining }))
+          return
+        }
+
         if (method === 'POST' && (pathname === '/room/clear' || pathname === '/rooms/clear')) {
           const body = await readJsonBody(req)
           const roomId = body.roomId || 'dev-team-alpha'

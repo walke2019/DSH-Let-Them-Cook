@@ -383,6 +383,28 @@ export class RoomManager {
     return this.roomLedgers.get(roomId)
   }
 
+  public archiveRoom(roomId: string): boolean {
+    if (roomId === 'dev-team-alpha') return false
+    this.rooms.delete(roomId)
+    this.roomMessageLists.delete(roomId)
+    this.roomLedgers.delete(roomId)
+    this.broadcast({ type: 'room:cleared', roomId, payload: { roomId, archived: true }, timestamp: Date.now() })
+    return true
+  }
+
+  public pruneOtherRooms(keepRoomId: string): string[] {
+    const kept = [keepRoomId]
+    for (const id of Array.from(this.rooms.keys())) {
+      if (id !== keepRoomId) {
+        this.rooms.delete(id)
+        this.roomMessageLists.delete(id)
+        this.roomLedgers.delete(id)
+        this.broadcast({ type: 'room:cleared', roomId: id, payload: { roomId: id, archived: true }, timestamp: Date.now() })
+      }
+    }
+    return kept
+  }
+
   public clearRoom(roomId: string): GroupChatRoom | undefined {
     this.roomMessageLists.set(roomId, [])
     this.initLedger(roomId)
@@ -393,6 +415,8 @@ export class RoomManager {
       room.coordinationEvents = []
       room.mailboxes = {}
       room.scratchpad = ''
+      room.pinnedGoal = ''
+      room.captainTaskProtocol = undefined
       room.interactionRound = 0
       room.awaitingUserDecision = undefined
       if (room.workflow) {

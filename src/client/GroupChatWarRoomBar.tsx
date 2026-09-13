@@ -31,7 +31,35 @@ export function GroupChatWarRoomBar({
   const [pickerOpen, setPickerOpen] = useState(false)
   const [availableRooms, setAvailableRooms] = useState<WarRoomItem[]>([])
   const [loadingRooms, setLoadingRooms] = useState(false)
+  const [archivedRoomIds, setArchivedRoomIds] = useState<string[]>(() => {
+    try {
+      return JSON.parse(localStorage.getItem('dsh-group-chat:archived-room-ids') || '[]')
+    } catch {
+      return []
+    }
+  })
   const popoverRef = useRef<HTMLDivElement>(null)
+
+  const handleArchiveRoom = (targetRoomId: string) => {
+    setArchivedRoomIds(prev => {
+      const next = Array.from(new Set([...prev, targetRoomId]))
+      try { localStorage.setItem('dsh-group-chat:archived-room-ids', JSON.stringify(next)) } catch {}
+      return next
+    })
+  }
+
+  const handlePruneOtherRooms = () => {
+    const others = availableRooms
+      .map(r => r.roomId)
+      .filter(id => id !== roomId && id !== 'dev-team-alpha')
+    setArchivedRoomIds(prev => {
+      const next = Array.from(new Set([...prev, ...others]))
+      try { localStorage.setItem('dsh-group-chat:archived-room-ids', JSON.stringify(next)) } catch {}
+      return next
+    })
+  }
+
+  const visibleRooms = availableRooms.filter(r => !archivedRoomIds.includes(r.roomId) || r.roomId === roomId)
 
   const isAutoMode = typeof localStorage !== 'undefined' && !localStorage.getItem('dsh-group-chat.selected-room-id')
 
@@ -317,8 +345,34 @@ export function GroupChatWarRoomBar({
           </div>
 
           {/* Room List Title */}
-          <div style={{ fontSize: '11px', fontWeight: 600, color: 'var(--dsw-alias-label-tertiary, #94a3b8)', padding: '4px 2px 6px' }}>
-            {tx(locale, '所有作战室清单', 'All War Rooms')} {availableRooms.length > 0 && `(${availableRooms.length})`}
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '4px 2px 6px' }}>
+            <span style={{ fontSize: '11px', fontWeight: 600, color: 'var(--dsw-alias-label-tertiary, #94a3b8)' }}>
+              {tx(locale, '所有作战室清单', 'All War Rooms')} {visibleRooms.length > 0 && `(${visibleRooms.length})`}
+            </span>
+            {visibleRooms.length > 1 && (
+              <button
+                type="button"
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  color: 'var(--dsw-alias-label-caption, #64748b)',
+                  fontSize: '10px',
+                  cursor: 'pointer',
+                  padding: '2px 4px',
+                  borderRadius: '4px',
+                }}
+                onMouseEnter={e => (e.currentTarget.style.color = '#ef4444')}
+                onMouseLeave={e => (e.currentTarget.style.color = 'var(--dsw-alias-label-caption, #64748b)')}
+                onClick={(e) => {
+                  e.stopPropagation()
+                  if (confirm(tx(locale, '确定清空所有其他历史作战室，仅保留当前作战室吗？', 'Clear all other historical war rooms?'))) {
+                    handlePruneOtherRooms()
+                  }
+                }}
+              >
+                {tx(locale, '清理闲置作战室', 'Prune idle rooms')}
+              </button>
+            )}
           </div>
 
           {/* Room Cards Scroll Area */}
@@ -327,12 +381,12 @@ export function GroupChatWarRoomBar({
               <div style={{ textAlign: 'center', padding: '16px', color: 'var(--dsw-alias-label-tertiary, #94a3b8)', fontSize: '11px' }}>
                 {tx(locale, '正在刷新作战室状态…', 'Loading war rooms…')}
               </div>
-            ) : availableRooms.length === 0 ? (
+            ) : visibleRooms.length === 0 ? (
               <div style={{ textAlign: 'center', padding: '16px', color: 'var(--dsw-alias-label-tertiary, #94a3b8)', fontSize: '11px' }}>
                 {tx(locale, '暂无其他作战室', 'No other war rooms found')}
               </div>
             ) : (
-              availableRooms.map((r) => {
+              visibleRooms.map((r) => {
                 const isSelected = roomId === r.roomId
                 const taskCount = r.assignments?.length || 0
                 const isAlpha = r.roomId === 'dev-team-alpha'
@@ -386,8 +440,32 @@ export function GroupChatWarRoomBar({
                             0 {tx(locale, '任务', 'tasks')}
                           </span>
                         )}
-                        {isSelected && (
+                        {isSelected ? (
                           <span style={{ fontSize: '10px', color: '#818cf8', fontWeight: 600 }}>✓</span>
+                        ) : !isAlpha && (
+                          <button
+                            type="button"
+                            title={tx(locale, '归档/移除该作战室', 'Archive / Delete this war room')}
+                            style={{
+                              background: 'none',
+                              border: 'none',
+                              color: 'var(--dsw-alias-label-caption, #64748b)',
+                              fontSize: '12px',
+                              cursor: 'pointer',
+                              padding: '0 4px',
+                              lineHeight: 1,
+                            }}
+                            onMouseEnter={e => (e.currentTarget.style.color = '#ef4444')}
+                            onMouseLeave={e => (e.currentTarget.style.color = 'var(--dsw-alias-label-caption, #64748b)')}
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              if (confirm(tx(locale, `确定归档并移除作战室【${title}】吗？`, `Archive and delete war room ${title}?`))) {
+                                handleArchiveRoom(r.roomId)
+                              }
+                            }}
+                          >
+                            🗑️
+                          </button>
                         )}
                       </div>
                     </div>
