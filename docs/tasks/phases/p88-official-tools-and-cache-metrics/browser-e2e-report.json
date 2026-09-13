@@ -1,5 +1,5 @@
 {
-  "timestamp": "2026-09-13T11:08:23.349Z",
+  "timestamp": "2026-09-13T11:31:11.127Z",
   "checks": [
     {
       "name": "Page loads with HTTP 200",
@@ -88,7 +88,7 @@
         "hasLlmTime": true,
         "hasTokens": true,
         "noNan": true,
-        "textSnippet": "总体运行统计官方摘要风格0 轮 · 0 步 LLM 0s · 工具调用 0s 首 token 平均 — · 0 tok/s 缓存命中 0% 输入 0 tok · 输出 0 tok按 Agent / 模型展开0 位成员记录暂无 Agent 调用记录；首次角色发言后会显示分项。📁 协同流转留痕 (任务分派 & 邮箱通讯审计)完整流水 · 分派 0 · 邮箱 0注：此部分为后台事件调度留痕，各 Agent 模型数据消耗请以上方“角色与模型消耗流水”为准。全部进行中 0未读 0任务分派 / Assignment（0/0）没有匹配的任务分派记录。主 Agent 邮箱 / Mailbox（0/0"
+        "textSnippet": "总体运行统计官方摘要风格15 轮 · 15 步 LLM 3m32s · 工具调用 0s 首 token 平均 3.9s · 41 tok/s 缓存命中 0% 输入 326.7K tok · 输出 8.69K tok按 Agent / 模型展开3 位成员记录离谱总导演311.2K tok12 轮 · 12 步 LLM 3m7s · 工具调用 0s 首 token 平均 3.9s · 42 tok/s 缓存命中 0% 输入 303.4K tok · 输出 7.81K tokcpa / gemini-3.8-flash-high12 轮 · 12 步 LLM 3m7s · 工具调用"
       }
     },
     {
@@ -107,7 +107,7 @@
         "hasSidebarHost": false,
         "hasConversationTab": false,
         "officialCenterStillPresent": true,
-        "centerText": "浏览器扩展修复与测试标准模式对话轨迹Agent 群聊加载更早GrepisOpen读取src/client/GroupChatSideDock.tsx失败读取Error: offset 80 is ou"
+        "centerText": "浏览器扩展修复与测试标准模式对话轨迹Agent 群聊加载更早读取src/client/GroupChatPanel.tsxBashInspect bottom element innerHTML an"
       }
     },
     {

@@ -514,8 +514,13 @@ export class DispatchArbiter {
 
     const isQuestioning = text.includes('？') || text.includes('?') || text.includes('请选择') || text.includes('请确认') || text.includes('请您抉择') || text.includes('需要您拍板')
 
-    // Only treat as real decision if it actually presents structured options or asks an explicit question with options
-    const isAwaiting = hasOptionsMention && (hasDecisionKeywords || isQuestioning || hasUserAddress)
+    // If commander is acknowledging/confirming a previously locked decision, reporting execution steps, or stating an option is locked/running, it is NOT awaiting a new decision!
+    const isExecutionAcknowledgement = (text.includes('收到') && (text.includes('拍板指示') || text.includes('拍板指令') || text.includes('决策指示') || text.includes('正式锁定'))) ||
+      text.includes('正式锁定') || text.includes('战术调整完毕') || text.includes('分工与指令下达') ||
+      text.includes('引擎已全速点火') || text.includes('已按您的拍板') || text.includes('选项已锁定')
+
+    // Must explicitly have questioning/decision words directed at the user, AND at least 2 real options presented
+    const isAwaiting = !isExecutionAcknowledgement && hasDecisionKeywords && (isQuestioning || hasUserAddress)
 
     if (!isAwaiting) return { isAwaiting: false }
 
@@ -587,6 +592,10 @@ export class DispatchArbiter {
     const question = questionMatch
       ? (questionMatch[1].startsWith('关于') ? questionMatch[1] : `请拍板：${questionMatch[1]}`).replace(/^[：:]\s*/, '').replace(/[*_]/g, '').trim()
       : (options.length > 0 ? '主 Agent 提出了如下方案，请您拍板选择：' : text.slice(0, 140))
+
+    if (options.length < 2 && !isQuestioning) {
+      return { isAwaiting: false }
+    }
 
     return {
       isAwaiting: true,
