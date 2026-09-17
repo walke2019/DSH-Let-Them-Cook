@@ -180,3 +180,5 @@ DSH-Let-Them-Cook/
 - `docs/tasks/phases/p94-approval-workflow-bridge/README.md` — Approval / Workflow bridge 能力诊断
 - `docs/tasks/phases/p95-dialog-continuity-and-anti-stall/README.md` — 对话防中断自愈引擎与全主题别名解析
 - `docs/tasks/phases/p96-user-decision-options-and-clear-history/README.md` — 方案选项抉择人机交互与全量记录清空
+- `docs/tasks/phases/p97-war-room-nav-and-composer-deconfliction/README.md` — 作战室驾驶舱导航强化与中央区双输入框去重
+- `docs/tasks/phases/p98-official-question-composer-takeover/README.md` — 官方同款提问接管输入框与交互式拍板卡片；防死循环角色锚定；工作流五阶段收官
