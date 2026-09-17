@@ -240,6 +240,7 @@ export class WorkflowOrchestrator {
         stage: nextStage,
       }
     } else {
+      room.workflow.isCompleted = true
       return {
         success: true,
         message: locale === 'en-US' ? `Done. Workflow [${room.workflow.title}] has completed all stages and final acceptance.` : `恭喜！全盘工作流 [${room.workflow.title}] 所有阶段已全部圆满结题验收！`,

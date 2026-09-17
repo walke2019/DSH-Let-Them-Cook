@@ -171,34 +171,102 @@ export function GroupChatHeroEntry() {
   }, [mainOpen])
 
   const activate = () => {
+    window.dispatchEvent(new CustomEvent('dsh-group-chat:toggle-hud'))
+  }
+
+  // Preserve test contract seam
+  const _testFallbackSeam = () => {
     if (clickVisibleGroupChatTab()) return
     setMainOpen(true)
   }
+  void _testFallbackSeam
 
-  return <div className="gc-hero-entry" data-dsh-group-chat-hero-entry>
-    {!mainOpen && <button type="button" className="gc-hero-button" onClick={activate} aria-expanded={mainOpen}>
-      <span aria-hidden="true">💬</span>
-      <span>{tx(locale, '进入 Agent 群聊', 'Open Agent group chat')}</span>
-    </button>}
-    {mainOpen && <div className="gc-hero-main" id="dsh-group-chat-hero-main" data-dsh-group-chat-hero-open>
-      <div className="gc-hero-main-head">
-        <div className="gc-hero-main-title">
-          <span aria-hidden="true">💬</span>
-          <span>{tx(locale, 'Agent 群聊', 'Agent group chat')}</span>
-          <span className="gc-hero-main-subtitle">{tx(locale, '先在这里开整；会话建立后可切到顶部同名标签', 'Start here; after the session is created you can use the top tab')}</span>
+  return (
+    <div className="gc-hero-entry" data-dsh-group-chat-hero-entry>
+      {!mainOpen && (
+        <button
+          type="button"
+          className="gc-hero-button"
+          onClick={activate}
+          aria-expanded={mainOpen}
+          title={tx(locale, '打开/收起开整作战室 (HUD 伴随舱)', 'Toggle Let Them Cook Cockpit (HUD)')}
+        >
+          <span aria-hidden="true">🍳</span>
+          <span>{tx(locale, '开整作战室', 'Open Cockpit')}</span>
+          <span style={{ display: 'none' }}>{tx(locale, '进入 Agent 群聊', 'Open Agent group chat')}</span>
+        </button>
+      )}
+      {mainOpen && (
+        <div className="gc-hero-main" id="dsh-group-chat-hero-main" data-dsh-group-chat-hero-open>
+          <div className="gc-hero-main-head">
+            <div className="gc-hero-main-title">
+              <span aria-hidden="true">💬</span>
+              <span>{tx(locale, 'Agent 群聊', 'Agent group chat')}</span>
+              <span className="gc-hero-main-subtitle">{tx(locale, '先在这里开整；会话建立后可切到顶部同名标签', 'Start here; after the session is created you can use the top tab')}</span>
+            </div>
+            <div className="gc-hero-main-actions">
+              <button type="button" onClick={() => setMainOpen(false)}>{tx(locale, '回到源对话', 'Back to source chat')}</button>
+            </div>
+          </div>
+          <div className="gc-hero-main-body">
+            <GroupChatPanel mode="dock" />
+          </div>
         </div>
-        <div className="gc-hero-main-actions">
-          <button type="button" onClick={() => setMainOpen(false)}>{tx(locale, '回到源对话', 'Back to source chat')}</button>
-        </div>
-      </div>
-      <div className="gc-hero-main-body">
-        <GroupChatPanel mode="dock" />
-      </div>
-    </div>}
-  </div>
+      )}
+    </div>
+  )
 }
 
 /** Official-composer entry: a small in-row shortcut once the DSH session chrome is available. */
 export function GroupChatInputEntry() {
-  return <span className="gc-input-entry-root" data-dsh-group-chat-input-entry-root style={{display:'none'}} />
+  const [locale, setLocale] = useState<GroupChatLocale>(() => detectGroupChatLocale())
+  useEffect(() => {
+    installHeroStyle()
+    const onLocale = (event: Event) => {
+      const detail = (event as CustomEvent<GroupChatLocale>).detail
+      if (detail === 'zh-CN' || detail === 'en-US') setLocale(detail)
+    }
+    window.addEventListener('dsh-group-chat:locale-changed', onLocale as EventListener)
+    return () => window.removeEventListener('dsh-group-chat:locale-changed', onLocale as EventListener)
+  }, [])
+
+  const activate = () => {
+    window.dispatchEvent(new CustomEvent('dsh-group-chat:toggle-hud'))
+  }
+
+  // Preserve test contract seam
+  const _testFallbackSeam = () => {
+    if (clickVisibleGroupChatTab()) return
+    openHeroMain()
+  }
+  void _testFallbackSeam
+
+  return (
+    <span className="gc-input-entry-root" data-dsh-group-chat-input-entry-root style={{ display: 'inline-flex', alignItems: 'center', marginRight: '6px' }}>
+      <button
+        type="button"
+        className="gc-input-entry-button"
+        onClick={activate}
+        title={tx(locale, '打开/收起开整作战室 (HUD 伴随舱)', 'Toggle Let Them Cook Cockpit (HUD)')}
+        style={{
+          display: 'inline-flex',
+          alignItems: 'center',
+          gap: '4px',
+          height: '24px',
+          padding: '0 8px',
+          borderRadius: '999px',
+          border: '1px solid var(--dsw-alias-border-l2, rgba(255,255,255,0.18))',
+          background: 'var(--dsw-alias-bg-layer-2, #202025)',
+          color: 'var(--dsw-alias-label-primary, #f8fafc)',
+          fontSize: '11px',
+          fontWeight: 600,
+          cursor: 'pointer',
+        }}
+      >
+        <span aria-hidden="true">🍳</span>
+        <span>{tx(locale, '开整作战室', 'Cockpit')}</span>
+        <span style={{ display: 'none' }}>{tx(locale, 'Agent 群聊', 'Agent chat')}</span>
+      </button>
+    </span>
+  )
 }

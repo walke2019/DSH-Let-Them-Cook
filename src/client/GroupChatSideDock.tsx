@@ -2,6 +2,8 @@ import {subscribeGroupChat} from './group-chat-events.js'
 import React, { useState, useEffect, useRef } from 'react'
 import {GroupChatRoleEditor} from './GroupChatRoleEditor.js'
 import {GroupChatCockpitModal} from './GroupChatCockpitModal.js'
+import {GroupChatQuestionComposer} from './GroupChatQuestionComposer.js'
+import {GroupChatComposerTakeover} from './GroupChatComposerTakeover.js'
 import {GroupChatHudTopControls} from './GroupChatHudTopControls.js'
 import {GroupChatHudWorkflowPanel} from './GroupChatHudWorkflowPanel.js'
 import {GroupChatHudRosterPanel} from './GroupChatHudRosterPanel.js'
@@ -39,6 +41,7 @@ export function GroupChatSideDock() {
   const [themeDraft,setThemeDraft] = useState<AgentProfile[]>([])
   const [workflowDraft,setWorkflowDraft] = useState<any>(null)
   const [dockFloating, setDockFloating] = useState(false)
+  const [decisionSending, setDecisionSending] = useState(false)
   const [dockPos, setDockPos] = useState({ x: 0, y: 24 })
   const [hudWidth, setHudWidth] = useState(() => {
     if (typeof localStorage === 'undefined') return SIDEBAR_DEFAULT_WIDTH
@@ -76,6 +79,20 @@ export function GroupChatSideDock() {
     window.addEventListener('focus', refresh)
     return () => { observer.disconnect(); window.removeEventListener('focus', refresh) }
   }, []) // dsh-group-chat: observe active conversation tab and temporary hero surface
+
+  useEffect(() => {
+    const handleToggle = () => {
+      setIsOpen(prev => {
+        const next = !prev
+        if (next && !dockFloating) {
+          setDockPos({ x: Math.max(8, window.innerWidth - SIDEBAR_DEFAULT_WIDTH - 8), y: 24 })
+        }
+        return next
+      })
+    }
+    window.addEventListener('dsh-group-chat:toggle-hud', handleToggle)
+    return () => window.removeEventListener('dsh-group-chat:toggle-hud', handleToggle)
+  }, [dockFloating])
 
   const fetchCompatData = async () => {
     try {
@@ -129,12 +146,28 @@ export function GroupChatSideDock() {
     }
   }, [roomId])
 
-  // Companion HUD: status, configuration, scratchpad, team, workflow, and ledger without duplicating the central chat input.
+  // Seamless native chat integration: hide redundant legacy conversation tab header from DSH top bar
+  useEffect(() => {
+    if (typeof document === 'undefined') return
+    const hideLegacyTab = () => {
+      const tabs = document.querySelectorAll('[role="tab"], button')
+      for (const tab of tabs) {
+        const text = (tab.textContent || '').trim()
+        if (text === 'Agent 群聊' || text === '特遣对话') {
+          ;(tab as HTMLElement).style.display = 'none'
+        }
+      }
+    }
+    hideLegacyTab()
+    const timer = window.setInterval(hideLegacyTab, 500)
+    return () => window.clearInterval(timer)
+  }, [])
+
   useEffect(()=>onGroupChatLocaleChange(setLocale),[])
   useEffect(() => {
     if (typeof document === 'undefined') return
     const body = document.body
-    if ((extensionTabActive || heroMainActive) && isOpen && !dockFloating) {
+    if ((extensionTabActive || heroMainActive || isOpen) && isOpen && !dockFloating) {
       body.setAttribute('data-dsh-group-chat-hud-docked-open', 'true')
       body.style.setProperty('--dsh-group-chat-hud-overlay-width', `${Math.max(0, hudWidth + 8)}px`)
     } else {
@@ -341,13 +374,19 @@ export function GroupChatSideDock() {
     finally { setThemeBusy(false) }
   }
 
-  const hudSurfaceActive = extensionTabActive || heroMainActive
+  const hudSurfaceActive = extensionTabActive || heroMainActive || isOpen
 
   return (
     <div data-dsh-group-chat-overlay-root style={{display:'contents'}}>
       {!extensionTabActive && <GroupChatHeroEntry />}
       {hudSurfaceActive && <>
-      <style>{`.gc-roster-avatar{width:22px;height:22px;border-radius:7px;display:inline-grid;place-items:center;flex-shrink:0;font-size:14px;color:var(--dsw-alias-state-business-primary,#4d6bfe);background:var(--dsw-alias-bg-layer-3,rgba(255,255,255,0.06));}`}</style>
+      <style>{`
+        .gc-roster-avatar{width:22px;height:22px;border-radius:7px;display:inline-grid;place-items:center;flex-shrink:0;font-size:14px;color:var(--dsw-alias-state-business-primary,#4d6bfe);background:var(--dsw-alias-bg-layer-3,rgba(255,255,255,0.06));}
+        body[data-dsh-group-chat-hud-docked-open="true"]:not([data-dsh-group-chat-tab-active="true"]) :is([class*="centerCol"], [data-pane="conversation"], .dshDesktopConversationSurface) {
+          margin-right: var(--dsh-group-chat-hud-overlay-width, 368px) !important;
+          transition: margin-right var(--ds-transition-duration-slow, 0.25s) var(--ds-ease-in-out, cubic-bezier(0.4, 0, 0.2, 1));
+        }
+      `}</style>
       {editingAgent&&<GroupChatRoleEditor editingAgent={editingAgent} roomId={room?.roomId || roomId || DEFAULT_GROUP_CHAT_ROOM_ID} onClose={()=>setEditingAgent(null)} onSaved={()=>void fetchRoomData()}/>}
       <GroupChatCockpitModal
         isOpen={cockpitModalOpen}
@@ -355,6 +394,13 @@ export function GroupChatSideDock() {
         roomId={roomId}
         locale={locale}
         room={room}
+      />
+      <GroupChatComposerTakeover
+        room={room}
+        roomId={roomId}
+        locale={locale}
+        onDecisionSubmitted={fetchRoomData}
+        onDecisionDismissed={fetchRoomData}
       />
       {/**
  * Companion HUD: status, configuration, scratchpad, team, workflow, and ledger without duplicating the central chat input.
@@ -391,7 +437,18 @@ export function GroupChatSideDock() {
         >
           <span style={{ fontSize: '13px' }}>🧭</span>
           <span>{tx(locale,'群聊副屏','Squad HUD')}</span>
-          {room?.workflow && !room.workflow.isCompleted && (
+          {room?.awaitingUserDecision ? (
+            <span style={{
+              background: '#ef4444',
+              color: '#fff',
+              fontSize: '10px',
+              fontWeight: 700,
+              padding: '1px 5px',
+              borderRadius: '999px',
+            }}>
+              {tx(locale, '待拍板', 'Decision')}
+            </span>
+          ) : room?.workflow && !room.workflow.isCompleted && (
             <span style={{
               width: '6px',
               height: '6px',
@@ -556,6 +613,66 @@ export function GroupChatSideDock() {
             </button>
           </div>
         </div>
+
+        {/* Prominent Official-style Decision Notice in HUD */}
+        {room?.awaitingUserDecision && (
+          <div
+            className="dsh-gc-hud-decision-card"
+            style={{
+              margin: '4px 8px 6px',
+              padding: '8px 10px',
+              border: '1px solid var(--dsw-alias-state-business-primary, #3b82f6)',
+              borderRadius: '10px',
+              background: 'linear-gradient(135deg, rgba(59,130,246,0.18), rgba(16,185,129,0.08))',
+              boxShadow: '0 2px 8px rgba(0,0,0,0.2)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              gap: '8px',
+            }}
+          >
+            <div style={{ minWidth: 0, overflow: 'hidden' }}>
+              <div style={{ fontSize: '10px', color: '#60a5fa', fontWeight: 600 }}>
+                🔔 {tx(locale, '方案抉择 / 待拍板', 'Decision Required')}
+              </div>
+              <div style={{ fontSize: '11px', fontWeight: 600, color: '#f8fafc', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                {room.awaitingUserDecision.question}
+              </div>
+              <div style={{ fontSize: '10px', color: '#94a3b8' }}>
+                {tx(locale, '已在中央官方输入区 1:1 接管展开 ▾', 'Active in central official composer ▾')}
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={async () => {
+                try {
+                  const targetRoomId = room?.roomId || roomId || DEFAULT_GROUP_CHAT_ROOM_ID
+                  await fetch('/dsh-group-chat/api/room/decision', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ roomId: targetRoomId, action: 'dismiss' })
+                  })
+                  setRoom(r => r ? { ...r, awaitingUserDecision: undefined } : null)
+                  await fetchRoomData()
+                } catch (e) {
+                  console.error('Dismiss decision error:', e)
+                }
+              }}
+              style={{
+                background: 'transparent',
+                border: '1px solid rgba(255,255,255,0.18)',
+                color: '#cbd5e1',
+                fontSize: '11px',
+                borderRadius: '6px',
+                padding: '2px 8px',
+                cursor: 'pointer',
+                flexShrink: 0,
+              }}
+            >
+              {tx(locale, '跳过', 'Skip')}
+            </button>
+          </div>
+        )}
 
         <GroupChatHudTopControls
           selectedTheme={selectedTheme}

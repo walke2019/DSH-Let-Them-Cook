@@ -36,6 +36,28 @@ export class RoomManager {
   private roomMessageLists = new Map<string, GroupMessageEnvelope[]>()
   private roomLedgers = new Map<string, RoomLedger>()
   private eventListeners = new Set<(event: GroupChatEvent) => void>()
+  private activeRoomId: string = 'dev-team-alpha'
+
+  public setActiveRoomId(roomId: string): void {
+    if (roomId && this.rooms.has(roomId)) {
+      this.activeRoomId = roomId
+    }
+  }
+
+  public getActiveRoomId(): string {
+    if (this.activeRoomId && this.rooms.has(this.activeRoomId)) {
+      return this.activeRoomId
+    }
+    let latestRoomId = 'dev-team-alpha'
+    let latestTime = 0
+    for (const [id, r] of this.rooms.entries()) {
+      if ((r.updatedAt || 0) > latestTime) {
+        latestTime = r.updatedAt || 0
+        latestRoomId = id
+      }
+    }
+    return latestRoomId
+  }
 
   constructor() {
     this.initDefaultRooms()
@@ -272,7 +294,7 @@ export class RoomManager {
       safetyPolicy: {
         maxTurnsPerPrompt: 6,
         silenceToken: 'NO_REPLY',
-        enableBotToBotTrigger: true,
+        enableBotToBotTrigger: false,
         cooldownPeriodMs: 30000,
       },
       interactionRound: 0,
@@ -295,6 +317,19 @@ export class RoomManager {
     room.members = attachRoleModelHints(room.members)
     for (const member of room.members) {
       member.permissions ||= {level: 'read_only', canWriteScratchpad: false, canApproveWorkflow: false, allowedTools: []}
+      if (member.id === 'researcher') {
+        const toolsToAdd = ['read', 'glob', 'grep', 'tool_fs', 'web_search', 'web_fetch', 'stealth_read_page', 'stealth_navigate', 'stealth_extract']
+        member.permissions.allowedTools = Array.from(new Set([...(member.permissions.allowedTools || []), ...toolsToAdd]))
+      } else if (member.id === 'backend') {
+        const toolsToAdd = ['read', 'write', 'edit', 'glob', 'grep', 'bash', 'tool_fs', 'tool_jobs']
+        member.permissions.allowedTools = Array.from(new Set([...(member.permissions.allowedTools || []), ...toolsToAdd]))
+      } else if (member.id === 'qa') {
+        const toolsToAdd = ['read', 'glob', 'grep', 'bash', 'tool_fs', 'tool_jobs']
+        member.permissions.allowedTools = Array.from(new Set([...(member.permissions.allowedTools || []), ...toolsToAdd]))
+      } else if (member.id === 'frontend') {
+        const toolsToAdd = ['read', 'write', 'edit', 'glob', 'grep', 'modlens_read_image', 'tool_fs']
+        member.permissions.allowedTools = Array.from(new Set([...(member.permissions.allowedTools || []), ...toolsToAdd]))
+      }
       member.permissions.allowedTools = normalizeToolNames(member.permissions.allowedTools || [])
     }
     if (room.workflow) WorkflowOrchestrator.ensureTaskDag(room.workflow)
@@ -330,8 +365,12 @@ export class RoomManager {
 
 
   public ensureRoomForSession(roomId: string, masterSessionId = roomId): GroupChatRoom {
+    this.activeRoomId = roomId
     const existing = this.getRoom(roomId)
-    if (existing) return existing
+    if (existing) {
+      existing.updatedAt = Date.now()
+      return existing
+    }
     const fleet = this.createDefaultFleet('meme_comedy')
     const workflow = WorkflowOrchestrator.createStandardDevWorkflow()
     const room: GroupChatRoom = {
@@ -354,7 +393,7 @@ export class RoomManager {
       safetyPolicy: {
         maxTurnsPerPrompt: 6,
         silenceToken: 'NO_REPLY',
-        enableBotToBotTrigger: true,
+        enableBotToBotTrigger: false,
         cooldownPeriodMs: 30000,
       },
       interactionRound: 0,
@@ -367,7 +406,10 @@ export class RoomManager {
 
   public getRoom(roomId: string): GroupChatRoom | undefined {
     const room = this.rooms.get(roomId)
-    if (room) this.ensureOrchestrationPolicy(room)
+    if (room) {
+      if (roomId !== 'dev-team-alpha') this.activeRoomId = roomId
+      this.ensureOrchestrationPolicy(room)
+    }
     return room
   }
 

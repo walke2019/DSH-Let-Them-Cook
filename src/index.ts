@@ -24,7 +24,7 @@ import { inferAgentTaskStatus, parseStructuredAgentResult, stripStructuredAgentR
 import type {GroupChatLocale} from './client/i18n.js'
 import type { DispatchMode, GroupTaskTier, PersonaThemeKey } from './types.js'
 
-export const name = '@dsh-external/dsh-let-them-cook'
+export const name = '@dsh-external/dsh-group-chat'
 export const inject = ['tools', 'webServer', 'agents', 'systemPrompt', 'agentDefaultModel', 'llm']
 
 export interface Config {
@@ -260,6 +260,7 @@ export function apply(ctx: AppContext, config: Config): void {
       const execution = await resilience.executeWithFallback(profile, (modelRef, signal) =>
         runMemberTurn(ctx, modelRef, systemPrompt, signal, {
           roleId: member.id,
+          roleName: member.name,
           allowedTools: member.permissions.allowedTools, locale,
           onProgress: (liveToolCalls, liveness) => {
             toolCalls = liveToolCalls
@@ -441,7 +442,10 @@ export function apply(ctx: AppContext, config: Config): void {
             continue
           }
         }
-        const nextAssignment = createTurnAssignment(roomId, nextId, `接续 ${member.name} 的阶段汇报：${visibleReplyContent.slice(0, 180)}`, envelope.messageId, member.id, envelope.metadata?.stageId, envelope.metadata?.taskTier)
+        const briefPrefix = nextId === masterId
+          ? `审阅来自 [${member.name}] 的阶段汇报`
+          : `[协作任务 - 前序成员 ${member.name} 交付汇报]`
+        const nextAssignment = createTurnAssignment(roomId, nextId, `${briefPrefix}：${visibleReplyContent.slice(0, 180)}`, envelope.messageId, member.id, envelope.metadata?.stageId, envelope.metadata?.taskTier)
         schedule(() => {
           void triggerAgentTurn(roomId, nextId, nextAssignment?.assignmentId).catch(err => {
             logger.warn?.(`[GroupChat] Turn error for ${nextId}:`, err)
@@ -624,6 +628,7 @@ export function apply(ctx: AppContext, config: Config): void {
             res.end(JSON.stringify({ error: 'Room not found' }))
             return
           }
+          roomManager.setActiveRoomId(room.roomId)
           for (const member of room.members) {
             const saved = modelSettings.get(room.roomId, member.id)
             if (saved && (!member.llmConfig.provider || !member.llmConfig.model)) {
@@ -1051,6 +1056,20 @@ export function apply(ctx: AppContext, config: Config): void {
           }
 
           if (action === 'advance') {
+            if (room.workflow) {
+              const currentStage = room.workflow.stages[room.workflow.currentStageIndex]
+              if (currentStage?.tasks?.length) {
+                for (const t of currentStage.tasks) {
+                  if (t.status !== 'passed') {
+                    t.status = 'passed'
+                    t.updatedAt = Date.now()
+                  }
+                }
+              }
+            }
+            if (room.awaitingUserDecision) {
+              room.awaitingUserDecision = undefined
+            }
             const result = WorkflowOrchestrator.advanceStage(room, body.approverRoleId || 'commander', body.summary, locale)
             roomManager.saveRoom(room)
             persistRoomState(roomId)
@@ -1247,6 +1266,37 @@ export function apply(ctx: AppContext, config: Config): void {
   const tools = registerGroupChatTools(roomManager, triggerAgentTurn)
   for (const tool of tools) {
     ctx.effect(() => ctx.tools.register(tool), `@dsh-external/dsh-group-chat: ${tool.name}`)
+  }
+
+  // Register DSH-native Let Them Cook orchestrator system prompt
+  if (ctx.systemPrompt && typeof ctx.systemPrompt.section === 'function') {
+    ctx.effect(() => {
+      return ctx.systemPrompt.section({
+        name: 'dsh-let-them-cook:orchestrator',
+        order: 120,
+        text: `## 🍳 DSH Let Them Cook (开整天团) Multi-Agent Orchestrator
+When the user asks for multi-agent collaboration, requests to "开整", or submits a non-trivial engineering/coding/testing/research task:
+You are the Commander (总指挥官) of the "Let Them Cook" squad.
+Lead the squad and delegate work to specialized agents via tools:
+- \`cook_assign_task\`: Delegate sub-tasks to specialists (\`researcher\`, \`backend\`, \`frontend\`, \`qa\`, \`writer\`). The specialist will execute real tools (read, edit, bash, grep) and return code diffs and concrete results.
+- \`group_chat_update_scratchpad\`: Sync key architecture decisions, consensus, or milestones to the companion HUD scratchpad.
+- \`group_chat_workflow_advance\`: Advance the 5-stage workflow DAG after verifying deliverables.
+- \`group_chat_ask_user\`: Prompt the user with structured decision options when choices or approvals are needed.
+- \`group_chat_room_status\`: Check current squad roster, workflow stage, and Token ledger.
+
+Specialist Fleet & Tool Capabilities:
+- \`backend\` (后端/代码工程): Read/edit code, inspect package.json, server architecture, run terminal commands (\`read\`, \`write\`, \`edit\`, \`glob\`, \`grep\`, \`bash\`). For reading or analyzing local code/dependencies, assign to \`backend\`.
+- \`researcher\` (深潜情报/调研): External web search, doc lookup, and read-only file/config inspection (\`web_search\`, \`read\`, \`glob\`, \`grep\`).
+- \`frontend\` (交互体验/UI设计): UI design, CSS/TSX components, styling, visual polish (\`read\`, \`write\`, \`edit\`, \`modlens_read_image\`).
+- \`qa\` (红队质检/测试验收): Running test suites (\`npm test\`), regression audit, verifying quality gates (\`read\`, \`glob\`, \`grep\`, \`bash\`).
+- \`writer\` (首席文案/技术文档): Specs, release notes, documentation summaries (\`read\`, \`group_chat_update_scratchpad\`).
+
+Guidelines:
+1. Always summarize the specialist's findings clearly for the user.
+2. Ensure tasks are actually executed by the specialists (using real tools) rather than hallucinated.
+3. For local code or project file reading/editing, assign to \`backend\` (or \`researcher\` for read-only research).`,
+      })
+    }, '@dsh-external/dsh-let-them-cook: orchestrator system prompt')
   }
 
   logger.info?.('[@dsh-external/dsh-group-chat] Plugin initialized with 6 roles, workflow pipeline and theme mappings.')

@@ -156,6 +156,7 @@ async function waitForMemberIdle(agent: AgentHandle['agent'], signal: AbortSigna
 
 export interface MemberTurnRuntimeOptions {
   roleId?: string
+  roleName?: string
   allowedTools?: readonly string[]
   locale?: GroupChatLocale
   onProgress?: (toolCalls: ToolCallRecord[], liveness?: RuntimeLivenessSnapshot) => void
@@ -196,8 +197,8 @@ export async function runMemberTurn(ctx: RuntimeContext, model: ModelRef, prompt
           const scoped = scopedCtx as RuntimeContext
           agentCtx.effect(() => {
             const scope = restrictToolsCompat(scoped.tools, allowedTools)
-            if (scope.missing.length) console.warn?.(`[GroupChat] 未找到工具别名，将跳过: ${scope.missing.join(', ')}`)
-            if (scope.warning) console.warn?.(`[GroupChat] 工具白名单降级为 Prompt 约束: ${scope.warning}`)
+            if (scope.missing.length) console.info?.(`[GroupChat] 未找到工具别名，将跳过: ${scope.missing.join(', ')}`)
+            if (scope.warning) console.info?.(`[GroupChat] 工具白名单降级为 Prompt 约束: ${scope.warning}`)
             return scope.effect || (() => {})
           })
           agentCtx.effect(() => scoped.systemPrompt.section({
@@ -211,9 +212,18 @@ export async function runMemberTurn(ctx: RuntimeContext, model: ModelRef, prompt
       },
     })
     signal.throwIfAborted()
+    const roleTag = options.roleName || options.roleId || ''
+    const followText = options.locale === 'en-US'
+      ? (roleTag
+          ? `[Mandatory Role Boundary] You MUST speak STRICTLY as your assigned role: ${roleTag}. Never adopt, mimic, or claim to be any previous speaker. Respond to the group-chat topic only as your assigned role; do not claim tools or research you did not actually perform.`
+          : 'Respond to the group-chat topic only as your assigned role; do not claim tools or research you did not actually perform.')
+      : (roleTag
+          ? `【强制身份锚定】你的当前角色是「${roleTag}」！你必须严格代表「${roleTag}」发言，严禁自称或冒充前序发言的其他角色！不要声称执行了未执行的工具或调研。`
+          : '请基于群聊议题，仅代表你的角色发言；不要声称执行了未执行的工具或调研。')
+
     handle.agent.followup({
       id: randomUUID(), role: 'user', source: { kind: 'plugin', plugin: '@dsh-external/dsh-group-chat' },
-      content: [{ type: 'text', text: options.locale === 'en-US' ? 'Respond to the group-chat topic only as your assigned role; do not claim tools or research you did not actually perform.' : '请基于群聊议题，仅代表你的角色发言；不要声称执行了未执行的工具或调研。' }],
+      content: [{ type: 'text', text: followText }],
     } as UserMessage)
 
     let progressTimer: NodeJS.Timeout | undefined

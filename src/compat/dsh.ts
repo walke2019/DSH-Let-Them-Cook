@@ -56,12 +56,12 @@ const SEMANTIC_TOOL_ALIASES: Record<string, string[]> = {
   tool_fs: ['read', 'write', 'edit', 'glob', 'grep', 'tool_fs', 'read_file', 'write_file', 'edit_file', 'apply_patch'],
   tool_jobs: ['bash', 'job_output', 'job_list', 'job_kill', 'tool_jobs', 'run_command', 'shell', 'terminal'],
   modlens_read_image: ['read_image', 'modlens_read_image', 'view_image'],
-  read: ['read', 'read_file'],
-  write: ['write', 'write_file'],
-  edit: ['edit', 'edit_file'],
-  bash: ['bash', 'shell', 'terminal', 'run_command'],
-  grep: ['grep'],
-  glob: ['glob'],
+  read: ['read', 'read_file', 'tool_fs'],
+  write: ['write', 'write_file', 'tool_fs'],
+  edit: ['edit', 'edit_file', 'tool_fs'],
+  bash: ['bash', 'shell', 'terminal', 'run_command', 'tool_jobs'],
+  grep: ['grep', 'tool_fs'],
+  glob: ['glob', 'tool_fs'],
 }
 
 export function detectDshCompat(ctx: any): DshCompatReport {

@@ -1,7 +1,5 @@
 import type { UserConfig } from 'tsdown'
 
-const PLUGIN_ID = '@dsh-external/dsh-let-them-cook'
-
 const CLIENT_EXTERNALS = [
   '@deepseek-ai/dsh-client-ui-primitives',
   'react',
@@ -30,8 +28,8 @@ const clientBundle: UserConfig = {
   },
   outputOptions: {
     entryFileNames: 'client.js',
-    banner: 'window.__ModuleLoader__.load({ id: ' + JSON.stringify(PLUGIN_ID) + ', factory: (require) => {\n',
-    footer: '\nreturn module.exports; } });',
+    banner: '(function() {\n  var factory = function(require) {\n',
+    footer: '\n    return module.exports;\n  };\n  if (typeof window !== "undefined" && window.__ModuleLoader__ && typeof window.__ModuleLoader__.load === "function") {\n    window.__ModuleLoader__.load({ id: "@dsh-external/dsh-group-chat", factory: factory });\n    window.__ModuleLoader__.load({ id: "@dsh-external/dsh-let-them-cook", factory: factory });\n  }\n})();',
     intro: 'var module = { exports: {} }; var exports = module.exports;',
     codeSplitting: false,
   },

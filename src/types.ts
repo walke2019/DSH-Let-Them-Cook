@@ -300,6 +300,7 @@ export interface WorkflowDefinition {
   title: string
   stages: WorkflowStage[]
   currentStageIndex: number
+  isCompleted?: boolean
 }
 
 

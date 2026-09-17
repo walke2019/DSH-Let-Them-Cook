@@ -1,9 +1,5 @@
-import {disposeGroupChatEvents} from './group-chat-events.js'
-import { createElement } from "react";
-/**
- * Client entry: register a safe middle conversation tab and a companion HUD without taking over the official chat.
- */
-
+import { disposeGroupChatEvents } from './group-chat-events.js';
+import { createElement } from 'react';
 import { GroupChatSideDock } from "./GroupChatSideDock.js";
 import { GroupChatInputEntry } from "./GroupChatHeroEntry.js";
 import { GroupChatConversationView } from "./GroupChatConversationTab.js";
@@ -23,7 +19,7 @@ export function apply(ctx: ClientContext): void {
   ctx.effect(()=>()=>disposeGroupChatEvents(), "dsh-group-chat: events");
   ctx.effect(() => injectLayoutPushStyles(), "dsh-group-chat: styles");
 
-  // Source comment kept in English for open-source readability; user-facing copy stays localized at runtime.
+  // Safe conversation view adapter without taking over the official chat
   ctx.effect(() => {
     return ctx.slots.inject("conversation.view", () => {
       return ctx.slots.register(

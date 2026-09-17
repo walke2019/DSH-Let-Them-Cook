@@ -224,20 +224,25 @@ export class DispatchArbiter {
       if (latestMessage.sender.id !== (moderatorAgentId || 'commander')) {
         const commanderId = moderatorAgentId || 'commander'
 
-        const { targetAgentIds } = this.extractMentions(latestMessage.content, members)
-        const validOtherTargets = targetAgentIds.filter(id => id !== latestMessage.sender.id && id !== commanderId)
-        if (validOtherTargets.length > 0) {
-          return {
-            nextSpeakerIds: validOtherTargets,
-            reason: `专家 [${latestMessage.sender.id}] 建议协同：唤醒 [${validOtherTargets.join(', ')}] 继续推进。`,
-            mode: 'workflow_driven',
-            isTerminal: false,
+        // AGENTS.md Anti-Loop & Universal Master Handoff:
+        // SubAgents MUST always report back to Commander for review & coordination.
+        // Direct SubAgent-to-SubAgent trigger is forbidden unless enableBotToBotTrigger is explicitly enabled.
+        if (safetyPolicy.enableBotToBotTrigger) {
+          const { targetAgentIds } = this.extractMentions(latestMessage.content, members)
+          const validOtherTargets = targetAgentIds.filter(id => id !== latestMessage.sender.id && id !== commanderId)
+          if (validOtherTargets.length > 0) {
+            return {
+              nextSpeakerIds: validOtherTargets,
+              reason: `专家 [${latestMessage.sender.id}] 建议协同：唤醒 [${validOtherTargets.join(', ')}] 继续推进。`,
+              mode: 'workflow_driven',
+              isTerminal: false,
+            }
           }
         }
 
-        // SubAgent always reports back to commander for review & coordination
+        // SubAgent always reports back to commander for review & coordination (Universal Master Handoff)
         return {
-          nextSpeakerIds: ['commander'],
+          nextSpeakerIds: [commanderId],
           reason: `阶段 [${currentStage.name}] 产物已输出，按流程进入指挥官审核把控环节。`,
           mode: 'workflow_driven',
           isTerminal: false,
@@ -284,10 +289,16 @@ export class DispatchArbiter {
           latestMessage.content.includes('交卷') ||
           /approve|approved|proceed|next stage|pass|lgtm|accepted|accept|finish|finished|done|ready/i.test(latestMessage.content)
 
-        // Dispatch arbiter, anti-loop rules, mention extraction, workflow routing, and silence-token handling.
         if (isAdvance) {
-          // Dispatch arbiter, anti-loop rules, mention extraction, workflow routing, and silence-token handling.
           currentStage.status = 'completed'
+          if (currentStage.tasks?.length) {
+            for (const t of currentStage.tasks) {
+              if (t.status !== 'passed') {
+                t.status = 'passed'
+                t.updatedAt = Date.now()
+              }
+            }
+          }
           const nextIndex = workflow.currentStageIndex + 1
           if (nextIndex < workflow.stages.length) {
             workflow.currentStageIndex = nextIndex
