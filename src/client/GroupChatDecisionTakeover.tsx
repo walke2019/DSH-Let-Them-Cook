@@ -5,7 +5,7 @@ import { GroupChatQuestionComposer } from './GroupChatQuestionComposer.js'
 import { tx, type GroupChatLocale } from './i18n.js'
 import { DEFAULT_GROUP_CHAT_ROOM_ID } from './current-room.js'
 
-export interface GroupChatComposerTakeoverProps {
+export interface GroupChatDecisionTakeoverProps {
   room: RoomData | null
   roomId: string
   locale: GroupChatLocale
@@ -43,13 +43,13 @@ function useComposerSeat(): HTMLElement | null {
  * When room.awaitingUserDecision is active, this component takes over the central official
  * [data-composer-seat] area, replacing the standard text input with the interactive decision card.
  */
-export function GroupChatComposerTakeover({
+export function GroupChatDecisionTakeover({
   room,
   roomId,
   locale,
   onDecisionSubmitted,
   onDecisionDismissed,
-}: GroupChatComposerTakeoverProps) {
+}: GroupChatDecisionTakeoverProps) {
   const composerSeat = useComposerSeat()
   const [sending, setSending] = useState(false)
   const decisionPrompt = room?.awaitingUserDecision

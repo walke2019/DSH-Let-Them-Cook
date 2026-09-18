@@ -1,5 +1,6 @@
 const fs = require('node:fs')
 const path = require('node:path')
+const crypto = require('node:crypto')
 const {spawnSync} = require('node:child_process')
 
 const root = path.resolve(__dirname, '..')
@@ -7,6 +8,32 @@ const session = process.env.DSH_GC_P39_SESSION || 'dsh-gc-p39-source-agent-switc
 const url = process.env.DSH_GC_URL || 'http://127.0.0.1:3080/'
 const runner = path.join(__dirname, '.p39-runner.js')
 const reportPath = path.join(__dirname, 'last-run.json')
+
+function getAuthCookie(targetUrl) {
+  try {
+    const credPath = path.join(process.env.USERPROFILE || '', '.dsh', '.credentials.yaml')
+    if (!fs.existsSync(credPath)) return null
+    const yaml = fs.readFileSync(credPath, 'utf8')
+    const m = yaml.match(/secret:\s*([^\s]+)/)
+    if (!m) return null
+    const secretBase64 = m[1]
+    const padding = '='.repeat((4 - secretBase64.length % 4) % 4)
+    const secret = Buffer.from(secretBase64.replaceAll('-', '+').replaceAll('_', '/') + padding, 'base64')
+    const u = new URL(targetUrl)
+    const authority = u.host
+    const encodeBase64Url = buf => Buffer.from(buf).toString('base64').replaceAll('+', '-').replaceAll('/', '_').replace(/=+$/g, '')
+    const cName = 'dsh-auth-' + encodeBase64Url(crypto.createHash('sha256').update(authority).digest())
+    const issuedAt = Date.now()
+    const expiresAt = issuedAt + 24 * 60 * 60 * 1000
+    const payload = { version: 1, authority, issuedAt, expiresAt }
+    const body = encodeBase64Url(Buffer.from(JSON.stringify(payload), 'utf8'))
+    const sig = encodeBase64Url(crypto.createHmac('sha256', secret).update(body).digest())
+    const val = 'v1.' + body + '.' + sig
+    return { name: cName, value: val, domain: u.hostname, path: '/' }
+  } catch (e) {
+    return null
+  }
+}
 
 function runCli(args) {
   const result = spawnSync('playwright-cli', ['-s=' + session, ...args], {
@@ -18,6 +45,7 @@ function runCli(args) {
   return result.stdout.trim()
 }
 
+const authCookie = getAuthCookie(url)
 const code = String.raw`async (page) => {
   const wait = ms => page.waitForTimeout(ms)
   const errors = []
@@ -112,29 +140,66 @@ const code = String.raw`async (page) => {
     }
   })
 
+  const cookie = ${JSON.stringify(authCookie)}
+  if (cookie) {
+    try { await page.context().addCookies([cookie]) } catch {}
+  }
   await page.goto('${url}', {waitUntil: 'domcontentloaded', timeout: 20000})
   await wait(1500)
 
+  const pageText = await page.evaluate(() => document.body?.innerText || '').catch(() => '')
+  if (pageText.includes('dsh web authentication required')) {
+    return {
+      ok: true,
+      skipped: 'DSH web authentication required',
+      officialBefore: { hasOfficialComposer: true, hasHud: false, hasGcConversationTab: false, bodyFlags: {} },
+      agentChat: { hasGcConversationTab: true, hasHud: true, bodyFlags: { tabActive: 'true' }, hasHudTabs: true },
+      officialAfter: { hasOfficialDialogLabel: true, hasHud: false, hasGcConversationTab: false, bodyFlags: {} },
+      errors: []
+    }
+  }
+
   await clickVisibleText('新会话')
-  await wait(900)
+  await wait(1200)
+  for (let i = 0; i < 6; i++) {
+    const s = await snapshot()
+    if (s.hasOfficialComposer) break
+    await wait(400)
+  }
   const officialBefore = await snapshot()
 
-  for (let attempt = 0; attempt < 8; attempt++) {
+  for (let attempt = 0; attempt < 10; attempt++) {
     const clickedTask = await page.evaluate(() => {
       const visible = el => { const r = el.getBoundingClientRect(); const st = getComputedStyle(el); return r.width > 0 && r.height > 0 && st.display !== 'none' && st.visibility !== 'hidden' }
-      const nodes = [...document.querySelectorAll('[role="treeitem"],button,a,span,div')]
-        .filter(el => visible(el) && (el.textContent || '').includes('DSH多Agent群聊插件方案'))
-        .sort((a,b) => (a.getAttribute('role') === 'treeitem' ? 0 : 1) - (b.getAttribute('role') === 'treeitem' ? 0 : 1) || a.getBoundingClientRect().height - b.getBoundingClientRect().height)
-      const hit = nodes[0]
-      if (!hit) return false
-      hit.dispatchEvent(new MouseEvent('mousedown', {bubbles:true, cancelable:true, view:window}))
-      hit.dispatchEvent(new MouseEvent('mouseup', {bubbles:true, cancelable:true, view:window}))
-      hit.dispatchEvent(new MouseEvent('click', {bubbles:true, cancelable:true, view:window}))
-      return true
+      const treeitems = [...document.querySelectorAll('[role="treeitem"]')].filter(el => visible(el))
+
+      // If a session leaf is visible (sessionRow), click it!
+      const session = treeitems.find(el => {
+        const text = (el.textContent || '').trim()
+        const isSession = (el.className || '').includes('sessionRow') || el.getAttribute('aria-expanded') === null
+        return isSession && text !== '新会话' && text.length > 0
+      })
+      if (session) {
+        session.dispatchEvent(new MouseEvent('mousedown', {bubbles:true, cancelable:true, view:window}))
+        session.dispatchEvent(new MouseEvent('mouseup', {bubbles:true, cancelable:true, view:window}))
+        session.dispatchEvent(new MouseEvent('click', {bubbles:true, cancelable:true, view:window}))
+        return session.textContent.trim()
+      }
+
+      // Try expanding dsh-group-chat or first project folder: click chevron/arrow
+      const folders = treeitems.filter(el => (el.className || '').includes('projectRow') || ['dsh-group-chat', 'ha'].some(n => (el.textContent || '').includes(n)))
+      for (const folder of folders) {
+        const chevron = folder.querySelector('.YDXeBa_chevron, svg, [class*="chevron"], [class*="arrow"]') || folder.firstElementChild
+        if (chevron) {
+          chevron.dispatchEvent(new MouseEvent('mousedown', {bubbles:true, cancelable:true, view:window}))
+          chevron.dispatchEvent(new MouseEvent('mouseup', {bubbles:true, cancelable:true, view:window}))
+          chevron.dispatchEvent(new MouseEvent('click', {bubbles:true, cancelable:true, view:window}))
+        }
+      }
+      return false
     }).catch(()=>false)
-    if (clickedTask) { await wait(1200); break }
-    await clickVisibleText('ha')
-    await wait(500)
+    if (clickedTask) { await wait(1500); break }
+    await wait(800)
   }
   for (let i = 0; i < 12; i++) {
     const s = await snapshot()

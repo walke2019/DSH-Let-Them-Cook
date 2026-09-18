@@ -89,7 +89,7 @@ export function GroupChatQuestionComposer({
 
   return (
     <div
-      className="Mbwy4a_frame gc-question-composer-frame"
+      className="Mbwy4a_frame gc-question-composer-frame gc-composer"
       data-dsh-gc-question-composer="true"
       data-dsh-gc-decision-card="true"
     >

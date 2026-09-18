@@ -366,6 +366,41 @@ export class RoomManager {
 
   public ensureRoomForSession(roomId: string, masterSessionId = roomId): GroupChatRoom {
     this.activeRoomId = roomId
+    if (roomId === 'dsh-new-session') {
+      const fleet = this.createDefaultFleet('meme_comedy')
+      const workflow = WorkflowOrchestrator.createStandardDevWorkflow()
+      const room: GroupChatRoom = {
+        roomId,
+        title: 'DSH 开整天团工作台',
+        masterSessionId: 'new-session',
+        dispatchMode: 'workflow_driven',
+        moderatorAgentId: 'commander',
+        activeTheme: 'meme_comedy',
+        members: fleet,
+        workflow,
+        assignments: [],
+        captainTaskProtocol: undefined,
+        coordinationEvents: [],
+        approvalTransactions: [],
+        mailboxes: {},
+        orchestration: createMasterSubagentStrategy(fleet),
+        scratchpad: '## 阶段共识与项目全局黑板\n- 机制：总指挥审核把关 + 调研先行 + 权限隔离 + 工作流流水线\n- 当前阶段：等待本会话的新任务',
+        pinnedGoal: '用有趣但靠谱的多 Agent 小队把任务推进到可交付',
+        safetyPolicy: {
+          maxTurnsPerPrompt: 6,
+          silenceToken: 'NO_REPLY',
+          enableBotToBotTrigger: false,
+          cooldownPeriodMs: 30000,
+        },
+        interactionRound: 0,
+        createdAt: Date.now(),
+        updatedAt: Date.now(),
+      }
+      this.rooms.set(roomId, room)
+      this.roomMessageLists.set(roomId, [])
+      this.roomLedgers.delete(roomId)
+      return room
+    }
     const existing = this.getRoom(roomId)
     if (existing) {
       existing.updatedAt = Date.now()

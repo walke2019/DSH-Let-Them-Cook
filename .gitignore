@@ -6,4 +6,7 @@ lib/
 .playwright-cli/
 
 Docs/**/.p*-runner.js
+__tests__/.p*-runner.js
 __tests__/last-run.*
+__tests__/*.png
+document.body.innerText

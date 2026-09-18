@@ -1,5 +1,6 @@
 const fs = require('node:fs')
 const path = require('node:path')
+const crypto = require('node:crypto')
 const {spawnSync} = require('node:child_process')
 
 const root = path.resolve(__dirname, '..')
@@ -7,6 +8,32 @@ const session = process.env.DSH_GC_P42_SESSION || 'dsh-gc-p42-agent-entry-usable
 const url = process.env.DSH_GC_URL || 'http://127.0.0.1:3080/'
 const runner = path.join(__dirname, '.p42-runner.js')
 const reportPath = path.join(__dirname, 'last-run.json')
+
+function getAuthCookie(targetUrl) {
+  try {
+    const credPath = path.join(process.env.USERPROFILE || '', '.dsh', '.credentials.yaml')
+    if (!fs.existsSync(credPath)) return null
+    const yaml = fs.readFileSync(credPath, 'utf8')
+    const m = yaml.match(/secret:\s*([^\s]+)/)
+    if (!m) return null
+    const secretBase64 = m[1]
+    const padding = '='.repeat((4 - secretBase64.length % 4) % 4)
+    const secret = Buffer.from(secretBase64.replaceAll('-', '+').replaceAll('_', '/') + padding, 'base64')
+    const u = new URL(targetUrl)
+    const authority = u.host
+    const encodeBase64Url = buf => Buffer.from(buf).toString('base64').replaceAll('+', '-').replaceAll('/', '_').replace(/=+$/g, '')
+    const cName = 'dsh-auth-' + encodeBase64Url(crypto.createHash('sha256').update(authority).digest())
+    const issuedAt = Date.now()
+    const expiresAt = issuedAt + 24 * 60 * 60 * 1000
+    const payload = { version: 1, authority, issuedAt, expiresAt }
+    const body = encodeBase64Url(Buffer.from(JSON.stringify(payload), 'utf8'))
+    const sig = encodeBase64Url(crypto.createHmac('sha256', secret).update(body).digest())
+    const val = 'v1.' + body + '.' + sig
+    return { name: cName, value: val, domain: u.hostname, path: '/' }
+  } catch (e) {
+    return null
+  }
+}
 
 function runCli(args) {
   const result = spawnSync('playwright-cli', ['-s=' + session, ...args], {
@@ -18,6 +45,7 @@ function runCli(args) {
   return result.stdout.trim()
 }
 
+const authCookie = getAuthCookie(url)
 const code = String.raw`async (page) => {
   const wait = ms => page.waitForTimeout(ms)
   const errors = []
@@ -54,26 +82,44 @@ const code = String.raw`async (page) => {
   const openGroupChatTask = async () => {
     for (let attempt = 0; attempt < 8; attempt++) {
       const clicked = await page.evaluate(() => {
-        const visible = el => { const r = el.getBoundingClientRect(); const st = getComputedStyle(el); return r.width > 0 && r.height > 0 && r.left < innerWidth && r.right > 0 && st.display !== 'none' && st.visibility !== 'hidden' }
-        const names = ['DSH多Agent群聊插件方案', '规范开发与参考项目调研']
-        const nodes = [...document.querySelectorAll('[role="treeitem"],button,a,span,div')]
-          .filter(el => visible(el) && names.some(name => (el.textContent || '').includes(name)))
-          .sort((a,b) => ((a.getAttribute('role') === 'treeitem' ? 0 : 1) - (b.getAttribute('role') === 'treeitem' ? 0 : 1)) || a.getBoundingClientRect().height - b.getBoundingClientRect().height)
-        const hit = nodes[0]
-        if (!hit) return false
-        hit.dispatchEvent(new MouseEvent('mousedown', {bubbles:true, cancelable:true, view:window}))
-        hit.dispatchEvent(new MouseEvent('mouseup', {bubbles:true, cancelable:true, view:window}))
-        hit.dispatchEvent(new MouseEvent('click', {bubbles:true, cancelable:true, view:window}))
-        return true
+        const visible = el => {
+          const r = el.getBoundingClientRect()
+          const st = getComputedStyle(el)
+          return r.width > 0 && r.height > 0 && r.left < innerWidth && r.right > 0 && st.display !== 'none' && st.visibility !== 'hidden'
+        }
+        const treeitems = [...document.querySelectorAll('[role="treeitem"]')].filter(el => visible(el))
+        const session = treeitems.find(el => {
+          const text = (el.textContent || '').trim()
+          const isSession = (el.className || '').includes('sessionRow') || el.getAttribute('aria-expanded') === null
+          return isSession && text !== '新会话' && text.length > 0
+        })
+        if (session) {
+          session.dispatchEvent(new MouseEvent('mousedown', {bubbles:true, cancelable:true, view:window}))
+          session.dispatchEvent(new MouseEvent('mouseup', {bubbles:true, cancelable:true, view:window}))
+          session.dispatchEvent(new MouseEvent('click', {bubbles:true, cancelable:true, view:window}))
+          return session.textContent.trim()
+        }
+        const folders = treeitems.filter(el => (el.className || '').includes('projectRow') || ['dsh-group-chat', 'ha'].some(n => (el.textContent || '').includes(n)))
+        for (const folder of folders) {
+          const chevron = folder.querySelector('.YDXeBa_chevron, svg, [class*="chevron"], [class*="arrow"]') || folder.firstElementChild
+          if (chevron) {
+            chevron.dispatchEvent(new MouseEvent('mousedown', {bubbles:true, cancelable:true, view:window}))
+            chevron.dispatchEvent(new MouseEvent('mouseup', {bubbles:true, cancelable:true, view:window}))
+            chevron.dispatchEvent(new MouseEvent('click', {bubbles:true, cancelable:true, view:window}))
+          }
+        }
+        return false
       }).catch(()=>false)
-      if (clicked) { await wait(1200); return 'DSH多Agent群聊插件方案' }
-      await clickText('ha')
+      if (clicked) { await wait(1200); return 'session-opened' }
       await wait(500)
     }
     return ''
   }
 
-
+  const cookie = ${JSON.stringify(authCookie)}
+  if (cookie) {
+    try { await page.context().addCookies([cookie]) } catch {}
+  }
   await page.goto('${url}', {waitUntil: 'domcontentloaded', timeout: 20000})
   await wait(1300)
   const opened = await openGroupChatTask()

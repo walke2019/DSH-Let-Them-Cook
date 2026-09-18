@@ -16,6 +16,28 @@ export function registerGroupChatTools(
   roomManager: RoomManager,
   onTriggerAgentTurn?: (roomId: string, targetAgentId: string, assignmentId?: string) => Promise<void>
 ) {
+  function resolveSessionRoomId(argsRoomId?: string, exec?: any): string {
+    if (argsRoomId && typeof argsRoomId === 'string' && argsRoomId.trim()) {
+      const trimmed = argsRoomId.trim()
+      roomManager.ensureRoomForSession(trimmed, trimmed.replace(/^dsh-/, ''))
+      roomManager.setActiveRoomId(trimmed)
+      return trimmed
+    }
+    const agentSessionId = exec?.agent?.id || exec?.agent?.session?.id || exec?.session?.id
+    if (agentSessionId && typeof agentSessionId === 'string') {
+      const rawId = String(agentSessionId).replace(/^dsh-/, '')
+      if (!rawId.startsWith('group-chat-')) {
+        const scopedId = `dsh-${rawId.replace(/[^a-zA-Z0-9_-]/g, '-').slice(0, 96)}`
+        roomManager.ensureRoomForSession(scopedId, rawId)
+        roomManager.setActiveRoomId(scopedId)
+        return scopedId
+      }
+    }
+    const active = roomManager.getActiveRoomId()
+    if (active && active !== 'dev-team-alpha') return active
+    return 'dsh-new-session'
+  }
+
   return [
     defineTool({
       name: 'cook_assign_task',
@@ -48,8 +70,8 @@ export function registerGroupChatTools(
         schema: { type: 'string' },
         render: (_args: unknown, value: unknown) => [{ type: 'text', text: String(value) }],
       },
-      async execute(args: { role: string; task: string; expectedOutput?: string; roomId?: string; locale?: string }) {
-        const roomId = args.roomId || roomManager.getActiveRoomId() || 'dev-team-alpha'
+      async execute(args: { role: string; task: string; expectedOutput?: string; roomId?: string; locale?: string }, exec?: any) {
+        const roomId = resolveSessionRoomId(args.roomId, exec)
         const locale = normalizeToolLocale(args.locale)
         const room = roomManager.getRoom(roomId)
         if (!room) return locale === 'en-US' ? `Error: room ${roomId} does not exist.` : `错误：房间 ${roomId} 不存在。`
@@ -156,8 +178,8 @@ export function registerGroupChatTools(
         schema: { type: 'string' },
         render: (_args: unknown, value: unknown) => [{ type: 'text', text: String(value) }],
       },
-      async execute(args: { roomId?: string; content: string; locale?: string }) {
-        const roomId = args.roomId || roomManager.getActiveRoomId() || 'dev-team-alpha'
+      async execute(args: { roomId?: string; content: string; locale?: string }, exec?: any) {
+        const roomId = resolveSessionRoomId(args.roomId, exec)
         const locale = normalizeToolLocale(args.locale)
         const room = roomManager.getRoom(roomId)
         if (!room) return locale === 'en-US' ? `Error: group chat room ${roomId} does not exist.` : `错误：群聊房间 ${roomId} 不存在。`
@@ -208,8 +230,8 @@ export function registerGroupChatTools(
         schema: { type: 'string' },
         render: (_args: unknown, value: unknown) => [{ type: 'text', text: String(value) }],
       },
-      async execute(args: { roomId?: string; theme: string; locale?: string }) {
-        const roomId = args.roomId || roomManager.getActiveRoomId() || 'dev-team-alpha'
+      async execute(args: { roomId?: string; theme: string; locale?: string }, exec?: any) {
+        const roomId = resolveSessionRoomId(args.roomId, exec)
         const locale = normalizeToolLocale(args.locale)
         const theme = (args.theme === 'default' ? 'meme_comedy' : args.theme) as PersonaThemeKey
         if (!['meme_comedy', 'genshin', 'modern', 'three_kingdoms', 'legends'].includes(theme)) {
@@ -241,8 +263,8 @@ export function registerGroupChatTools(
         schema: { type: 'string' },
         render: (_args: unknown, value: unknown) => [{ type: 'text', text: String(value) }],
       },
-      async execute(args: { roomId?: string; approverRoleId?: string; summary?: string; locale?: string }) {
-        const roomId = args.roomId || roomManager.getActiveRoomId() || 'dev-team-alpha'
+      async execute(args: { roomId?: string; approverRoleId?: string; summary?: string; locale?: string }, exec?: any) {
+        const roomId = resolveSessionRoomId(args.roomId, exec)
         const locale = normalizeToolLocale(args.locale)
         const room = roomManager.getRoom(roomId)
         if (!room) return locale === 'en-US' ? `Error: room ${roomId} does not exist.` : `错误：房间 ${roomId} 不存在。`
@@ -294,8 +316,8 @@ export function registerGroupChatTools(
         schema: { type: 'string' },
         render: (_args: unknown, value: unknown) => [{ type: 'text', text: String(value) }],
       },
-      async execute(args: { roomId?: string; reason: string; locale?: string }) {
-        const roomId = args.roomId || roomManager.getActiveRoomId() || 'dev-team-alpha'
+      async execute(args: { roomId?: string; reason: string; locale?: string }, exec?: any) {
+        const roomId = resolveSessionRoomId(args.roomId, exec)
         const locale = normalizeToolLocale(args.locale)
         const room = roomManager.getRoom(roomId)
         if (!room) return locale === 'en-US' ? `Error: room ${roomId} does not exist.` : `错误：房间 ${roomId} 不存在。`
@@ -318,8 +340,8 @@ export function registerGroupChatTools(
         schema: { type: 'string' },
         render: (_args: unknown, value: unknown) => [{ type: 'text', text: String(value) }],
       },
-      async execute(args: { roomId?: string; locale?: string }) {
-        const roomId = args.roomId || roomManager.getActiveRoomId() || 'dev-team-alpha'
+      async execute(args: { roomId?: string; locale?: string }, exec?: any) {
+        const roomId = resolveSessionRoomId(args.roomId, exec)
         const locale = normalizeToolLocale(args.locale)
         const room = roomManager.getRoom(roomId)
         if (!room) return locale === 'en-US' ? `Error: group chat room ${roomId} does not exist.` : `错误：群聊房间 ${roomId} 不存在。`
@@ -366,8 +388,8 @@ export function registerGroupChatTools(
         schema: { type: 'string' },
         render: (_args: unknown, value: unknown) => [{ type: 'text', text: String(value) }],
       },
-      async execute(args: { roomId?: string; operatorRoleId?: string; scratchpad: string; locale?: string }) {
-        const roomId = args.roomId || roomManager.getActiveRoomId() || 'dev-team-alpha'
+      async execute(args: { roomId?: string; operatorRoleId?: string; scratchpad: string; locale?: string }, exec?: any) {
+        const roomId = resolveSessionRoomId(args.roomId, exec)
         const operator = args.operatorRoleId || 'commander'
         const result = roomManager.updateScratchpad(roomId, args.scratchpad, operator)
         const locale = normalizeToolLocale(args.locale)
@@ -388,8 +410,8 @@ export function registerGroupChatTools(
         schema: { type: 'string' },
         render: (_args: unknown, value: unknown) => [{ type: 'text', text: String(value) }],
       },
-      async execute(args: { roomId?: string; mode: string; locale?: string }) {
-        const roomId = args.roomId || roomManager.getActiveRoomId() || 'dev-team-alpha'
+      async execute(args: { roomId?: string; mode: string; locale?: string }, exec?: any) {
+        const roomId = resolveSessionRoomId(args.roomId, exec)
         const locale = normalizeToolLocale(args.locale)
         const mode = args.mode as DispatchMode
         if (!['mention_only', 'moderator_led', 'workflow_driven', 'free_discussion'].includes(mode)) {
@@ -413,8 +435,8 @@ export function registerGroupChatTools(
         schema: { type: 'string' },
         render: (_args: unknown, value: unknown) => [{ type: 'text', text: String(value) }],
       },
-      async execute(args: { roomId?: string; masterRoleId?: string }) {
-        const roomId = args.roomId || roomManager.getActiveRoomId() || 'dev-team-alpha'
+      async execute(args: { roomId?: string; masterRoleId?: string }, exec?: any) {
+        const roomId = resolveSessionRoomId(args.roomId, exec)
         return roomManager.formatCommanderMailboxDigest(roomId, args.masterRoleId || 'commander')
       },
     }),
@@ -431,8 +453,8 @@ export function registerGroupChatTools(
         locale: { type: 'string', description: '输出语言：zh-CN 或 en-US（默认 zh-CN）' },
       },
       output: { schema: { type: 'string' }, render: (_args: unknown, value: unknown) => [{ type: 'text', text: String(value) }] },
-      async execute(args: { roomId?: string; actorRoleId: string; assignmentId?: string; taskId?: string; content?: string; locale?: string }) {
-        const roomId = args.roomId || roomManager.getActiveRoomId() || 'dev-team-alpha'
+      async execute(args: { roomId?: string; actorRoleId: string; assignmentId?: string; taskId?: string; content?: string; locale?: string }, exec?: any) {
+        const roomId = resolveSessionRoomId(args.roomId, exec)
         const locale = normalizeToolLocale(args.locale)
         const event = roomManager.recordCoordinationEvent(roomId, { type: 'claim', actorRoleId: args.actorRoleId, assignmentId: args.assignmentId, taskId: args.taskId, content: args.content || 'Task claimed.' })
         return event ? (locale === 'en-US' ? `Task claimed by @${args.actorRoleId}.` : `任务已由 @${args.actorRoleId} 领取。`) : (locale === 'en-US' ? 'Room not found.' : '未找到房间。')
@@ -451,8 +473,8 @@ export function registerGroupChatTools(
         locale: { type: 'string', description: '输出语言：zh-CN 或 en-US（默认 zh-CN）' },
       },
       output: { schema: { type: 'string' }, render: (_args: unknown, value: unknown) => [{ type: 'text', text: String(value) }] },
-      async execute(args: { roomId?: string; actorRoleId: string; assignmentId?: string; taskId?: string; reason: string; locale?: string }) {
-        const roomId = args.roomId || roomManager.getActiveRoomId() || 'dev-team-alpha'
+      async execute(args: { roomId?: string; actorRoleId: string; assignmentId?: string; taskId?: string; reason: string; locale?: string }, exec?: any) {
+        const roomId = resolveSessionRoomId(args.roomId, exec)
         const locale = normalizeToolLocale(args.locale)
         const event = roomManager.recordCoordinationEvent(roomId, { type: 'block', actorRoleId: args.actorRoleId, assignmentId: args.assignmentId, taskId: args.taskId, content: args.reason })
         return event ? (locale === 'en-US' ? `Task blocked by @${args.actorRoleId}: ${args.reason}` : `任务被 @${args.actorRoleId} 标记阻塞：${args.reason}`) : (locale === 'en-US' ? 'Room not found.' : '未找到房间。')
@@ -472,8 +494,8 @@ export function registerGroupChatTools(
         locale: { type: 'string', description: '输出语言：zh-CN 或 en-US（默认 zh-CN）' },
       },
       output: { schema: { type: 'string' }, render: (_args: unknown, value: unknown) => [{ type: 'text', text: String(value) }] },
-      async execute(args: { roomId?: string; actorRoleId: string; targetRoleId: string; assignmentId?: string; taskId?: string; content?: string; locale?: string }) {
-        const roomId = args.roomId || roomManager.getActiveRoomId() || 'dev-team-alpha'
+      async execute(args: { roomId?: string; actorRoleId: string; targetRoleId: string; assignmentId?: string; taskId?: string; content?: string; locale?: string }, exec?: any) {
+        const roomId = resolveSessionRoomId(args.roomId, exec)
         const locale = normalizeToolLocale(args.locale)
         const event = roomManager.recordCoordinationEvent(roomId, { type: 'handoff', actorRoleId: args.actorRoleId, targetRoleId: args.targetRoleId, assignmentId: args.assignmentId, taskId: args.taskId, content: args.content || '' })
         if (event && onTriggerAgentTurn) void onTriggerAgentTurn(roomId, args.targetRoleId).catch(console.error)
@@ -493,8 +515,8 @@ export function registerGroupChatTools(
         locale: { type: 'string', description: '输出语言：zh-CN 或 en-US（默认 zh-CN）' },
       },
       output: { schema: { type: 'string' }, render: (_args: unknown, value: unknown) => [{ type: 'text', text: String(value) }] },
-      async execute(args: { roomId?: string; actorRoleId: string; assignmentId?: string; taskId?: string; content: string; locale?: string }) {
-        const roomId = args.roomId || roomManager.getActiveRoomId() || 'dev-team-alpha'
+      async execute(args: { roomId?: string; actorRoleId: string; assignmentId?: string; taskId?: string; content: string; locale?: string }, exec?: any) {
+        const roomId = resolveSessionRoomId(args.roomId, exec)
         const locale = normalizeToolLocale(args.locale)
         const room = roomManager.getRoom(roomId)
         const masterRoleId = room?.orchestration?.masterAgentId || room?.moderatorAgentId || 'commander'
@@ -515,8 +537,8 @@ export function registerGroupChatTools(
         locale: { type: 'string', description: '输出语言：zh-CN 或 en-US（默认 zh-CN）' },
       },
       output: { schema: { type: 'string' }, render: (_args: unknown, value: unknown) => [{ type: 'text', text: String(value) }] },
-      async execute(args: { roomId?: string; actorRoleId?: string; taskId?: string; content?: string; locale?: string }) {
-        const roomId = args.roomId || roomManager.getActiveRoomId() || 'dev-team-alpha'
+      async execute(args: { roomId?: string; actorRoleId?: string; taskId?: string; content?: string; locale?: string }, exec?: any) {
+        const roomId = resolveSessionRoomId(args.roomId, exec)
         const locale = normalizeToolLocale(args.locale)
         const actorRoleId = args.actorRoleId || 'commander'
         const event = roomManager.recordCoordinationEvent(roomId, { type: 'close', actorRoleId, taskId: args.taskId, content: args.content || 'Closed by commander.' })
@@ -537,8 +559,8 @@ export function registerGroupChatTools(
         locale: { type: 'string', description: '输出语言：zh-CN 或 en-US（默认 zh-CN）' },
       },
       output: { schema: { type: 'string' }, render: (_args: unknown, value: unknown) => [{ type: 'text', text: String(value) }] },
-      async execute(args: { roomId?: string; title: string; summary: string; willChange?: string[]; rollbackPlan?: string[]; createdByRoleId?: string; locale?: string }) {
-        const roomId = args.roomId || roomManager.getActiveRoomId() || 'dev-team-alpha'
+      async execute(args: { roomId?: string; title: string; summary: string; willChange?: string[]; rollbackPlan?: string[]; createdByRoleId?: string; locale?: string }, exec?: any) {
+        const roomId = resolveSessionRoomId(args.roomId, exec)
         const locale = normalizeToolLocale(args.locale)
         const tx = roomManager.createApprovalTransaction(roomId, args.title, args.summary, Array.isArray(args.willChange) ? args.willChange : [], Array.isArray(args.rollbackPlan) ? args.rollbackPlan : [], args.createdByRoleId || 'commander')
         return tx ? (locale === 'en-US' ? `Approve & Run card created: ${tx.transactionId}` : `确认后执行卡片已创建：${tx.transactionId}`) : (locale === 'en-US' ? 'Room not found.' : '未找到房间。')
@@ -556,8 +578,8 @@ export function registerGroupChatTools(
         locale: { type: 'string', description: '输出语言：zh-CN 或 en-US（默认 zh-CN）' },
       },
       output: { schema: { type: 'string' }, render: (_args: unknown, value: unknown) => [{ type: 'text', text: String(value) }] },
-      async execute(args: { roomId?: string; transactionId: string; action: string; resolvedByRoleId?: string; locale?: string }) {
-        const roomId = args.roomId || roomManager.getActiveRoomId() || 'dev-team-alpha'
+      async execute(args: { roomId?: string; transactionId: string; action: string; resolvedByRoleId?: string; locale?: string }, exec?: any) {
+        const roomId = resolveSessionRoomId(args.roomId, exec)
         const locale = normalizeToolLocale(args.locale)
         const tx = roomManager.resolveApprovalTransaction(roomId, args.transactionId, args.action as any, args.resolvedByRoleId || 'commander')
         return tx ? (locale === 'en-US' ? `Transaction ${tx.transactionId} is now ${tx.status}.` : `事务 ${tx.transactionId} 已更新为 ${tx.status}。`) : (locale === 'en-US' ? 'Transaction not found.' : '未找到事务。')
@@ -580,8 +602,8 @@ export function registerGroupChatTools(
         locale: { type: 'string', description: '输出语言：zh-CN 或 en-US' },
       },
       output: { schema: { type: 'string' }, render: (_args: unknown, value: unknown) => [{ type: 'text', text: String(value) }] },
-      async execute(args: { roomId?: string; question: string; header?: string; detail?: string; options?: Array<{ label: string; description?: string }>; askedByRoleId?: string; locale?: string }) {
-        const roomId = args.roomId || roomManager.getActiveRoomId() || 'dev-team-alpha'
+      async execute(args: { roomId?: string; question: string; header?: string; detail?: string; options?: Array<{ label: string; description?: string }>; askedByRoleId?: string; locale?: string }, exec?: any) {
+        const roomId = resolveSessionRoomId(args.roomId, exec)
         const locale = normalizeToolLocale(args.locale)
         const room = roomManager.getRoom(roomId)
         if (!room) return locale === 'en-US' ? 'Room not found.' : '未找到房间。'
@@ -623,8 +645,8 @@ export function registerGroupChatTools(
         schema: { type: 'string' },
         render: (_args: unknown, value: unknown) => [{ type: 'text', text: String(value) }],
       },
-      async execute(args: { roomId?: string; locale?: string }) {
-        const roomId = args.roomId || roomManager.getActiveRoomId() || 'dev-team-alpha'
+      async execute(args: { roomId?: string; locale?: string }, exec?: any) {
+        const roomId = resolveSessionRoomId(args.roomId, exec)
         return roomManager.exportMeetingSummary(roomId, args.locale === 'en-US' ? 'en-US' : 'zh-CN')
       },
     }),

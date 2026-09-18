@@ -2,8 +2,7 @@ import {subscribeGroupChat} from './group-chat-events.js'
 import React, { useState, useEffect, useRef } from 'react'
 import {GroupChatRoleEditor} from './GroupChatRoleEditor.js'
 import {GroupChatCockpitModal} from './GroupChatCockpitModal.js'
-import {GroupChatQuestionComposer} from './GroupChatQuestionComposer.js'
-import {GroupChatComposerTakeover} from './GroupChatComposerTakeover.js'
+import {GroupChatDecisionTakeover} from './GroupChatDecisionTakeover.js'
 import {GroupChatHudTopControls} from './GroupChatHudTopControls.js'
 import {GroupChatHudWorkflowPanel} from './GroupChatHudWorkflowPanel.js'
 import {GroupChatHudRosterPanel} from './GroupChatHudRosterPanel.js'
@@ -122,6 +121,12 @@ export function GroupChatSideDock() {
   }
 
   useEffect(() => {
+    // When switching rooms, immediately reset states to avoid displaying old room data
+    setRoom(null)
+    setMessages([])
+    setScratchpadDraft('')
+    setLedger(undefined)
+
     fetchRoomData()
     fetchCompatData()
 
@@ -146,28 +151,11 @@ export function GroupChatSideDock() {
     }
   }, [roomId])
 
-  // Seamless native chat integration: hide redundant legacy conversation tab header from DSH top bar
-  useEffect(() => {
-    if (typeof document === 'undefined') return
-    const hideLegacyTab = () => {
-      const tabs = document.querySelectorAll('[role="tab"], button')
-      for (const tab of tabs) {
-        const text = (tab.textContent || '').trim()
-        if (text === 'Agent 群聊' || text === '特遣对话') {
-          ;(tab as HTMLElement).style.display = 'none'
-        }
-      }
-    }
-    hideLegacyTab()
-    const timer = window.setInterval(hideLegacyTab, 500)
-    return () => window.clearInterval(timer)
-  }, [])
-
   useEffect(()=>onGroupChatLocaleChange(setLocale),[])
   useEffect(() => {
     if (typeof document === 'undefined') return
     const body = document.body
-    if ((extensionTabActive || heroMainActive || isOpen) && isOpen && !dockFloating) {
+    if ((extensionTabActive || heroMainActive) && isOpen && !dockFloating) {
       body.setAttribute('data-dsh-group-chat-hud-docked-open', 'true')
       body.style.setProperty('--dsh-group-chat-hud-overlay-width', `${Math.max(0, hudWidth + 8)}px`)
     } else {
@@ -374,19 +362,13 @@ export function GroupChatSideDock() {
     finally { setThemeBusy(false) }
   }
 
-  const hudSurfaceActive = extensionTabActive || heroMainActive || isOpen
+  const hudSurfaceActive = extensionTabActive || heroMainActive
 
   return (
     <div data-dsh-group-chat-overlay-root style={{display:'contents'}}>
       {!extensionTabActive && <GroupChatHeroEntry />}
       {hudSurfaceActive && <>
-      <style>{`
-        .gc-roster-avatar{width:22px;height:22px;border-radius:7px;display:inline-grid;place-items:center;flex-shrink:0;font-size:14px;color:var(--dsw-alias-state-business-primary,#4d6bfe);background:var(--dsw-alias-bg-layer-3,rgba(255,255,255,0.06));}
-        body[data-dsh-group-chat-hud-docked-open="true"]:not([data-dsh-group-chat-tab-active="true"]) :is([class*="centerCol"], [data-pane="conversation"], .dshDesktopConversationSurface) {
-          margin-right: var(--dsh-group-chat-hud-overlay-width, 368px) !important;
-          transition: margin-right var(--ds-transition-duration-slow, 0.25s) var(--ds-ease-in-out, cubic-bezier(0.4, 0, 0.2, 1));
-        }
-      `}</style>
+      <style>{`.gc-roster-avatar{width:22px;height:22px;border-radius:7px;display:inline-grid;place-items:center;flex-shrink:0;font-size:14px;color:var(--dsw-alias-state-business-primary,#4d6bfe);background:var(--dsw-alias-bg-layer-3,rgba(255,255,255,0.06));}`}</style>
       {editingAgent&&<GroupChatRoleEditor editingAgent={editingAgent} roomId={room?.roomId || roomId || DEFAULT_GROUP_CHAT_ROOM_ID} onClose={()=>setEditingAgent(null)} onSaved={()=>void fetchRoomData()}/>}
       <GroupChatCockpitModal
         isOpen={cockpitModalOpen}
@@ -395,7 +377,7 @@ export function GroupChatSideDock() {
         locale={locale}
         room={room}
       />
-      <GroupChatComposerTakeover
+      <GroupChatDecisionTakeover
         room={room}
         roomId={roomId}
         locale={locale}
