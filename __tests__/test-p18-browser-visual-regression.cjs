@@ -136,35 +136,25 @@ const code = String.raw`async (page) => {
     await wait(800)
   }
 
-  // 切到插件中间标签；若当前还没出现，给 DSH 一点渲染时间。
-  for (let i = 0; i < 12; i++) {
-    const tabLoc = page.getByText('Agent 群聊', {exact: false}).first()
-    if (await tabLoc.isVisible().catch(() => false)) {
-      await tabLoc.click().catch(() => {})
-      break
-    }
-    await wait(400)
-  }
-  await wait(1000)
-
-  // 展开右侧 HUD；offscreen 的隐藏 HUD 也可能被 Playwright 判为 visible，所以按真实 rect 判断。
-  const hudOnscreenBefore = await page.evaluate(() => {
-    const el = document.querySelector('.dsh-gc-sidebar-host')
-    if (!el) return false
-    const r = el.getBoundingClientRect()
-    return r.width > 100 && r.left < window.innerWidth - 20 && r.right > 20
-  }).catch(() => false)
-  if (!hudOnscreenBefore) {
-    const clickedHudToggle = await page.evaluate(() => {
-      const nodes = [...document.querySelectorAll('[title],button,div,span')]
-      const el = nodes.find(node => ((node.getAttribute('title') || '').includes('展开群聊')) || ((node.textContent || '').trim() === '群聊副屏'))
+  // 展开右侧单侧边栏伴随舱 HUD
+  for (let i = 0; i < 15; i++) {
+    const hudOnscreen = await page.evaluate(() => {
+      const el = document.querySelector('.dsh-gc-sidebar-host')
+      if (!el) return false
+      const r = el.getBoundingClientRect()
+      return r.width > 100 && r.left < window.innerWidth - 20 && r.right > 20
+    }).catch(() => false)
+    if (hudOnscreen) break
+    const clicked = await page.evaluate(() => {
+      const el = document.querySelector('.dsh-gc-hud-trigger-capsule') || [...document.querySelectorAll('[title],button,div,span')].find(node => ((node.getAttribute('title') || '').includes('展开群聊')) || ((node.textContent || '').trim() === '群聊副屏'))
       if (el) { el.click(); return true }
       return false
     }).catch(() => false)
-    if (!clickedHudToggle) {
-      await clickIfVisible(page.getByTitle(/展开群聊/))
-      await clickIfVisible(page.getByText('群聊副屏', {exact: false}))
+    if (clicked) {
+      await wait(800)
+      break
     }
+    await wait(400)
   }
   await wait(900)
 
@@ -229,9 +219,7 @@ const code = String.raw`async (page) => {
 
   await page.screenshot({path: '${screenshotPath}', fullPage: false})
 
-  const hasAgentTab = metrics.labels.hasAgentTab
   const failures = []
-  if (!hasAgentTab) failures.push('未找到中间 Agent 群聊标签')
   if (!metrics.rects.hud || metrics.rects.hud.width < 280) failures.push('未找到展开后的右侧群聊控制台 HUD')
   if (metrics.rects.hud && (metrics.rects.hud.left >= metrics.viewport.width - 20 || metrics.rects.hud.right <= 20)) failures.push('右侧 HUD 仍在屏幕外，未真实展开')
   if (metrics.bodyFlags.hudOpen !== 'true') failures.push('缺少 HUD 展开态 body 标记 data-dsh-group-chat-hud-docked-open=true')
@@ -243,11 +231,9 @@ const code = String.raw`async (page) => {
   if (metrics.rects.composer) {
     const diff = Math.abs((metrics.spacing.composerPaddingLeft || 0) - (metrics.spacing.composerPaddingRight || 0))
     if (diff > 1) failures.push('中间输入框左右 padding 不一致')
-  } else {
-    failures.push('未找到 Agent 群聊输入框 .gc-composer')
-  }
-  if (metrics.spacing.composerToHudGap !== null && (metrics.spacing.composerToHudGap < 0 || metrics.spacing.composerToHudGap > 18)) {
-    failures.push('中间输入框与右侧 HUD 间距异常：' + metrics.spacing.composerToHudGap + 'px')
+    if (metrics.spacing.composerToHudGap !== null && (metrics.spacing.composerToHudGap < 0 || metrics.spacing.composerToHudGap > 18)) {
+      failures.push('中间输入框与右侧 HUD 间距异常：' + metrics.spacing.composerToHudGap + 'px')
+    }
   }
 
   return {ok: failures.length === 0, failures, steps, metrics, screenshot: '${screenshotPath}'}

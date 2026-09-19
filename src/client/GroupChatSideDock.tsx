@@ -11,7 +11,6 @@ import {GroupChatHudDiagnosticsPanel} from './GroupChatHudDiagnosticsPanel.js'
 import type {AssignmentEnvelope, AgentMailboxMessage, CompatReport, GroupMessageData, LedgerData, WorkflowTask} from './group-chat-hud-types.js'
 import type {AgentProfile} from './group-chat-view-types.js'
 import {detectGroupChatLocale, onGroupChatLocaleChange, setGroupChatLocale, tx, type GroupChatLocale} from './i18n.js'
-import {GroupChatHeroEntry} from './GroupChatHeroEntry.js'
 import {DEFAULT_GROUP_CHAT_ROOM_ID, setCurrentGroupChatRoomId, useCurrentGroupChatRoomId} from './current-room.js'
 
 const SIDEBAR_DEFAULT_WIDTH = 360
@@ -155,6 +154,28 @@ export function GroupChatSideDock() {
       unsubscribe()
     }
   }, [roomId])
+
+  // Seamless native integration: completely remove the legacy Agent Chat tab from user view
+  useEffect(() => {
+    if (typeof document === 'undefined') return
+    const hideLegacyTab = () => {
+      const candidates = document.querySelectorAll('[role="tab"], button, [data-tab-id="dsh-group-chat"]')
+      for (const el of candidates) {
+        const text = (el.textContent || '').replace(/\s+/g, ' ').trim()
+        if (text === 'Agent 群聊' || text === '特遣对话' || text.includes('Agent 群聊')) {
+          ;(el as HTMLElement).style.setProperty('display', 'none', 'important')
+        }
+      }
+    }
+    hideLegacyTab()
+    const observer = new MutationObserver(hideLegacyTab)
+    observer.observe(document.body, { childList: true, subtree: true })
+    const timer = window.setInterval(hideLegacyTab, 300)
+    return () => {
+      observer.disconnect()
+      window.clearInterval(timer)
+    }
+  }, [])
 
   useEffect(()=>onGroupChatLocaleChange(setLocale),[])
   useEffect(() => {
@@ -371,10 +392,9 @@ export function GroupChatSideDock() {
 
   return (
     <div data-dsh-group-chat-overlay-root style={{display:'contents'}}>
-      {!extensionTabActive && <GroupChatHeroEntry />}
       <style>{`
         .gc-roster-avatar{width:22px;height:22px;border-radius:7px;display:inline-grid;place-items:center;flex-shrink:0;font-size:14px;color:var(--dsw-alias-state-business-primary,#4d6bfe);background:var(--dsw-alias-bg-layer-3,rgba(255,255,255,0.06));}
-        body[data-dsh-group-chat-hud-docked-open="true"]:not([data-dsh-group-chat-tab-active="true"]) :is([class*="centerCol"], [data-pane="conversation"], .dshDesktopConversationSurface) {
+        body[data-dsh-group-chat-hud-docked-open="true"] :is([class*="centerCol"], [data-pane="conversation"], .dshDesktopConversationSurface) {
           margin-right: var(--dsh-group-chat-hud-overlay-width, 368px) !important;
           transition: margin-right var(--ds-transition-duration-slow, 0.25s) var(--ds-ease-in-out, cubic-bezier(0.4, 0, 0.2, 1));
         }

@@ -1,7 +1,6 @@
 import { disposeGroupChatEvents } from './group-chat-events.js';
 import { createElement } from 'react';
 import { GroupChatSideDock } from "./GroupChatSideDock.js";
-import { GroupChatInputEntry } from "./GroupChatHeroEntry.js";
 import { GroupChatConversationView } from "./GroupChatConversationTab.js";
 import { injectLayoutPushStyles } from "./layout-push.js";
 
@@ -36,15 +35,6 @@ export function apply(ctx: ClientContext): void {
     });
   }, "dsh-group-chat: safe conversation view tab");
 
-  // Official-composer shortcut: discoverable but still keeps the source composer as the primary entry.
-  ctx.effect(() => {
-    return ctx.slots.inject("conversation.input.left", () => {
-      return ctx.slots.register(
-        { name: "conversation.input.left", id: "dsh-group-chat-input-entry", order: 30 },
-        GroupChatInputEntry,
-      );
-    });
-  }, "dsh-group-chat: official composer shortcut");
 
   // Source comment kept in English for open-source readability; user-facing copy stays localized at runtime.
   ctx.effect(() => {
