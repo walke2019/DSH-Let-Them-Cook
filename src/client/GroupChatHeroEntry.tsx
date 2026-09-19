@@ -226,8 +226,6 @@ export function GroupChatInputEntry() {
   }, [])
 
   const activate = () => {
-    if (clickVisibleGroupChatTab()) return
-    openHeroMain()
     window.dispatchEvent(new CustomEvent('dsh-group-chat:toggle-hud'))
   }
 

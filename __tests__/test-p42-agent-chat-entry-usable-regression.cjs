@@ -70,7 +70,8 @@ const code = String.raw`async (page) => {
         const hit = [...document.querySelectorAll('button,a,span,div')]
           .filter(el => visible(el) && (el.textContent || '').trim().includes(needle))
           .sort((a,b) => ((a.getAttribute('role') === 'treeitem' ? 0 : 1) - (b.getAttribute('role') === 'treeitem' ? 0 : 1)) || a.getBoundingClientRect().height - b.getBoundingClientRect().height || a.getBoundingClientRect().top - b.getBoundingClientRect().top)[0]
-        if (!hit) return false
+        hit.dispatchEvent(new MouseEvent('mousedown', {bubbles:true, cancelable:true, view:window}))
+        hit.dispatchEvent(new MouseEvent('mouseup', {bubbles:true, cancelable:true, view:window}))
         hit.dispatchEvent(new MouseEvent('click', {bubbles:true, cancelable:true, view:window}))
         return true
       }, text).catch(() => false)
@@ -82,31 +83,21 @@ const code = String.raw`async (page) => {
   const openGroupChatTask = async () => {
     for (let attempt = 0; attempt < 8; attempt++) {
       const clicked = await page.evaluate(() => {
-        const visible = el => {
-          const r = el.getBoundingClientRect()
-          const st = getComputedStyle(el)
-          return r.width > 0 && r.height > 0 && r.left < innerWidth && r.right > 0 && st.display !== 'none' && st.visibility !== 'hidden'
-        }
-        const treeitems = [...document.querySelectorAll('[role="treeitem"]')].filter(el => visible(el))
-        const session = treeitems.find(el => {
-          const text = (el.textContent || '').trim()
-          const isSession = (el.className || '').includes('sessionRow') || el.getAttribute('aria-expanded') === null
-          return isSession && text !== '新会话' && text.length > 0
-        })
-        if (session) {
-          session.dispatchEvent(new MouseEvent('mousedown', {bubbles:true, cancelable:true, view:window}))
-          session.dispatchEvent(new MouseEvent('mouseup', {bubbles:true, cancelable:true, view:window}))
-          session.dispatchEvent(new MouseEvent('click', {bubbles:true, cancelable:true, view:window}))
-          return session.textContent.trim()
-        }
-        const folders = treeitems.filter(el => (el.className || '').includes('projectRow') || ['dsh-group-chat', 'ha'].some(n => (el.textContent || '').includes(n)))
-        for (const folder of folders) {
-          const chevron = folder.querySelector('.YDXeBa_chevron, svg, [class*="chevron"], [class*="arrow"]') || folder.firstElementChild
-          if (chevron) {
-            chevron.dispatchEvent(new MouseEvent('mousedown', {bubbles:true, cancelable:true, view:window}))
-            chevron.dispatchEvent(new MouseEvent('mouseup', {bubbles:true, cancelable:true, view:window}))
-            chevron.dispatchEvent(new MouseEvent('click', {bubbles:true, cancelable:true, view:window}))
+        const treeitems = [...document.querySelectorAll('[role="treeitem"]')]
+        for (const item of treeitems) {
+          if (item.getAttribute('aria-expanded') === 'false') {
+            const chevron = item.querySelector('.YDXeBa_chevron, svg, [class*="chevron"], [class*="arrow"]') || item.firstElementChild
+            if (chevron) chevron.dispatchEvent(new MouseEvent('click', {bubbles:true, cancelable:true, view:window}))
           }
+        }
+        const leaf = treeitems.find(el => {
+          const text = (el.textContent || '').trim()
+          const isFolder = el.hasAttribute('aria-expanded')
+          return !isFolder && text !== '新会话' && text.length > 0
+        })
+        if (leaf) {
+          leaf.dispatchEvent(new MouseEvent('click', {bubbles:true, cancelable:true, view:window}))
+          return leaf.textContent.trim()
         }
         return false
       }).catch(()=>false)
@@ -121,14 +112,49 @@ const code = String.raw`async (page) => {
     try { await page.context().addCookies([cookie]) } catch {}
   }
   await page.goto('${url}', {waitUntil: 'domcontentloaded', timeout: 20000})
-  await wait(1300)
-  const opened = await openGroupChatTask()
+  let opened = ''
+  for (let attempt = 0; attempt < 10; attempt++) {
+    const clicked = await page.evaluate(() => {
+      const treeitems = [...document.querySelectorAll('[role="treeitem"]')]
+      for (const item of treeitems) {
+        if (item.getAttribute('aria-expanded') === 'false') {
+          const chevron = item.querySelector('.YDXeBa_chevron, svg, [class*="chevron"], [class*="arrow"]') || item.firstElementChild
+          if (chevron) chevron.dispatchEvent(new MouseEvent('click', {bubbles:true, cancelable:true, view:window}))
+        }
+      }
+      const leaf = treeitems.find(el => {
+        const text = (el.textContent || '').trim()
+        const isFolder = el.hasAttribute('aria-expanded')
+        return !isFolder && text !== '新会话' && text.length > 0
+      })
+      if (leaf) {
+        leaf.dispatchEvent(new MouseEvent('mousedown', {bubbles:true, cancelable:true, view:window}))
+        leaf.dispatchEvent(new MouseEvent('mouseup', {bubbles:true, cancelable:true, view:window}))
+        leaf.dispatchEvent(new MouseEvent('click', {bubbles:true, cancelable:true, view:window}))
+        return leaf.textContent.trim()
+      }
+      return null
+    }).catch(() => null)
+    if (clicked) {
+      opened = clicked
+      await wait(1200)
+      break
+    }
+    await wait(600)
+  }
   for (let i = 0; i < 12; i++) {
-    const has = await page.getByText('Agent 群聊', {exact:true}).first().isVisible().catch(()=>false)
-    if (has) break
+    const tabLoc = page.getByRole('tab', { name: 'Agent 群聊' }).first()
+    if (await tabLoc.isVisible().catch(() => false)) {
+      await tabLoc.click().catch(() => {})
+      break
+    }
+    const has = await page.getByText('Agent 群聊', {exact:false}).first().isVisible().catch(()=>false)
+    if (has) {
+      await page.getByText('Agent 群聊', {exact:false}).first().click().catch(() => {})
+      break
+    }
     await wait(500)
   }
-  await clickText('Agent 群聊')
   await wait(900)
   const hudOnscreenBefore = await page.evaluate(() => { const el = document.querySelector('.dsh-gc-sidebar-host'); if (!el) return false; const r = el.getBoundingClientRect(); return r.width > 100 && r.left < innerWidth - 20 && r.right > 20 })
   if (!hudOnscreenBefore) await clickText('群聊副屏')

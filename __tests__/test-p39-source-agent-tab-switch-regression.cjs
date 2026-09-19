@@ -81,14 +81,24 @@ const code = String.raw`async (page) => {
 
 
   const clickConversationTab = async (text) => {
+    const tab = page.getByRole('tab', { name: text }).first()
+    if (await tab.isVisible({ timeout: 800 }).catch(() => false)) {
+      await tab.click().catch(() => {})
+      await wait(650)
+      return true
+    }
+    const loc = page.locator('[role="tab"],button,div').filter({ hasText: text }).first()
+    if (await loc.isVisible({ timeout: 800 }).catch(() => false)) {
+      await loc.click().catch(() => {})
+      await wait(650)
+      return true
+    }
     const clicked = await page.evaluate((needle) => {
       const visible = el => { const r = el.getBoundingClientRect(); const st = getComputedStyle(el); return r.width > 0 && r.height > 0 && st.display !== 'none' && st.visibility !== 'hidden' }
-      const tabs = [...document.querySelectorAll('button[role="tab"],[role="tab"]')]
+      const tabs = [...document.querySelectorAll('button[role="tab"],[role="tab"],button,div')]
         .filter(el => visible(el) && (el.textContent || '').replace(/\s+/g, ' ').trim() === needle)
       const hit = tabs[0]
       if (!hit) return false
-      hit.dispatchEvent(new MouseEvent('mousedown', {bubbles:true, cancelable:true, view:window}))
-      hit.dispatchEvent(new MouseEvent('mouseup', {bubbles:true, cancelable:true, view:window}))
       hit.dispatchEvent(new MouseEvent('click', {bubbles:true, cancelable:true, view:window}))
       return true
     }, text).catch(() => false)
@@ -130,7 +140,7 @@ const code = String.raw`async (page) => {
       hasHud: !!hud,
       hasGcConversationTab: !!gcTab,
       hasOfficialComposer: officialComposer,
-      hasAgentTabLabel: text.includes('Agent 群聊'),
+      hasAgentTabLabel: text.includes('Agent 群聊') || [...document.querySelectorAll('[role="tab"],button')].some(el => (el.textContent || '').includes('Agent 群聊')),
       hasHudTabs: ['团队', '工作流', '黑板', '账本'].every(label => text.includes(label)),
       hasOfficialDialogLabel: text.includes('对话'),
       bodyFlags: {
@@ -161,45 +171,38 @@ const code = String.raw`async (page) => {
 
   await clickVisibleText('新会话')
   await wait(1200)
-  for (let i = 0; i < 6; i++) {
+  for (let i = 0; i < 15; i++) {
     const s = await snapshot()
     if (s.hasOfficialComposer) break
-    await wait(400)
+    await wait(500)
   }
   const officialBefore = await snapshot()
 
   for (let attempt = 0; attempt < 10; attempt++) {
-    const clickedTask = await page.evaluate(() => {
-      const visible = el => { const r = el.getBoundingClientRect(); const st = getComputedStyle(el); return r.width > 0 && r.height > 0 && st.display !== 'none' && st.visibility !== 'hidden' }
-      const treeitems = [...document.querySelectorAll('[role="treeitem"]')].filter(el => visible(el))
-
-      // If a session leaf is visible (sessionRow), click it!
-      const session = treeitems.find(el => {
-        const text = (el.textContent || '').trim()
-        const isSession = (el.className || '').includes('sessionRow') || el.getAttribute('aria-expanded') === null
-        return isSession && text !== '新会话' && text.length > 0
-      })
-      if (session) {
-        session.dispatchEvent(new MouseEvent('mousedown', {bubbles:true, cancelable:true, view:window}))
-        session.dispatchEvent(new MouseEvent('mouseup', {bubbles:true, cancelable:true, view:window}))
-        session.dispatchEvent(new MouseEvent('click', {bubbles:true, cancelable:true, view:window}))
-        return session.textContent.trim()
-      }
-
-      // Try expanding dsh-group-chat or first project folder: click chevron/arrow
-      const folders = treeitems.filter(el => (el.className || '').includes('projectRow') || ['dsh-group-chat', 'ha'].some(n => (el.textContent || '').includes(n)))
-      for (const folder of folders) {
-        const chevron = folder.querySelector('.YDXeBa_chevron, svg, [class*="chevron"], [class*="arrow"]') || folder.firstElementChild
-        if (chevron) {
-          chevron.dispatchEvent(new MouseEvent('mousedown', {bubbles:true, cancelable:true, view:window}))
-          chevron.dispatchEvent(new MouseEvent('mouseup', {bubbles:true, cancelable:true, view:window}))
-          chevron.dispatchEvent(new MouseEvent('click', {bubbles:true, cancelable:true, view:window}))
+    const clicked = await page.evaluate(() => {
+      const treeitems = [...document.querySelectorAll('[role="treeitem"]')]
+      for (const item of treeitems) {
+        if (item.getAttribute('aria-expanded') === 'false') {
+          const chevron = item.querySelector('.YDXeBa_chevron, svg, [class*="chevron"], [class*="arrow"]') || item.firstElementChild
+          if (chevron) chevron.dispatchEvent(new MouseEvent('click', {bubbles:true, cancelable:true, view:window}))
         }
       }
-      return false
-    }).catch(()=>false)
-    if (clickedTask) { await wait(1500); break }
-    await wait(800)
+      const leaf = treeitems.find(el => {
+        const text = (el.textContent || '').trim()
+        const isFolder = el.hasAttribute('aria-expanded')
+        return !isFolder && text !== '新会话' && text.length > 0
+      })
+      if (leaf) {
+        leaf.dispatchEvent(new MouseEvent('click', {bubbles:true, cancelable:true, view:window}))
+        return leaf.textContent.trim()
+      }
+      return null
+    }).catch(() => null)
+    if (clicked) {
+      await wait(1200)
+      break
+    }
+    await wait(600)
   }
   for (let i = 0; i < 12; i++) {
     const s = await snapshot()

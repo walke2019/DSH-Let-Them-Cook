@@ -66,7 +66,12 @@ export function GroupChatSideDock() {
     const refresh = () => {
       const tabActive = document.body.getAttribute('data-dsh-group-chat-tab-active') === 'true'
       const heroActive = document.body.getAttribute('data-dsh-group-chat-hero-open') === 'true'
-      setExtensionTabActive(tabActive)
+      setExtensionTabActive(prev => {
+        if (prev && !tabActive && !heroActive) {
+          setIsOpen(false)
+        }
+        return tabActive
+      })
       setHeroMainActive(heroActive)
       if (tabActive || heroActive) {
         setIsOpen(true)
@@ -155,7 +160,7 @@ export function GroupChatSideDock() {
   useEffect(() => {
     if (typeof document === 'undefined') return
     const body = document.body
-    if ((extensionTabActive || heroMainActive) && isOpen && !dockFloating) {
+    if (isOpen && !dockFloating) {
       body.setAttribute('data-dsh-group-chat-hud-docked-open', 'true')
       body.style.setProperty('--dsh-group-chat-hud-overlay-width', `${Math.max(0, hudWidth + 8)}px`)
     } else {
@@ -166,7 +171,7 @@ export function GroupChatSideDock() {
       body.removeAttribute('data-dsh-group-chat-hud-docked-open')
       body.style.removeProperty('--dsh-group-chat-hud-overlay-width')
     }
-  }, [extensionTabActive, heroMainActive, isOpen, dockFloating, hudWidth])
+  }, [isOpen, dockFloating, hudWidth])
 
   useEffect(() => {
     if (typeof localStorage !== 'undefined') localStorage.setItem('dsh-group-chat.hud-width', String(hudWidth))
@@ -362,13 +367,18 @@ export function GroupChatSideDock() {
     finally { setThemeBusy(false) }
   }
 
-  const hudSurfaceActive = extensionTabActive || heroMainActive
+  const hudSurfaceActive = extensionTabActive || heroMainActive || isOpen
 
   return (
     <div data-dsh-group-chat-overlay-root style={{display:'contents'}}>
       {!extensionTabActive && <GroupChatHeroEntry />}
-      {hudSurfaceActive && <>
-      <style>{`.gc-roster-avatar{width:22px;height:22px;border-radius:7px;display:inline-grid;place-items:center;flex-shrink:0;font-size:14px;color:var(--dsw-alias-state-business-primary,#4d6bfe);background:var(--dsw-alias-bg-layer-3,rgba(255,255,255,0.06));}`}</style>
+      <style>{`
+        .gc-roster-avatar{width:22px;height:22px;border-radius:7px;display:inline-grid;place-items:center;flex-shrink:0;font-size:14px;color:var(--dsw-alias-state-business-primary,#4d6bfe);background:var(--dsw-alias-bg-layer-3,rgba(255,255,255,0.06));}
+        body[data-dsh-group-chat-hud-docked-open="true"]:not([data-dsh-group-chat-tab-active="true"]) :is([class*="centerCol"], [data-pane="conversation"], .dshDesktopConversationSurface) {
+          margin-right: var(--dsh-group-chat-hud-overlay-width, 368px) !important;
+          transition: margin-right var(--ds-transition-duration-slow, 0.25s) var(--ds-ease-in-out, cubic-bezier(0.4, 0, 0.2, 1));
+        }
+      `}</style>
       {editingAgent&&<GroupChatRoleEditor editingAgent={editingAgent} roomId={room?.roomId || roomId || DEFAULT_GROUP_CHAT_ROOM_ID} onClose={()=>setEditingAgent(null)} onSaved={()=>void fetchRoomData()}/>}
       <GroupChatCockpitModal
         isOpen={cockpitModalOpen}
@@ -385,10 +395,11 @@ export function GroupChatSideDock() {
         onDecisionDismissed={fetchRoomData}
       />
       {/**
- * Companion HUD: status, configuration, scratchpad, team, workflow, and ledger without duplicating the central chat input.
+ * Companion HUD: trigger capsule always available across official dialog and extension tabs
  */}
       {!isOpen && (
         <div
+          className="dsh-gc-hud-trigger-capsule"
           onClick={() => { setIsOpen(true); if (!dockFloating) setDockPos({ x: Math.max(8, window.innerWidth - SIDEBAR_DEFAULT_WIDTH - 8), y: 24 }) }}
           title={tx(locale,'展开群聊控制台 (HUD)','Open group chat console (HUD)')}
           style={{
@@ -442,10 +453,11 @@ export function GroupChatSideDock() {
       )}
 
       {/**
- * Companion HUD: status, configuration, scratchpad, team, workflow, and ledger without duplicating the central chat input.
+ * Companion HUD: side dock host rendered when open or when extension tab is active
  */}
-      <div
-        className="dsh-gc-sidebar-host"
+      {(isOpen || extensionTabActive || heroMainActive) && (
+        <div
+          className="dsh-gc-sidebar-host"
         aria-label={tx(locale,'群聊管理侧栏','Group chat management sidebar')}
         aria-hidden={!isOpen}
         inert={!isOpen}
@@ -796,7 +808,7 @@ export function GroupChatSideDock() {
         </div>
 
       </div>
-      </>}
+      )}
     </div>
   )
 }

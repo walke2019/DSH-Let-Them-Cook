@@ -82,31 +82,21 @@ const code = String.raw`async (page) => {
   const openGroupChatTask = async () => {
     for (let attempt = 0; attempt < 8; attempt++) {
       const clicked = await page.evaluate(() => {
-        const visible = el => {
-          const r = el.getBoundingClientRect()
-          const st = getComputedStyle(el)
-          return r.width > 0 && r.height > 0 && st.display !== 'none' && st.visibility !== 'hidden'
-        }
-        const treeitems = [...document.querySelectorAll('[role="treeitem"]')].filter(el => visible(el))
-        const session = treeitems.find(el => {
-          const text = (el.textContent || '').trim()
-          const isSession = (el.className || '').includes('sessionRow') || el.getAttribute('aria-expanded') === null
-          return isSession && text !== '新会话' && text.length > 0
-        })
-        if (session) {
-          session.dispatchEvent(new MouseEvent('mousedown', {bubbles:true, cancelable:true, view:window}))
-          session.dispatchEvent(new MouseEvent('mouseup', {bubbles:true, cancelable:true, view:window}))
-          session.dispatchEvent(new MouseEvent('click', {bubbles:true, cancelable:true, view:window}))
-          return session.textContent.trim()
-        }
-        const folders = treeitems.filter(el => (el.className || '').includes('projectRow') || ['dsh-group-chat', 'ha'].some(n => (el.textContent || '').includes(n)))
-        for (const folder of folders) {
-          const chevron = folder.querySelector('.YDXeBa_chevron, svg, [class*="chevron"], [class*="arrow"]') || folder.firstElementChild
-          if (chevron) {
-            chevron.dispatchEvent(new MouseEvent('mousedown', {bubbles:true, cancelable:true, view:window}))
-            chevron.dispatchEvent(new MouseEvent('mouseup', {bubbles:true, cancelable:true, view:window}))
-            chevron.dispatchEvent(new MouseEvent('click', {bubbles:true, cancelable:true, view:window}))
+        const treeitems = [...document.querySelectorAll('[role="treeitem"]')]
+        for (const item of treeitems) {
+          if (item.getAttribute('aria-expanded') === 'false') {
+            const chevron = item.querySelector('.YDXeBa_chevron, svg, [class*="chevron"], [class*="arrow"]') || item.firstElementChild
+            if (chevron) chevron.dispatchEvent(new MouseEvent('click', {bubbles:true, cancelable:true, view:window}))
           }
+        }
+        const leaf = treeitems.find(el => {
+          const text = (el.textContent || '').trim()
+          const isFolder = el.hasAttribute('aria-expanded')
+          return !isFolder && text !== '新会话' && text.length > 0
+        })
+        if (leaf) {
+          leaf.dispatchEvent(new MouseEvent('click', {bubbles:true, cancelable:true, view:window}))
+          return leaf.textContent.trim()
         }
         return false
       }).catch(() => false)
@@ -153,7 +143,7 @@ const code = String.raw`async (page) => {
       hasGcConversationTab: !!gcTab,
       gcTabVisible: visibleRect(gcTab),
       hasComposer: composer,
-      hasAgentLabel: text.includes('Agent 群聊'),
+      hasAgentLabel: text.includes('Agent 群聊') || [...document.querySelectorAll('[role="tab"],button')].some(el => (el.textContent || '').includes('Agent 群聊')),
       hasOfficialDialogLabel: text.includes('对话'),
       bodyFlags: {
         tabActive: document.body.getAttribute('data-dsh-group-chat-tab-active'),
@@ -167,10 +157,20 @@ const code = String.raw`async (page) => {
     try { await page.context().addCookies([cookie]) } catch {}
   }
   await page.goto('${url}', {waitUntil: 'domcontentloaded', timeout: 20000})
+  const clickConversationTab = async (text) => {
+    const tab = page.getByRole('tab', { name: text }).first()
+    if (await tab.isVisible({ timeout: 1000 }).catch(() => false)) {
+      await tab.click().catch(() => {})
+      await wait(650)
+      return true
+    }
+    return await clickText(text)
+  }
+
   await wait(1400)
   await openGroupChatTask()
   for (let i = 0; i < 12; i++) { if ((await snapshot()).hasAgentLabel) break; await wait(500) }
-  await clickText('Agent 群聊')
+  await clickConversationTab('Agent 群聊')
   await wait(800)
   const beforeReload = await snapshot()
 
@@ -187,7 +187,7 @@ const code = String.raw`async (page) => {
 
   await openGroupChatTask()
   for (let i = 0; i < 12; i++) { if ((await snapshot()).hasAgentLabel) break; await wait(500) }
-  await clickText('Agent 群聊')
+  await clickConversationTab('Agent 群聊')
   await wait(900)
   const afterReturnAgent = await snapshot()
 
