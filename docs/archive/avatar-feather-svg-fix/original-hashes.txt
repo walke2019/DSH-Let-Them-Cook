@@ -1,6 +1,0 @@
-2a194acc60387f3fbcb1dace6cd57150beeaab03b08bd6550f20079e225cf1de  C:\项目\dsh-group-chat\src\client\GroupChatSideDock.tsx
-aba205fc523a0b6bb414745f66961fdfcf5a98b2625819298317f19e94ebcead  C:\项目\dsh-group-chat\src\client\GroupChatPanel.tsx
-615b9b25132f1a7048e0f70e428658c38dcda284003e598e66a6f691875072c7  C:\项目\dsh-group-chat\src\client\GroupChatComposer.tsx
-a684c0da4c0690aee26ad81582954b9a71eb64f5f2cc08e47866f5320fb472f6  C:\项目\dsh-group-chat\src\client\GroupChatRoleEditor.tsx
-1ac89daca99fe07791427ceea13d06a8ed8017014e37d30c4f7c42731645f011  C:\项目\dsh-group-chat\lib\client.js
-e47ddc52140b52e13e1d34cbe52db145b6213836f82d370ea16f7016f6b8cbf5  C:\项目\dsh-group-chat\.pm-workflow\dsh-group-chat\rooms.json

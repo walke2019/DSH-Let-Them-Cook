@@ -143,12 +143,12 @@ export function GroupChatHeroEntry() {
       const detail = (event as CustomEvent<GroupChatLocale>).detail
       if (detail === 'zh-CN' || detail === 'en-US') setLocale(detail)
     }
-    const onOpen = () => setMainOpen(true)
+    const onToggle = () => setMainOpen(prev => !prev)
     window.addEventListener('dsh-group-chat:locale-changed', onLocale as EventListener)
-    window.addEventListener(HERO_OPEN_EVENT, onOpen)
+    window.addEventListener(HERO_OPEN_EVENT, onToggle)
     return () => {
       window.removeEventListener('dsh-group-chat:locale-changed', onLocale as EventListener)
-      window.removeEventListener(HERO_OPEN_EVENT, onOpen)
+      window.removeEventListener(HERO_OPEN_EVENT, onToggle)
     }
   }, [])
 
@@ -171,15 +171,10 @@ export function GroupChatHeroEntry() {
   }, [mainOpen])
 
   const activate = () => {
+    if (clickVisibleGroupChatTab()) return
+    setMainOpen(prev => !prev)
     window.dispatchEvent(new CustomEvent('dsh-group-chat:toggle-hud'))
   }
-
-  // Preserve test contract seam
-  const _testFallbackSeam = () => {
-    if (clickVisibleGroupChatTab()) return
-    setMainOpen(true)
-  }
-  void _testFallbackSeam
 
   return (
     <div className="gc-hero-entry" data-dsh-group-chat-hero-entry>
@@ -231,6 +226,8 @@ export function GroupChatInputEntry() {
   }, [])
 
   const activate = () => {
+    if (clickVisibleGroupChatTab()) return
+    openHeroMain()
     window.dispatchEvent(new CustomEvent('dsh-group-chat:toggle-hud'))
   }
 

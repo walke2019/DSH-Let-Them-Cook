@@ -99,59 +99,53 @@ const code = String.raw`async (page) => {
   const steps = []
   steps.push({step: 'url', value: page.url()})
 
-  // 左侧栏保持展开；如果当前处于窄/收起状态，优先点官方展开/项目入口。
-  const openGroupChatTask = async () => {
-    const candidates = ['DSH多Agent群聊插件方案', '规范开发与参考项目调研']
-    await clickText('ha')
-    let opened = await clickText(...candidates)
-    if (opened) return opened
-    await clickText('展开其余')
-    opened = await clickText(...candidates)
-    if (opened) return opened
-    await clickText('dsh-group-chat')
-    opened = await clickText(...candidates)
-    if (opened) return opened
-    await clickText('展开其余')
-    opened = await clickText(...candidates)
-    return opened
+  const candidates = ['项目杂乱文档整理优化', '规范开发与参考项目调研', '项目代码修改评估', '调研 package.json 依赖', 'DSH多Agent群聊插件方案']
+  for (let attempt = 0; attempt < 10; attempt++) {
+    let opened = ''
+    for (const name of candidates) {
+      const item = page.locator('[role="treeitem"]').filter({hasText: name}).first()
+      if (await item.isVisible().catch(() => false)) {
+        await item.click().catch(() => {})
+        await wait(1200)
+        opened = name
+        break
+      }
+      const textLoc = page.getByText(name, {exact: false}).first()
+      if (await textLoc.isVisible().catch(() => false)) {
+        await textLoc.click().catch(() => {})
+        await wait(1200)
+        opened = name
+        break
+      }
+    }
+    if (opened) {
+      steps.push({step: 'open-task', value: opened})
+      break
+    }
+    await page.evaluate(() => {
+      const folders = [...document.querySelectorAll('[role="treeitem"],div')]
+        .filter(el => (el.textContent || '').includes('dsh-group-chat') && el.getBoundingClientRect().left < 340)
+      for (const folder of folders) {
+        const chevron = folder.querySelector('.YDXeBa_chevron, svg, [class*="chevron"], [class*="arrow"]')
+        if (chevron) {
+          chevron.dispatchEvent(new MouseEvent('click', {bubbles:true, cancelable:true, view:window}))
+          break
+        }
+      }
+    }).catch(() => {})
+    await wait(800)
   }
-  const openedTask = await openGroupChatTask()
-  if (openedTask) steps.push({step: 'open-task', value: openedTask})
 
   // 切到插件中间标签；若当前还没出现，给 DSH 一点渲染时间。
-  const clickConversationTab = async (text) => {
-    const clicked = await page.evaluate((needle) => {
-      const visible = el => { const r = el.getBoundingClientRect(); const st = getComputedStyle(el); return r.width > 0 && r.height > 0 && st.display !== 'none' && st.visibility !== 'hidden' }
-      const tabs = [...document.querySelectorAll('button[role="tab"],[role="tab"]')]
-        .filter(el => visible(el) && (el.textContent || '').replace(/\s+/g, ' ').trim() === needle)
-      const hit = tabs[0]
-      if (!hit) return false
-      hit.dispatchEvent(new MouseEvent('mousedown', {bubbles:true, cancelable:true, view:window}))
-      hit.dispatchEvent(new MouseEvent('mouseup', {bubbles:true, cancelable:true, view:window}))
-      hit.dispatchEvent(new MouseEvent('click', {bubbles:true, cancelable:true, view:window}))
-      return true
-    }, text).catch(() => false)
-    if (clicked) await wait(650)
-    return clicked
-  }
-
   for (let i = 0; i < 12; i++) {
-    const tabFound = await page.evaluate(() => {
-      const tabs = [...document.querySelectorAll('button[role="tab"],[role="tab"]')]
-      return tabs.some(el => (el.textContent || '').includes('Agent 群聊'))
-    }).catch(() => false)
-    if (tabFound) break
-    await wait(500)
+    const tabLoc = page.getByText('Agent 群聊', {exact: false}).first()
+    if (await tabLoc.isVisible().catch(() => false)) {
+      await tabLoc.click().catch(() => {})
+      break
+    }
+    await wait(400)
   }
-  const tabClicked = await clickConversationTab('Agent 群聊')
-  if (!tabClicked) {
-    await page.evaluate(() => {
-      window.dispatchEvent(new CustomEvent('dsh-group-chat:open-hero-main'))
-      const btn = document.querySelector('.gc-hero-button') || document.querySelector('.gc-input-entry-button')
-      if (btn) btn.click()
-    }).catch(() => {})
-  }
-  await wait(1500)
+  await wait(1000)
 
   // 展开右侧 HUD；offscreen 的隐藏 HUD 也可能被 Playwright 判为 visible，所以按真实 rect 判断。
   const hudOnscreenBefore = await page.evaluate(() => {
@@ -256,7 +250,7 @@ const code = String.raw`async (page) => {
     failures.push('中间输入框与右侧 HUD 间距异常：' + metrics.spacing.composerToHudGap + 'px')
   }
 
-  return {ok: failures.length === 0, failures, metrics, screenshot: '${screenshotPath}'}
+  return {ok: failures.length === 0, failures, steps, metrics, screenshot: '${screenshotPath}'}
 }`
 
 fs.writeFileSync(runner, code, 'utf8')

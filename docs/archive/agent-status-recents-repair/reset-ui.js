@@ -1,1 +1,0 @@
-() => { localStorage.setItem('dsh-group-chat.status-pos', JSON.stringify({x:18,y:18})); document.querySelector('[aria-label="编辑特遣角色属性"] button')?.click(); return {reset:localStorage.getItem('dsh-group-chat.status-pos')}; }

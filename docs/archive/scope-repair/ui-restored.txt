@@ -1,3 +1,0 @@
-
-  uid=7_1520 button "选择模型，当前 gemini-3.8-flash-high" expandable focusable focused haspopup="menu"
-

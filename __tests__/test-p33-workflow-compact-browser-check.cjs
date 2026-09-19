@@ -8,6 +8,7 @@ const session = process.env.DSH_GC_P33_SESSION || 'dsh-gc-p33-compact-workflow'
 const url = process.env.DSH_GC_URL || 'http://127.0.0.1:3080/'
 const runner = path.join(__dirname, '.p33-runner.js')
 const reportPath = path.join(__dirname, 'last-run.json')
+const screenshotPath = path.join(__dirname, 'last-run.png').replaceAll('\\', '/')
 
 function getAuthCookie(targetUrl) {
   try {
@@ -91,41 +92,67 @@ const code = String.raw`async (page) => {
   // 回归测试必须进入实际承载插件讨论的 DSH 任务；历史上它位于 ha 工作区，
   // 但测试仍保留 dsh-group-chat / 当前页兜底，避免不同机器侧栏记忆不一致。
   const openKnownGroupChatTask = async () => {
-    for (let attempt = 0; attempt < 8; attempt++) {
-      const clicked = await page.evaluate(() => {
-        const visible = (el) => { const r = el.getBoundingClientRect(); const st = getComputedStyle(el); return r.width > 0 && r.height > 0 && st.display !== 'none' && st.visibility !== 'hidden' }
-        const names = ['DSH多Agent群聊插件方案', '规范开发与参考项目调研']
-        const nodes = [...document.querySelectorAll('[role="treeitem"],button,div,span')].filter(el => visible(el))
-        const hit = nodes.sort((a,b) => (a.getAttribute('role') === 'treeitem' ? 0 : 1) - (b.getAttribute('role') === 'treeitem' ? 0 : 1) || a.getBoundingClientRect().height - b.getBoundingClientRect().height).find(el => names.some(name => (el.textContent || '').includes(name)))
-        if (!hit) return false
-        hit.dispatchEvent(new MouseEvent('mousedown', {bubbles:true, cancelable:true, view:window}))
-        hit.dispatchEvent(new MouseEvent('mouseup', {bubbles:true, cancelable:true, view:window}))
-        hit.dispatchEvent(new MouseEvent('click', {bubbles:true, cancelable:true, view:window}))
-        return true
-      }).catch(()=>false)
-      if (clicked) { await wait(1600); return true }
-      await clickText('ha', 'dsh-group-chat')
-      await wait(700)
+    const candidates = ['项目杂乱文档整理优化', '规范开发与参考项目调研', '项目代码修改评估', '调研 package.json 依赖', 'DSH多Agent群聊插件方案']
+    for (let attempt = 0; attempt < 10; attempt++) {
+      for (const name of candidates) {
+        const item = page.locator('[role="treeitem"]').filter({hasText: name}).first()
+        if (await item.isVisible().catch(() => false)) {
+          await item.click().catch(() => {})
+          await wait(1200)
+          return true
+        }
+        const textLoc = page.getByText(name, {exact: false}).first()
+        if (await textLoc.isVisible().catch(() => false)) {
+          await textLoc.click().catch(() => {})
+          await wait(1200)
+          return true
+        }
+      }
+      await page.evaluate(() => {
+        const folders = [...document.querySelectorAll('[role="treeitem"],div')]
+          .filter(el => (el.textContent || '').includes('dsh-group-chat') && el.getBoundingClientRect().left < 340)
+        for (const folder of folders) {
+          const chevron = folder.querySelector('.YDXeBa_chevron, svg, [class*="chevron"], [class*="arrow"]')
+          if (chevron) {
+            chevron.dispatchEvent(new MouseEvent('click', {bubbles:true, cancelable:true, view:window}))
+            break
+          }
+        }
+      }).catch(() => {})
+      await wait(800)
     }
-    return await clickText('Agent 群聊') !== ''
+    return false
   }
   await openKnownGroupChatTask()
-  for (let i=0;i<12;i++) { if (await page.getByText('Agent 群聊', {exact:true}).first().isVisible().catch(()=>false)) break; await wait(500) }
-  await clickIfVisible(page.getByText('Agent 群聊', {exact:true}))
+  for (let i = 0; i < 12; i++) {
+    const tabLoc = page.getByText('Agent 群聊', {exact: false}).first()
+    if (await tabLoc.isVisible().catch(() => false)) {
+      await tabLoc.click().catch(() => {})
+      break
+    }
+    await wait(400)
+  }
+  await wait(1000)
   let hudOnscreen = await page.evaluate(() => { const el = document.querySelector('.dsh-gc-sidebar-host'); if (!el) return false; const r = el.getBoundingClientRect(); return r.width > 100 && r.left < innerWidth - 20 && r.right > 20 }).catch(()=>false)
   if (!hudOnscreen) {
-    await page.evaluate(() => {
-      window.dispatchEvent(new CustomEvent('dsh-group-chat:open-hero-main'))
-      const el = [...document.querySelectorAll('[title],button,div,span')].find(node => ((node.getAttribute('title') || '').includes('展开群聊')) || ['群聊副屏'].includes((node.textContent || '').trim()) || (node.textContent || '').includes('开整作战室'))
-      if (el) el.click()
-    }).catch(()=>{})
+    await clickText('群聊副屏')
+    await clickIfVisible(page.getByTitle(/展开群聊/))
   }
   await wait(1200)
-  await page.evaluate(() => {
-    const tab = document.querySelector('.dsh-gc-sidebar-host [data-dsh-gc-hud-tab=\"workflow\"]')
-    if (tab) tab.dispatchEvent(new MouseEvent('click', {bubbles:true, cancelable:true, view:window}))
-  }).catch(()=>{})
+  for (let i = 0; i < 10; i++) {
+    const clickedWf = await page.evaluate(() => {
+      const tab = document.querySelector('.dsh-gc-sidebar-host [data-dsh-gc-hud-tab="workflow"]')
+      if (tab) {
+        tab.dispatchEvent(new MouseEvent('click', {bubbles:true, cancelable:true, view:window}))
+        return true
+      }
+      return false
+    }).catch(()=>false)
+    if (clickedWf) break
+    await wait(300)
+  }
   await wait(500)
+  await page.screenshot({path: '${screenshotPath}', fullPage: false})
 
   const result = await page.evaluate(() => {
     const hud = document.querySelector('.dsh-gc-sidebar-host')
