@@ -22,10 +22,12 @@
 - 切换回官方「对话」或「新会话」时，DOM 中不得残留 `.dsh-gc-sidebar-host`、`.gc-conversation-tab`，body 不得残留 `data-dsh-group-chat-tab-active` 或 `data-dsh-group-chat-hud-docked-open`；
 - 详见：[docs/tasks/phases/p38-official-source-dialog-guard/README.md](../tasks/phases/p38-official-source-dialog-guard/README.md)、[docs/tasks/phases/p39-source-agent-tab-switch-regression/README.md](../tasks/phases/p39-source-agent-tab-switch-regression/README.md)、[docs/tasks/phases/p40-refresh-state-cleanup-regression/README.md](../tasks/phases/p40-refresh-state-cleanup-regression/README.md)。
 
-### 1.4 新会话 Blank Hero 入口与自点击防线
-- Blank Hero 临时面板跟随中间列实际 DOM 几何，展开对齐 ~280px，收起对齐 ~56px；
-- 自点击查找官方真实标签页时，必须排除自身入口按钮，杜绝无限递归死循环点击；
-- 详见：[docs/tasks/phases/p71-new-session-agent-entry/README.md](../tasks/phases/p71-new-session-agent-entry/README.md)、[docs/tasks/phases/p73-hero-left-collapse-adaptation/README.md](../tasks/phases/p73-hero-left-collapse-adaptation/README.md)、[docs/tasks/phases/p83-hero-entry-self-click-guard/README.md](../tasks/phases/p83-hero-entry-self-click-guard/README.md)。
+### 1.4 全融合官方对话与单侧边栏伴随舱铁律 (Native Dialog Fusion & Single Companion HUD)
+- **彻底去除独立 Tab**：不向用户展示任何二级对话 Tab，所有多 Agent 协同 100% 融入 DSH 官方主对话；
+- **官方输入框零污染**：严禁在 `conversation.input.left` 或任何输入框插槽注入插件按钮（如「开整作战室」等），输入框保持原生纯净；
+- **新会话零覆盖**：空白会话界面禁止挂载任何自定义 Blank Hero 卡片，保持官方干净空白；
+- **单侧边栏伴随舱（唯一入口）**：右侧贴边胶囊 `🧭 群聊副屏` 为唯一入口，展开后官方对话主区自适应避让 368px 同屏协同，收起时零残留；
+- 详见：`scripts/release-preflight.cjs`、`__tests__/test-p18-browser-visual-regression.cjs`。
 
 ### 1.5 输入框常驻视口底部与滚动区外挂
 - `.gc-chat-bottom`（Composer 区域）作为独立 flex 子节点置于滚动区 `.gc-chat-messages` 外侧，保证滚动长对话时长驻视口底部；

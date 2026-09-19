@@ -198,7 +198,8 @@ const code = String.raw`async (page) => {
         hudOpen: document.body.getAttribute('data-dsh-group-chat-hud-docked-open'),
       },
       labels: {
-        hasAgentTab: [...document.querySelectorAll('*')].some(el => (el.textContent || '').trim() === 'Agent 群聊'),
+        hasVisibleAgentTab: [...document.querySelectorAll('[role="tab"], button, [data-tab-id]')].some(el => (el.textContent || '').trim().includes('Agent 群聊') && el.offsetParent !== null && getComputedStyle(el).display !== 'none'),
+        hasComposerShortcut: !!document.querySelector('#dsh-group-chat-input-entry') || [...document.querySelectorAll('*')].some(el => (el.textContent || '').trim() === '开整作战室'),
         hudTitle: text('.dsh-gc-sidebar-host'),
         hasOldHudName: document.body.textContent.includes('特遣监控室'),
         hasOldSquadSubtitle: !!hud && (hud.textContent || '').includes('全能特遣队'),
@@ -220,6 +221,8 @@ const code = String.raw`async (page) => {
   await page.screenshot({path: '${screenshotPath}', fullPage: false})
 
   const failures = []
+  if (metrics.labels.hasVisibleAgentTab) failures.push('铁律违规：顶栏出现可见的“Agent 群聊”标签，已违反完全融入 DSH 官方对话规范')
+  if (metrics.labels.hasComposerShortcut) failures.push('铁律违规：官方输入框出现“开整作战室”插件入口，已违反官方输入框 0 污染规范')
   if (!metrics.rects.hud || metrics.rects.hud.width < 280) failures.push('未找到展开后的右侧群聊控制台 HUD')
   if (metrics.rects.hud && (metrics.rects.hud.left >= metrics.viewport.width - 20 || metrics.rects.hud.right <= 20)) failures.push('右侧 HUD 仍在屏幕外，未真实展开')
   if (metrics.bodyFlags.hudOpen !== 'true') failures.push('缺少 HUD 展开态 body 标记 data-dsh-group-chat-hud-docked-open=true')
