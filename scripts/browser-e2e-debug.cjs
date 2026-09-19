@@ -220,7 +220,7 @@ async function run() {
       }
 
       // Step 9: Take a screenshot of the active Agent Chat view
-      const screenshotDir = path.join(root, 'docs/tasks/phases/p88-official-tools-and-cache-metrics')
+      const screenshotDir = path.join(root, '__tests__')
       if (!fs.existsSync(screenshotDir)) fs.mkdirSync(screenshotDir, { recursive: true })
       const screenshotFile = path.join(screenshotDir, 'browser-e2e-verified.png')
       await page.screenshot({ path: screenshotFile, fullPage: false })
@@ -261,7 +261,7 @@ async function run() {
   }
 
   // Save report
-  const reportPath = path.join(root, 'docs/tasks/phases/p88-official-tools-and-cache-metrics/browser-e2e-report.json')
+  const reportPath = path.join(root, '__tests__/browser-e2e-report.json')
   fs.writeFileSync(reportPath, JSON.stringify(report, null, 2), 'utf8')
   console.log(`\nBrowser E2E report written to ${reportPath}`)
   const passedAll = report.checks.every(c => c.passed)

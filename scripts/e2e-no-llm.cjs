@@ -58,7 +58,7 @@ async function main() {
   assert.equal(update.task.status, 'passed', 'workflow task passed')
   assert.equal(update.task.verification.output, structured.summary, 'summary stored for HUD')
 
-  const mailbox = manager.addMailboxMessage(applied.roomId, {fromRoleId:task.ownerRoleId, toRoleId:'commander', assignmentId:assignment.assignmentId, content:visible, artifactRefs:['docs/tasks/phases/p10-end-to-end-small-task/README.md']})
+  const mailbox = manager.addMailboxMessage(applied.roomId, {fromRoleId:task.ownerRoleId, toRoleId:'commander', assignmentId:assignment.assignmentId, content:visible, artifactRefs:['docs/tasks/milestones-index.md']})
   assert.ok(mailbox && !mailbox.readAt, 'mailbox message created unread')
   const read = manager.markMailboxRead(applied.roomId, mailbox.mailboxMessageId, 'commander')
   assert.ok(read.readAt, 'mailbox message marked read')

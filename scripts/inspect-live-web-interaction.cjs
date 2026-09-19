@@ -135,7 +135,7 @@ async function runInteractiveWebInspection() {
   }
 
   // 7. 截图留存
-  const screenshotPath = path.join(root, 'docs/tasks/phases/p88-official-tools-and-cache-metrics/live-interactive-inspection.png')
+  const screenshotPath = path.join(root, '__tests__/live-interactive-inspection.png')
   await page.screenshot({ path: screenshotPath, fullPage: true })
   console.log(`\n📸 真实页面完整视口截图已留存至: ${screenshotPath}`)
 

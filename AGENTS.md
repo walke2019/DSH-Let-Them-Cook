@@ -18,9 +18,13 @@
 | **`__tests__/`** | **自动化测试工程目录** | 存放所有 90+ 套自动化回归与集成测试脚本（`__tests__/*.cjs`），对齐标准化开源项目工程目录规范。 |
 
 ### 🛑 文档精简与防泛滥铁律（Anti-Process Bloat Guardrail）
-1. **彻底废除过程性切片文档**：严禁在后续功能迭代、Bug修复、切片重构时，随意新建诸如 `docs/tasks/phases/pXX-...`、`Docs/xxx-repair/`、`test-report.md` 或临时 patch/sandbox 过程文档！
+1. **彻底废除过程性切片文档**：严禁在后续功能迭代、Bug修复、切片重构时，随意新建诸如 `docs/tasks/phases/pXX-...`、`Docs/xxx-repair/`、`test-report.md` 或临时 patch/sandbox 过程文档！全工程 docs 文档总数硬上限必须 `<= 15`。
 2. **长效领域收敛维护**：所有演进经验、踩坑记录与设计规约，必须直接收敛维护在固定的 **四大长效领域专著** (`docs/agents/01~04`) 或 `docs/architecture/` 白皮书中，杜绝文档碎片化。
-3. **测试留痕自动化**：测试验收以自动化测试脚本（`__tests__/*.cjs`）与 preflight 输出为准，严禁通过编写冗长过程报告替代真实自动化测试。
+3. **测试套件严禁碎片化（Anti-Test Bloat Guardrail）**：
+   - **禁止随手新增 `test-pXX-*.cjs` 切片测试**！严禁为单一 issue 或临时 phase 制造一次性断言脚本。
+   - **收敛至 6 大标准领域套件**：所有单元测试与集成验证必须直接补充并维护在 `__tests__/suite-01~06.cjs` 六大标准领域套件中；
+   - **硬上限封顶保护**：`__tests__/` 目录测试脚本总数必须硬性限制在 `<= 8` 个，流水线与 `preflight` 强制核验，超额立即构建阻断！
+4. **测试留痕自动化**：测试验收以统一的 `npm test`（即 6 大标准领域套件）与 `npm run preflight` 为准，秒级快速回归，杜绝耗时冗长的僵尸测试矩阵。
 
 ---
 

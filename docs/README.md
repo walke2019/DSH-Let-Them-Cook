@@ -1,55 +1,65 @@
 # DSH Let Them Cook (开整天团) 技术方案、规范与任务文档中心
 
-> 本目录为项目标准化技术方案中心，涵盖多智能体协同引擎设计、UI 扩展插槽生命周期契约、发版预检与 P1~P94 全量演进里程碑。
+> 本目录为项目标准化技术方案中心，涵盖多智能体协同引擎设计、UI 扩展插槽生命周期契约、发版预检与全量演进里程碑。
 
 ---
 
-## 🧭 项目三层文档体系结构
+## 🧭 项目精简三层文档体系结构
 
-为了保持项目的规范化与工程严谨性，项目严格遵循三层文档结构：
+为了彻底根治文档散落混乱与野蛮生长，项目严格遵循三层文档结构，实行**严格的文档瘦身与反过程膨胀铁律（Anti-Process Bloat Guardrail）**：
 
 ```text
 DSH-Let-Them-Cook/
-├── README.md                      # [第一层] 产品介绍与扩展安装部署指南 (默认地道英文，顶部提供中文切换)
-├── AGENTS.md                      # [第二层] AI Agent 编码、UI 规范标准及避坑开发宪章 (分类索引 + docs 引用)
-├── __tests__/                     # [测试层] 90+ 套自动化回归与集成测试脚本 (专业自动化测试目录)
-└── docs/                          # [第三层] 技术方案、业务规范与开发任务索引中心 (本目录)
+├── README.md                      # [第一层] 产品介绍与扩展安装部署指南 (英文优先，提供中文切换)
+├── AGENTS.md                      # [第二层] AI Agent 编码、UI 规范标准及工程宪章 (四大长效专著索引)
+├── __tests__/                     # [测试层] 90+ 套自动化回归与集成测试脚本 (单一可信验收源)
+└── docs/                          # [第三层] 技术方案与长效专著中心 (全量控制在 15 篇以内)
     ├── README.md                  # 本索引导航文件
-    ├── TODO.md                    # 全局待办开发任务清单与完成状态
-    ├── agents/                    # 1. Agents 专属规范与避坑宪章专区
-    ├── tasks/                     # 2. 开发任务、待办与里程碑管理
-    ├── architecture/              # 3. 系统架构与技术设计白皮书
-    ├── releases/                  # 4. 版本发版记录与发布检查清单
-    ├── archive/                   # 5. 历史修复与沙箱归档
-    └── p1-* ~ p94-*               # 6. P1~P94 各演进阶段专项设计文档
+    ├── TODO.md                    # 全局开发任务清单与完成状态
+    ├── tasks/
+    │   └── milestones-index.md    # 核心历史迭代里程碑整合索引
+    ├── agents/                    # 四大长效领域专著（严禁新建过程切片，所有规约收拢于此）
+    │   ├── 01-ui-and-lifecycle.md
+    │   ├── 02-tools-and-ledger.md
+    │   ├── 03-orchestration-and-anti-stall.md
+    │   └── 04-i18n-personas-workspaces.md
+    ├── architecture/              # 核心架构与策略白皮书
+    │   ├── dispatch-engine.md
+    │   ├── ecosystem-assessment-and-roadmap.md
+    │   ├── orchestrator-skill-and-policy.md
+    │   ├── standards-and-extensibility.md
+    │   └── workflow-and-role-personas.md
+    └── skills/
+        └── dsh-group-chat-orchestrator/SKILL.md
 ```
+
+### 🛑 核心文档精简纪律与反泛滥铁律
+1. **彻底杜绝过程性切片文档**：严禁新建任何阶段性、切片式临时文档（如 `pXX-.../README.md`、`xxx-repair.md`）。所有知识与改动一律直接合流至上述长效专著或架构白皮书。
+2. **测试脚本为验收唯一凭据**：所有交付物的正确性由 `__tests__/*.cjs` 自动化测试保障，严禁在文档中罗列冗余的手写过程报告。
+3. **文档总量硬约束**：整个 `docs/` 目录文件总数受发布预检监控，严格保持在 15 篇以内。
 
 ---
 
-## 📚 业务分类文档目录导航
+## 📚 核心文档全景索引
 
-### 1. 🤖 Agents 专属规范与避坑宪章专区 (`docs/agents/`)
+### 1. 🤖 四大长效领域专著 (`docs/agents/`)
 面向 AI Coding Agent 与业务 Participant Agent 的强制性工程铁律与避坑专著：
-- **[docs/agents/README.md](./agents/README.md)**：Agents 规范专区总览与导读
 - **[01-ui-and-lifecycle.md](./agents/01-ui-and-lifecycle.md)**：UI 布局、插槽生命周期与源版对话绝对隔离（零污染红线）
 - **[02-tools-and-ledger.md](./agents/02-tools-and-ledger.md)**：底座原生工具直通、250ms 流式工具探针、行号 Diff 与 Prompt Cache 真实计费
 - **[03-orchestration-and-anti-stall.md](./agents/03-orchestration-and-anti-stall.md)**：Universal Master Handoff 完工必回主控、阶段流转双语识别、看门狗超时报警信自愈
 - **[04-i18n-personas-workspaces.md](./agents/04-i18n-personas-workspaces.md)**：全栈中英双语运行时、主题人格化、空态文案差异化与工作区持久化隔离
 
-### 2. 📋 开发任务与待办清单 (`docs/tasks/`)
-项目开发进度管理、迭代阶段划分与任务跟踪：
-- **[docs/tasks/README.md](./tasks/README.md)**：开发任务管理总览
-- **[TODO.md](./TODO.md)** (或查看 [tasks/TODO.md](./tasks/TODO.md))：全局待办开发任务清单（P0~P94 迭代进展追踪）
-- **[roadmap.md](./tasks/roadmap.md)**：版本演进规划与中长期技术路线图
-- **[milestones-index.md](./tasks/milestones-index.md)**：P1~P94 迭代里程碑全景索引
-
-### 3. 🏛️ 系统架构与技术设计 (`docs/architecture/`)
+### 2. 🏛️ 系统架构白皮书 (`docs/architecture/`)
 核心系统架构设计、微内核挂载与协作机制深度白皮书：
-- **[docs/architecture/README.md](./architecture/README.md)**：系统架构文档总览
-- **[technical-architecture.md](./architecture/technical-architecture.md)**：总体技术架构与 Cordis 扩展分层设计
-- **[business-specification.md](./architecture/business-specification.md)**：业务定位与主副屏协同规范
 - **[dispatch-engine.md](./architecture/dispatch-engine.md)**：主 Agent + SubAgent 分工、工具归口专员与并发调度模型
 - **[standards-and-extensibility.md](./architecture/standards-and-extensibility.md)**：DSH 插件标准与 UI Seam 隔离规范
+- **[workflow-and-role-personas.md](./architecture/workflow-and-role-personas.md)**：五大世界观主题与工作流 DAG 编排
+- **[orchestrator-skill-and-policy.md](./architecture/orchestrator-skill-and-policy.md)**：运行时 Skill 规范与工具调度策略
+- **[ecosystem-assessment-and-roadmap.md](./architecture/ecosystem-assessment-and-roadmap.md)**：生态评估与演进路线
+
+### 3. 📋 任务与里程碑 (`docs/tasks/` & `docs/TODO.md`)
+- **[TODO.md](./TODO.md)**：全局待办开发任务清单与完成状态
+- **[milestones-index.md](./tasks/milestones-index.md)**：历史迭代里程碑全景归拢与索引
 - **[orchestrator-skill-and-policy.md](./architecture/orchestrator-skill-and-policy.md)**：扩展与 Runtime Skill 协同策略
 - **[fault-tolerance-and-token-thrift.md](./architecture/fault-tolerance-and-token-thrift.md)**：看门狗容错机制与 Token 节约策略
 - **[workflow-and-role-personas.md](./architecture/workflow-and-role-personas.md)**：角色设定、五套主题世界观与闭环工作流

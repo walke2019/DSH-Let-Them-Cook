@@ -27,13 +27,44 @@ function countDocs(dir) {
 const docCount = countDocs(path.join(root, 'docs'))
 if (docCount > 15) errors.push(`Anti-Process Bloat Guardrail tripped: total docs count ${docCount} exceeds ceiling of 15`)
 
-const required = ['README.md','AGENTS.md','docs/TODO.md','docs/tasks/milestones-index.md','docs/agents/01-ui-and-lifecycle.md','docs/agents/02-tools-and-ledger.md','docs/agents/03-orchestration-and-anti-stall.md','docs/agents/04-i18n-personas-workspaces.md','src/compat/dsh.ts','src/engine/agent-runtime.ts','src/engine/auto-setup.ts','src/engine/model-recommender.ts','src/engine/structured-result.ts','src/client/GroupChatSideDock.tsx','src/client/group-chat-hud-types.ts','src/client/group-chat-hud-styles.ts','src/client/GroupChatConversationTab.tsx','src/client/GroupChatHeroEntry.tsx','scripts/test-matrix.cjs','scripts/api-smoke.cjs','scripts/e2e-no-llm.cjs','__tests__/test-p39-source-agent-tab-switch-regression.cjs','__tests__/test-p40-refresh-state-cleanup-regression.cjs','__tests__/test-p42-agent-chat-entry-usable-regression.cjs','__tests__/test-p43-final-closure-audit.cjs','__tests__/test-p44-source-dialog-prepare-diagnostic.cjs','__tests__/test-p45-theme-aware-central-copy.cjs','__tests__/test-p46-i18n-panel-task-smoke.cjs',
-  '__tests__/test-p47-bilingual-ui-and-tool-scope.cjs','__tests__/test-p48-real-agent-loop-quality.cjs','__tests__/test-p49-agent-timeout-diagnostic.cjs','__tests__/test-p50-real-moderator-led-loop.cjs','__tests__/test-p51-task-tier-progress.cjs','__tests__/test-p52-autosetup-dispatch-guard.cjs','__tests__/test-p53-message-ledger-persistence.cjs','__tests__/test-p54-interrupted-assignment-recovery.cjs','__tests__/test-p55-bilingual-export-summary.cjs','__tests__/test-p56-runtime-autosetup-i18n.cjs','__tests__/test-p57-agent-runtime-prompt-i18n.cjs','__tests__/test-p58-tool-workflow-api-i18n.cjs','__tests__/test-p59-theme-workflow-content-i18n.cjs','__tests__/test-p60-tech-legends-theme.cjs','__tests__/test-p61-english-source-bilingual-runtime.cjs','__tests__/test-p62-runtime-agent-watchdog.cjs','__tests__/test-p63-assignment-watchdog-timeout.cjs','__tests__/test-p64-chat-ui-composer-progression.cjs','__tests__/test-p65-captain-task-protocol.cjs','__tests__/test-p66-durable-subagent-resume.cjs','__tests__/test-p67-approve-run-transaction-card.cjs','__tests__/test-p68-team-coordination-tools.cjs','__tests__/test-p69-task-cockpit-productization.cjs','__tests__/test-p70-model-health-and-switching.cjs','__tests__/test-p71-new-session-agent-entry.cjs','__tests__/test-p72-hud-message-margins.cjs','__tests__/test-p73-hero-left-collapse.cjs','__tests__/test-p74-session-room-binding.cjs','__tests__/test-p75-distinct-theme-copy.cjs','__tests__/test-p76-hud-locale-toggle-header.cjs','__tests__/test-p77-central-live-execution-status.cjs','__tests__/test-p78-agent-turn-surface-fallback.cjs','__tests__/test-p79-composer-outside-scroll.cjs','__tests__/test-p80-central-loading-state.cjs','__tests__/test-p81-workflow-commander-delegation.cjs','__tests__/test-p82-official-like-central-execution.cjs','__tests__/test-p83-hero-entry-self-click-guard.cjs','__tests__/test-p46-i18n-panel-task-smoke.cjs']
+const testFiles = fs.readdirSync(path.join(root, '__tests__')).filter(file => file.endsWith('.cjs'))
+if (testFiles.length > 8) errors.push(`Anti-Test Bloat Guardrail tripped: test files count ${testFiles.length} exceeds ceiling of 8`)
+
+const required = [
+  'README.md',
+  'AGENTS.md',
+  'docs/TODO.md',
+  'docs/tasks/milestones-index.md',
+  'docs/agents/01-ui-and-lifecycle.md',
+  'docs/agents/02-tools-and-ledger.md',
+  'docs/agents/03-orchestration-and-anti-stall.md',
+  'docs/agents/04-i18n-personas-workspaces.md',
+  'src/compat/dsh.ts',
+  'src/engine/agent-runtime.ts',
+  'src/engine/auto-setup.ts',
+  'src/engine/model-recommender.ts',
+  'src/engine/structured-result.ts',
+  'src/client/GroupChatSideDock.tsx',
+  'src/client/group-chat-hud-types.ts',
+  'src/client/group-chat-hud-styles.ts',
+  'src/client/GroupChatConversationTab.tsx',
+  'src/client/GroupChatHeroEntry.tsx',
+  'scripts/test-matrix.cjs',
+  'scripts/api-smoke.cjs',
+  'scripts/e2e-no-llm.cjs',
+  '__tests__/suite-01-room-and-lifecycle.cjs',
+  '__tests__/suite-02-workflow-dag.cjs',
+  '__tests__/suite-03-runtime-anti-stall.cjs',
+  '__tests__/suite-04-tools-and-ledger.cjs',
+  '__tests__/suite-05-personas-and-i18n.cjs',
+  '__tests__/suite-06-e2e-closed-loop.cjs',
+]
 for (const file of required) if (!exists(file)) errors.push(`missing required artifact: ${file}`)
 
 const pkg = JSON.parse(read('package.json'))
-for (const script of ['typecheck','build:all','test:matrix','smoke:api','test:e2e:no-llm','test:ui:visual','test:ui:switch','test:ui:refresh','test:ui:entry','test:diagnostic:prepare','test:theme-copy','test:i18n-panel-smoke',
-  'test:bilingual-ui','test:agent-loop-quality','test:agent-timeout-diagnostic','test:real-moderator-loop','test:task-tier-progress','test:autosetup-dispatch-guard','test:message-ledger-persistence','test:interrupted-assignment-recovery','test:bilingual-export-summary','test:runtime-autosetup-i18n','test:agent-runtime-prompt-i18n','test:tool-workflow-api-i18n','test:theme-workflow-content-i18n','test:tech-legends-theme','test:english-source-bilingual-runtime','test:runtime-agent-watchdog','test:assignment-watchdog-timeout','test:chat-ui-composer-progression','test:captain-task-protocol','test:durable-subagent-resume','test:approve-run-transaction-card','test:team-coordination-tools','test:task-cockpit-productization','test:model-health-switching','test:new-session-agent-entry','test:hud-message-margins','test:hero-left-collapse','test:session-room-binding','test:distinct-theme-copy','test:hud-locale-toggle-header','test:central-live-status','test:agent-turn-surface-fallback','test:composer-outside-scroll','test:central-loading-state','test:workflow-commander-delegation','test:official-like-central-execution','test:hero-entry-self-click-guard','preflight']) if (!pkg.scripts?.[script]) errors.push(`missing package script: ${script}`)
+for (const script of ['typecheck', 'build:all', 'test', 'test:matrix', 'smoke:api', 'test:e2e:no-llm', 'preflight']) {
+  if (!pkg.scripts?.[script]) errors.push(`missing package script: ${script}`)
+}
 if (pkg.main !== './lib/index.js') errors.push('package main must point to ./lib/index.js')
 if (!pkg.dsh?.client?.inject?.includes('@deepseek-ai/dsh-client-runtime')) errors.push('dsh client runtime injection missing')
 
