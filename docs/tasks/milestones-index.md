@@ -27,6 +27,7 @@
 | **P45** | 中间群聊主题化人话文案 | [docs/tasks/phases/p45-theme-aware-central-copy](../tasks/phases/p45-theme-aware-central-copy/README.md) | `test-p45-theme-aware-central-copy.cjs` |
 | **P47** | 双语 UI 与工具作用域规范 | [docs/tasks/phases/p47-bilingual-ui-and-tool-scope](../tasks/phases/p47-bilingual-ui-and-tool-scope/README.md) | `test-p47-bilingual-ui-and-tool-scope.cjs` |
 | **P48** | 真实多智能体闭环质量验收 | [docs/tasks/phases/p48-real-agent-loop-quality](../tasks/phases/p48-real-agent-loop-quality/README.md) | `test-p48-real-agent-loop-quality.cjs` |
+| **P50** | 真实主持链路验收 | [docs/tasks/phases/p50-real-moderator-led-loop](../tasks/phases/p50-real-moderator-led-loop/README.md) | `test-p50-real-moderator-led-loop.cjs` |
 | **P51** | 快速任务与长流程任务分层 | [docs/tasks/phases/p51-task-tier-progress](../tasks/phases/p51-task-tier-progress/README.md) | `test-p51-task-tier-progress.cjs` |
 | **P53** | 消息与账本持久化 | [docs/tasks/phases/p53-message-ledger-persistence](../tasks/phases/p53-message-ledger-persistence/README.md) | `test-p53-message-ledger-persistence.cjs` |
 | **P54** | 重启中断任务状态自愈恢复 | [docs/tasks/phases/p54-interrupted-assignment-recovery](../tasks/phases/p54-interrupted-assignment-recovery/README.md) | `test-p54-interrupted-assignment-recovery.cjs` |
