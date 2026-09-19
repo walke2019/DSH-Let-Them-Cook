@@ -18,10 +18,18 @@ const SIDEBAR_MIN_WIDTH = 300
 const SIDEBAR_MAX_WIDTH = 520
 
 
+export interface GroupChatSideDockProps {
+  useSessions?: (selector: (state: any) => any) => any;
+  useWorkspaces?: (selector: (state: any) => any) => any;
+  [key: string]: any;
+}
+
 /**
  * Companion HUD: status, configuration, scratchpad, team, workflow, and ledger without duplicating the central chat input.
  */
-export function GroupChatSideDock() {
+export function GroupChatSideDock(props?: GroupChatSideDockProps) {
+  const hasSessionsHook = typeof props?.useSessions === 'function'
+  const liveSessionId = hasSessionsHook ? (props.useSessions((s: any) => s?.current) ?? '') : undefined
   const [isOpen, setIsOpen] = useState(false)
   const [cockpitModalOpen, setCockpitModalOpen] = useState(false)
   const [editingAgent,setEditingAgent] = useState<AgentProfile|null>(null)
@@ -51,7 +59,7 @@ export function GroupChatSideDock() {
   const [isResizingHud, setIsResizingHud] = useState(false)
   const [extensionTabActive, setExtensionTabActive] = useState(false)
   const [heroMainActive, setHeroMainActive] = useState(false)
-  const roomId = useCurrentGroupChatRoomId()
+  const roomId = useCurrentGroupChatRoomId(liveSessionId)
   const selectedTheme = room?.activeTheme === 'meme_comedy' ? 'default' : (room?.activeTheme || 'default')
   const selectedMode = room?.dispatchMode === 'workflow_driven' ? 'default' : (room?.dispatchMode || 'default')
   const displayRoomTitle = (room?.title?.includes('特遣') || room?.title?.includes('AI 小队')) ? tx(locale,'DSH 开整天团工作台','DSH Let Them Cook Workspace') : (room?.title || tx(locale,'DSH 开整天团','DSH Let Them Cook'))

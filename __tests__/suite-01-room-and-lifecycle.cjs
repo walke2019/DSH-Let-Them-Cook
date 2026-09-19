@@ -64,4 +64,26 @@ assert.equal(roomById.roomId, roomId)
 assert.ok(roomById.assignments.length >= 1)
 console.log('  ✓ Room lookup and assignment tracking')
 
+// 5. Dynamic Session-to-Room Binding & Cross-Session Isolation
+const roomA = manager.ensureRoomForSession('dsh-session-project-alpha', 'session-project-alpha')
+const roomB = manager.ensureRoomForSession('dsh-session-project-beta', 'session-project-beta')
+const roomNew = manager.ensureRoomForSession('dsh-new-session')
+
+assert.equal(roomA.roomId, 'dsh-session-project-alpha')
+assert.equal(roomB.roomId, 'dsh-session-project-beta')
+assert.equal(roomNew.roomId, 'dsh-new-session')
+
+// Mutate Session A state
+manager.createAssignment(roomA.roomId, 'frontend', 'Design HUD Header')
+roomA.scratchpad = 'Session A Scratchpad'
+manager.saveRoom(roomA)
+
+// Verify Session B and New Session are 100% clean and isolated
+const freshB = manager.getRoom(roomB.roomId)
+const freshNew = manager.getRoom(roomNew.roomId)
+assert.equal(freshB.assignments.length, 0, 'Session B must not inherit Session A assignments')
+assert.notEqual(freshB.scratchpad, 'Session A Scratchpad', 'Session B scratchpad must not leak from Session A')
+assert.equal(freshNew.assignments.length, 0, 'New session must start completely blank')
+console.log('  ✓ Dynamic session-to-room binding and 100% cross-session isolation')
+
 console.log('SUITE_01_ROOM_LIFECYCLE_EXIT:0')

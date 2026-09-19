@@ -3,20 +3,48 @@ import { createElement } from 'react';
 import { GroupChatSideDock } from "./GroupChatSideDock.js";
 import { GroupChatConversationView } from "./GroupChatConversationTab.js";
 import { injectLayoutPushStyles } from "./layout-push.js";
+import { setActiveSessionId } from "./current-room.js";
 
 export interface ClientContext {
   slots: {
     inject(slotName: string, callback: () => unknown): () => void;
     register(meta: Record<string, unknown>, component?: unknown): unknown;
   };
+  sessions?: {
+    list: {
+      getSnapshot(): { current?: string };
+      subscribe(fn: () => void): () => void;
+    };
+  };
+  get?(name: string): unknown;
   effect(callback: () => unknown, label?: string): void;
 }
 
-export const inject = ["slots"];
+export const inject = ["slots", "sessions"];
 
 export function apply(ctx: ClientContext): void {
   ctx.effect(()=>()=>disposeGroupChatEvents(), "dsh-group-chat: events");
   ctx.effect(() => injectLayoutPushStyles(), "dsh-group-chat: styles");
+
+  // Sync active DSH session with companion HUD current-room state machine
+  try {
+    const sessionsService = ctx.get ? (ctx.get("sessions") as any) : ctx.sessions;
+    if (sessionsService?.list) {
+      if (typeof window !== "undefined" && !(window as any).__dshSessions) {
+        (window as any).__dshSessions = sessionsService;
+      }
+      const syncSession = () => {
+        try {
+          const snap = sessionsService.list.getSnapshot();
+          if (snap) {
+            setActiveSessionId(snap.current || "");
+          }
+        } catch {}
+      };
+      syncSession();
+      ctx.effect(() => sessionsService.list.subscribe(syncSession), "dsh-group-chat: session watch");
+    }
+  } catch {}
 
   // Safe conversation view adapter without taking over the official chat
   ctx.effect(() => {
