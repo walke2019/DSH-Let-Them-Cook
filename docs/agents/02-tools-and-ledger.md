@@ -1,53 +1,30 @@
-# 02 - 原生工具调用、流式状态机与计费审计 (Tools, Streaming & Ledger)
+# 02-tools-and-ledger.md — 原生工具调用、流式状态机与计费审计
 
-本文档规范群聊智能体对 DSH 底座工具的调用机制、流式状态回传、行号 Diff 可视化以及 Prompt Cache 真实计费审计。
-
----
-
-## 1. 核心契约与铁律
-
-### 1.1 DSH 底座原生工具白名单直通
-- 严禁向智能体提供虚拟假工具或脱离底层执行能力的占位工具；
-- 成员智能体必须直接白名单直通底座原生工具（`read`, `write`, `edit`, `glob`, `grep`, `bash`, `web_search`, `web_fetch`, `read_image`）；
-- 详见：[docs/tasks/phases/execution-tool-routing-runtime/README.md](../tasks/phases/execution-tool-routing-runtime/README.md)、[docs/tasks/phases/p88-official-tools-and-cache-metrics/README.md](../tasks/phases/p88-official-tools-and-cache-metrics/README.md)。
-
-### 1.2 中央消息流 250ms 工具探针与行号 Diff
-- `runMemberTurn` 挂载 250ms 流式探针，但工具事实解析统一委托给 `src/engine/dsh-tool-event-adapter.ts`；
-- 适配器优先消费 DSH 原生工具事件：`tool/ptc-dispatch-start`、`tool/ptc-dispatch`、`tool/call`、`tool/result`，输出稳定的 `ToolCallRecord` 视图模型；
-- 通过 SSE 实时向前端广播 `assignment:updated`，驱动中央对话流气泡实时展示工具调用状态；
-- `edit` 工具调用必须智能解析提取行号差异（如 `+29 -14`），`bash` 提取清晰描述，工具执行失败显式标红（`isError` 标签）；
-- 详见：[docs/tasks/phases/p77-central-live-execution-status/README.md](../tasks/phases/p77-central-live-execution-status/README.md)、[docs/tasks/phases/p82-official-like-central-execution/README.md](../tasks/phases/p82-official-like-central-execution/README.md)、[docs/tasks/phases/p86-native-tool-row-adapter/README.md](../tasks/phases/p86-native-tool-row-adapter/README.md)。
-
-### 1.3 多网关 Prompt Cache 命中率解析与真实账本
-- 最新 DSH 环境必须优先读取 `ctx.sessionProjections` 的官方 `tokenUsage` / `sessionStats` 投影，分别作为 Token 账本与首 Token/LLM/工具耗时的权威数据源；
-- 在投影不可用时，才降级扫描 `assistant/message` 或 `assistant/attempt` 的 `data.stream`，读取 `chunk.type === 'usage'`；
-- 兼容主流模型厂商的 Cache 计量字段：
-  - OpenAI / DeepSeek: `prompt_cache_hit_tokens` 或 `prompt_tokens_details.cached_tokens`
-  - Anthropic / 标准兼容: `cache_read_input_tokens`
-  - Gemini / Google 兼容: `cached_tokens` / `total_cached_tokens`
-- 缓存命中百分比公式：`cachePercentage = cacheReadTokens / (uncachedInputTokens + cacheReadTokens + cacheWriteTokens) * 100%`；
-- 详见：[docs/tasks/phases/p88-official-tools-and-cache-metrics/README.md](../tasks/phases/p88-official-tools-and-cache-metrics/README.md)。
-
-### 1.4 结构化交付卡片与确认后执行事务
-- 专员完成任务后交付 Markdown 结构化卡片（`agent-result` 块），支持状态（`passed`/`failed`/`blocked`）、证据与下一步动作；
-- 针对危险文件操作或架构修改，通过 `group_chat_transaction_create` 创建待确认卡片，经用户或 Commander 批准后方可执行；
-- 详见：[docs/tasks/phases/p6-structured-agent-result/README.md](../tasks/phases/p6-structured-agent-result/README.md)、[docs/tasks/phases/p67-approve-run-transaction-card/README.md](../tasks/phases/p67-approve-run-transaction-card/README.md)。
-
-### 1.5 团队协同工具箱 (Captain Task Protocol)
-- 团队成员协同标准工具：
-  - `group_chat_task_claim`：领取/恢复任务
-  - `group_chat_task_block`：标记阻塞并上报原因
-  - `group_chat_task_handoff`：任务移交指定角色
-  - `group_chat_task_report`：向 Commander 上报结果与产物证据
-  - `group_chat_task_close`：Commander 收口关闭任务节点
-- 详见：[docs/tasks/phases/p65-captain-task-protocol/README.md](../tasks/phases/p65-captain-task-protocol/README.md)、[docs/tasks/phases/p68-team-coordination-tools/README.md](../tasks/phases/p68-team-coordination-tools/README.md)。
+本指南聚焦于 **DSH 底座原生工具直通、实时工具流式广播、结构化结果解析与 Prompt Cache 计费核算**。
 
 ---
 
-## 2. 自动化回归命令
-- `npm run test:central-live-status` — 中央执行状态可见性回归
-- `npm run test:native-tool-row-adapter` — 原生工具行号 Diff 与展示适配回归
-- `npm run test:capability-diagnostics-ui` — HUD 底座能力诊断卡回归
-- `npm run test:approval-workflow-bridge` — DSH approval/workflow bridge 能力检测回归
-- `npm run test:approve-run-transaction-card` — 确认后执行事务卡片回归
-- `npm run test:team-coordination-tools` — 团队协同工具箱回归
+## 🏛️ 核心架构契约
+
+### 1. DSH 底座原生工具直通（Native Tool Passthrough）
+- 赋予专员真实的 DSH 底座能力（`read` / `edit` / `bash` / `grep` / `glob`），严禁使用任何未落地的虚拟假工具。
+- 所有工具调用经过 `normalizeToolNames()` 规整，杜绝因名称别名造成的权限拦截。
+
+### 2. 毫秒级流式 Diff 探针
+- 实时广播工具执行状态。对于文件编辑（`edit`）自动精确解析 `+add -del` 行号差异与代码补丁指标。
+- bash 工具实时捕获执行意图与退出状态码，执行失败显式标红。
+
+### 3. 真实 Prompt Cache 计费审计
+- 跨模型网关精准解析 `cached_tokens`，基于真实缓存读取量精确计算缓存命中率（`cacheRead / (inTokens + cacheRead + cacheWrite)`），杜绝计费误报为 0%。
+
+### 4. 结构化交付结果（Structured Agent Result）
+- 专员交付结果采用统一的结构化代码块（`agent-result`），包含明确的 `RESULT_STATUS`、`SUMMARY`、`NEXT` 与 `EVIDENCE`。
+- 渲染层在中央消息流中无损剥离控制块，仅展示纯净的人类可读正文，控制块直接驱动状态机流转。
+
+### 5. 团队协同工具箱（Captain Task Protocol）
+- 提供 `claim` / `block` / `handoff` / `report` / `close` 五大标准协同原子，确保多 Agent 分工互斥且有序。
+
+---
+
+## 🧪 对应标准验证套件
+- `__tests__/suite-04-tools-and-ledger.cjs`（原生工具直通、Diff 提取与账本计费）

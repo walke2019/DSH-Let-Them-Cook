@@ -5,74 +5,67 @@ const root = path.resolve(__dirname, '..')
 const { parseStructuredAgentResult, stripStructuredAgentResult } = require(path.join(root, 'lib/engine/structured-result.js'))
 const { normalizeToolNames } = require(path.join(root, 'lib/compat/dsh.js'))
 
-console.log('[SUITE-04] Testing Tools Whitelist, Streaming Diff, Structured Result & Prompt Cache...')
+console.log('[SUITE-04] Pure Domain Behavioral Test: Native Tools Whitelist, Streaming Diff & Token Accounting...')
 
-// 1. DSH Native Tools Whitelist & Normalization
+// 1. Tool Normalization: Idempotent and Canonical
 const rawTools = ['bash', 'terminal', 'sh', 'web_search', 'read_file']
 const normalized = normalizeToolNames(rawTools)
-assert.ok(normalized.includes('bash'), 'bash should remain normalized')
-assert.ok(normalized.includes('web_search'), 'web_search should remain normalized')
-console.log('  ✓ Native DSH tool normalization and permission whitelist')
+assert.ok(normalized.includes('bash'))
+assert.ok(normalized.includes('web_search'))
 
-// 2. Structured Agent Result Parsing & Display Stripping
-const rawAgentOutput = `我已经完成了测试代码的修复。
+// 2. Structured Agent Result Parsing & Display Purification
+const agentMsg = `任务执行完毕。
 
 \`\`\`agent-result
 RESULT_STATUS: passed
-SUMMARY: 修复了单元测试中的断言不一致问题，覆盖率达到 100%。
-NEXT: 移交给测试专员进行集成回归。
+SUMMARY: 核心模块单测全量通过。
+NEXT: 提交给总指挥官审核。
 EVIDENCE: __tests__/suite-01-room-and-lifecycle.cjs
 \`\`\`
-祝工作顺利！`
+请指示。`
 
-const parsed = parseStructuredAgentResult(rawAgentOutput)
+const parsed = parseStructuredAgentResult(agentMsg)
 assert.equal(parsed.status, 'passed')
-assert.match(parsed.summary, /修复了单元测试/)
-assert.match(parsed.next, /移交给测试专员/)
+assert.match(parsed.summary, /核心模块单测全量通过/)
+assert.match(parsed.next, /提交给总指挥官审核/)
 assert.ok(parsed.evidence.includes('__tests__/suite-01-room-and-lifecycle.cjs'))
 
-const cleaned = stripStructuredAgentResult(rawAgentOutput)
-assert.ok(!cleaned.includes('```agent-result'), 'control block must be stripped from visible message')
-assert.match(cleaned, /我已经完成了测试代码的修复/)
-assert.match(cleaned, /祝工作顺利/)
-console.log('  ✓ Structured agent result block extraction and clean UI rendering')
+const cleanDisplay = stripStructuredAgentResult(agentMsg)
+assert.equal(cleanDisplay.includes('```agent-result'), false, 'UI display must be 100% stripped of control blocks')
+assert.match(cleanDisplay, /任务执行完毕/)
+assert.match(cleanDisplay, /请指示/)
 
-// 3. Official Prompt Cache Formula Verification
-// Formula: promptTokens = inTok + cacheRead + cacheWrite; cacheHit = cacheRead / promptTokens
-function calculateCacheHit(inTok, cacheRead, cacheWrite) {
-  const promptTokens = inTok + cacheRead + cacheWrite
-  if (promptTokens <= 0) return 0
-  return Number(((cacheRead / promptTokens) * 100).toFixed(1))
+// 3. Exact Formula for Prompt Cache Accounting
+function computeCacheHitRate(inTokens, cacheRead, cacheWrite) {
+  const totalPromptTokens = inTokens + cacheRead + cacheWrite
+  if (totalPromptTokens <= 0) return 0
+  return Number(((cacheRead / totalPromptTokens) * 100).toFixed(1))
 }
-const hitRate1 = calculateCacheHit(100, 900, 0)
-assert.equal(hitRate1, 90.0, '900 cache read out of 1000 total prompt tokens should be 90.0%')
-const hitRate2 = calculateCacheHit(500, 0, 0)
-assert.equal(hitRate2, 0.0, '0 cache read should yield 0.0%')
-console.log('  ✓ Accurate Prompt Cache hit-rate calculation across gateways')
+assert.equal(computeCacheHitRate(100, 900, 0), 90.0)
+assert.equal(computeCacheHitRate(200, 0, 0), 0.0)
 
-// 4. Live Tool Diff Adapter (+add -del extraction)
-function parseDiffSummary(patchContent) {
+// 4. Live Tool Diff Parsing: Precise +add -del Calculation
+function parsePatchMetrics(diffText) {
   let added = 0
   let deleted = 0
-  const lines = patchContent.split('\n')
+  const lines = diffText.split('\n')
   for (const line of lines) {
     if (line.startsWith('+') && !line.startsWith('+++')) added++
     if (line.startsWith('-') && !line.startsWith('---')) deleted++
   }
   return { added, deleted, summary: `+${added} -${deleted}` }
 }
-const samplePatch = `
---- a/src/index.ts
-+++ b/src/index.ts
-@@ -10,3 +10,4 @@
--const oldCode = 1
-+const newCode = 2
-+const extraCode = 3
+const mockDiff = `
+--- a/file.ts
++++ b/file.ts
+@@ -1,3 +1,4 @@
+-const a = 1
++const a = 2
++const b = 3
 `
-const diffResult = parseDiffSummary(samplePatch)
-assert.equal(diffResult.added, 2)
-assert.equal(diffResult.deleted, 1)
-assert.equal(diffResult.summary, '+2 -1')
-console.log('  ✓ 250ms tool event streaming diff (+add -del) extraction')
+const metrics = parsePatchMetrics(mockDiff)
+assert.equal(metrics.added, 2)
+assert.equal(metrics.deleted, 1)
+assert.equal(metrics.summary, '+2 -1')
 
 console.log('SUITE_04_TOOLS_AND_LEDGER_EXIT:0')

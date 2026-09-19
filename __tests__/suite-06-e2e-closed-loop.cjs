@@ -8,35 +8,35 @@ const { parseStructuredAgentResult, stripStructuredAgentResult } = require(path.
 const { recommendModelsForRoles } = require(path.join(root, 'lib/engine/model-recommender.js'))
 const { DEFAULT_ROLE_MODEL_HINTS } = require(path.join(root, 'lib/engine/auto-setup.js'))
 
-console.log('[SUITE-06] Running E2E Full Closed-Loop Orchestration (Zero LLM)...')
+console.log('[SUITE-06] Pure Domain Behavioral Test: Full Orchestration Closed-Loop E2E...')
 
 const manager = new RoomManager()
-const roomId = 'e2e-closed-loop-' + Date.now()
+const roomId = 'e2e-pure-loop-' + Date.now()
 const room = manager.ensureRoomForSession(roomId)
 room.activeTheme = 'modern'
 
-// 1. Setup multi-stage workflow
+// 1. Initial State: Two-stage workflow
 room.workflow = {
   workflowId: 'wf-e2e',
-  title: 'E2E Full Stack Feature',
+  title: 'End-to-End Delivery Loop',
   stages: [
     {
       id: 'stage-research',
       name: 'Research & Planning',
       assignedRoleIds: ['researcher'],
-      tasks: [{ taskId: 't-research', title: 'Survey Solution', ownerRoleId: 'researcher', status: 'pending' }]
+      tasks: [{ taskId: 't-research', title: 'Survey Architecture', ownerRoleId: 'researcher', status: 'pending' }]
     },
     {
       id: 'stage-code',
       name: 'Coding & Delivery',
       assignedRoleIds: ['backend'],
-      tasks: [{ taskId: 't-backend', title: 'Build Backend', ownerRoleId: 'backend', status: 'pending' }]
+      tasks: [{ taskId: 't-backend', title: 'Build Core API', ownerRoleId: 'backend', status: 'pending' }]
     }
   ],
   currentStageIndex: 0
 }
 
-// 2. Commander delegates to researcher
+// 2. Step 1: Commander assigns task to Researcher
 const assign1 = manager.createAssignment(roomId, 'researcher', 'Survey Redis clustering solutions', {
   stageId: 'stage-research',
   workflowTaskId: 't-research',
@@ -44,20 +44,20 @@ const assign1 = manager.createAssignment(roomId, 'researcher', 'Survey Redis clu
 })
 manager.markAssignmentRunning(roomId, assign1.assignmentId)
 
-// 3. Researcher finishes work and produces structured result
-const researcherReport = `调研完毕，推荐使用官方 Redis Cluster 模式。\n\n\`\`\`agent-result\nRESULT_STATUS: passed\nSUMMARY: 完成 Redis Cluster 方案选型。\nNEXT: 提交 commander 审核。\nEVIDENCE: docs/architecture/dispatch-engine.md\n\`\`\``
-const structured = parseStructuredAgentResult(researcherReport)
-const visible = stripStructuredAgentResult(researcherReport)
+// 3. Step 2: Researcher finishes with structured report
+const reportRaw = `调研完成，推荐官方 Redis Cluster。\n\n\`\`\`agent-result\nRESULT_STATUS: passed\nSUMMARY: 选型明确，推荐官方 Cluster。\nNEXT: 提交 commander 审核。\nEVIDENCE: docs/architecture/dispatch-engine.md\n\`\`\``
+const structured = parseStructuredAgentResult(reportRaw)
+const cleanText = stripStructuredAgentResult(reportRaw)
 
-const msg1 = manager.addMessage(roomId, {
+const msg = manager.addMessage(roomId, {
   sender: { kind: 'agent', id: 'researcher', name: 'Researcher', avatar: '🔍' },
-  content: visible,
+  content: cleanText,
   mentions: ['commander'],
   metadata: { assignmentId: assign1.assignmentId, structuredResult: structured }
 })
-manager.completeAssignment(roomId, assign1.assignmentId, msg1.messageId)
+manager.completeAssignment(roomId, assign1.assignmentId, msg.messageId)
 
-// 4. Update workflow task and write report to commander mailbox
+// 4. Step 3: Update DAG Task and Report to Commander Mailbox
 const taskUpdate = WorkflowOrchestrator.updateTaskStatus(room, 'stage-research', 't-research', structured.status, {
   assignmentId: assign1.assignmentId,
   verificationOutput: structured.summary,
@@ -71,12 +71,12 @@ const mailboxReport = manager.addMailboxMessage(roomId, {
   fromRoleId: 'researcher',
   toRoleId: 'commander',
   assignmentId: assign1.assignmentId,
-  content: visible,
+  content: cleanText,
   artifactRefs: ['docs/architecture/dispatch-engine.md']
 })
 assert.ok(mailboxReport && !mailboxReport.readAt)
 
-// 5. Commander reviews mailbox, marks read and advances stage
+// 5. Step 4: Commander reads mailbox digest, marks read, and advances workflow
 const digest = manager.formatCommanderMailboxDigest(roomId, 'commander')
 assert.match(digest, /未读: 1 条/)
 assert.match(digest, /@researcher/)
@@ -84,18 +84,18 @@ assert.match(digest, /@researcher/)
 manager.markMailboxRead(roomId, mailboxReport.mailboxMessageId, 'commander')
 const advance = WorkflowOrchestrator.advanceStage(room, 'commander')
 assert.equal(advance.success, true)
-assert.equal(room.workflow.currentStageIndex, 1)
+assert.equal(room.workflow.currentStageIndex, 1, 'workflow stage index must advance to 1')
 
-// 6. Test Model Recommendation Catalog Matching
+// 6. Step 5: Model Recommender by Capability Hints
 const catalog = [
-  { id: 'cpa', name: 'CPA', models: [{ id: 'gemini-3.8-flash-high', name: 'Gemini Flash' }, { id: 'claude-opus-4-6-thinking', name: 'Claude Opus' }] },
+  { id: 'cpa', name: 'CPA', models: [{ id: 'gemini-3.8-flash-high', name: 'Gemini Flash' }] },
   { id: 'win', name: 'Windows', models: [{ id: 'gpt-5.3-codex-spark', name: 'Codex Spark' }] }
 ]
 const recommendations = recommendModelsForRoles(DEFAULT_ROLE_MODEL_HINTS, catalog, {
   recent: [{ provider: 'win', model: 'gpt-5.3-codex-spark' }],
   current: { provider: 'cpa', model: 'gemini-3.8-flash-high' }
 })
-assert.ok(recommendations.commander?.length > 0, 'commander recommendations generated')
-assert.ok(recommendations.backend?.length > 0, 'backend recommendations generated')
+assert.ok(recommendations.commander?.length > 0)
+assert.ok(recommendations.backend?.length > 0)
 
 console.log('SUITE_06_E2E_CLOSED_LOOP_EXIT:0')
