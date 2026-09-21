@@ -159,10 +159,27 @@ export function GroupChatHudWorkflowPanel({room, messages, onApproveStage, onUpd
     </div>}
 
     <div style={{...hudCardStyle,display:'grid',gap:7,padding:'9px 10px',border:isWaitingApproval?'1px solid rgba(234,179,8,0.34)':`1px solid ${hudTokens.borderL1}`}}>
-      <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',gap:8}}><span style={{fontSize:11,fontWeight:700,color:hudTokens.labelPrimary}}>{tx(locale,'当前阶段','Current stage')} · {currentIndex + 1}/{stages.length || 0}</span><span style={{fontSize:10,color:isWaitingApproval?'#fbbf24':'#60a5fa'}}>{room?.workflow?.isCompleted ? tx(locale,'已完成','Completed') : currentStage?.status || 'pending'}</span></div>
+      <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',gap:8}}><span style={{fontSize:11,fontWeight:700,color:hudTokens.labelPrimary}}>{tx(locale,'当前阶段','Current stage')} · {currentIndex + 1}/{stages.length || 0}</span><span style={{fontSize:10,color:isWaitingApproval?'#fbbf24':room?.workflow?.isCompleted?'#34d399':'#60a5fa'}}>{room?.workflow?.isCompleted ? tx(locale,'已完成','Completed') : currentStage?.status || 'pending'}</span></div>
       <div style={{fontSize:12,fontWeight:800,color:hudTokens.labelPrimary,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{currentStage?.name || tx(locale,'等待创建工作流','Waiting for workflow')}</div>
       <div style={{fontSize:10,lineHeight:1.45,color:hudTokens.labelSecondary}}>{currentStage?.description || tx(locale,'在中间 Agent 群聊输入任务后，我会先生成角色和工作流草案，确认后再开工。','Send a task in the Agent group chat. I will draft roles and workflow first, then start after confirmation.')}</div>
-      {focusTask ? <div style={{padding:'7px 8px',borderRadius:8,background:'rgba(77,107,254,0.10)',border:'1px solid rgba(77,107,254,0.24)',display:'grid',gap:3}}><div style={{fontSize:10,color:hudTokens.labelTertiary}}>{tx(locale,'当前任务','Current task')}</div><div style={{fontSize:11,fontWeight:700,color:hudTokens.labelPrimary,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>@{focusTask.ownerRoleId} · {focusTask.title}</div><div style={{fontSize:10,color:hudTokens.labelSecondary,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{focusTask.description}</div></div> : <div style={{padding:'7px 8px',borderRadius:8,background:'rgba(255,255,255,0.035)',border:`1px solid ${hudTokens.borderL1}`,display:'grid',gap:3}}><div style={{fontSize:10,color:hudTokens.labelTertiary}}>{tx(locale,'当前任务','Current task')}</div><div style={{fontSize:11,fontWeight:700,color:hudTokens.labelPrimary}}>{tx(locale,'等待创建工作流','Waiting for workflow')}</div><div style={{fontSize:10,color:hudTokens.labelSecondary}}>{tx(locale,'中间 Agent 群聊里一句话丢任务即可。','Drop one sentence into the center Agent chat.')}</div></div>}
+      {room?.workflow?.isCompleted ? (
+        <div style={{padding:'7px 8px',borderRadius:8,background:'rgba(16,185,129,0.10)',border:'1px solid rgba(16,185,129,0.28)',display:'grid',gap:3}}>
+          <div style={{fontSize:10,color:'#34d399',fontWeight:700}}>✓ {tx(locale,'本轮工作流全部结题验收完成','Workflow completed and accepted')}</div>
+          <div style={{fontSize:10,color:hudTokens.labelSecondary}}>{tx(locale,'所有阶段产物已归档，指挥官结题完毕。可随时提出新需求开启下一轮。','All stage deliverables archived. You can ask new questions to begin a new round.')}</div>
+        </div>
+      ) : focusTask ? (
+        <div style={{padding:'7px 8px',borderRadius:8,background:'rgba(77,107,254,0.10)',border:'1px solid rgba(77,107,254,0.24)',display:'grid',gap:3}}>
+          <div style={{fontSize:10,color:hudTokens.labelTertiary}}>{tx(locale,'当前任务','Current task')}</div>
+          <div style={{fontSize:11,fontWeight:700,color:hudTokens.labelPrimary,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>@{focusTask.ownerRoleId} · {focusTask.title}</div>
+          <div style={{fontSize:10,color:hudTokens.labelSecondary,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{focusTask.description}</div>
+        </div>
+      ) : (
+        <div style={{padding:'7px 8px',borderRadius:8,background:'rgba(255,255,255,0.035)',border:`1px solid ${hudTokens.borderL1}`,display:'grid',gap:3}}>
+          <div style={{fontSize:10,color:hudTokens.labelTertiary}}>{tx(locale,'当前任务','Current task')}</div>
+          <div style={{fontSize:11,fontWeight:700,color:hudTokens.labelPrimary}}>{currentStage ? tx(locale,'暂无待执行子任务','No pending subtasks') : tx(locale,'等待创建工作流','Waiting for workflow')}</div>
+          <div style={{fontSize:10,color:hudTokens.labelSecondary}}>{currentStage ? tx(locale,'当前阶段责任人正在推进中。','Stage owners are currently progressing.') : tx(locale,'中间 Agent 群聊里一句话丢任务即可。','Drop one sentence into the center Agent chat.')}</div>
+        </div>
+      )}
       {isWaitingApproval && <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',gap:8,padding:'6px 8px',borderRadius:8,background:'rgba(234,179,8,0.10)',border:'1px dashed rgba(234,179,8,0.30)'}}><span style={{fontSize:11,color:'#fbbf24'}}>{tx(locale,'产物就绪，等你放行','Deliverable ready, waiting for approval')}</span><button onClick={()=>void onApproveStage()} style={{...hudPrimaryButtonStyle,backgroundColor:'#10b981',borderRadius:'6px'}}>{tx(locale,'批准','Approve')}</button></div>}
     </div>
 

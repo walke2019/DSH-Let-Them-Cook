@@ -9,6 +9,7 @@ interface GroupChatHudTopControlsProps {
   selectedTheme: ThemeValue
   selectedMode: ModeValue
   managementError?: string
+  roomId?: string
   onThemeChange(theme: string): void | Promise<void>
   locale?: GroupChatLocale
   onModeChange(mode: string): void | Promise<void>
@@ -33,20 +34,131 @@ function SelectChevron() {
   return <svg className="dsh-gc-top-chevron" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M4 6l4 4 4-4"/></svg>
 }
 
-export function GroupChatHudTopControls({selectedTheme, selectedMode, managementError, locale = 'zh-CN', onThemeChange, onModeChange}: GroupChatHudTopControlsProps) {
+export function GroupChatHudTopControls({selectedTheme, selectedMode, managementError, roomId = 'dev-team-alpha', locale = 'zh-CN', onThemeChange, onModeChange}: GroupChatHudTopControlsProps) {
   const [modeHelpOpen, setModeHelpOpen] = useState(false)
+  const [clearing, setClearing] = useState(false)
   const currentModeGuide = MODE_GUIDE[selectedMode] || MODE_GUIDE.default
+
   return <>
     <span aria-hidden="true" data-dsh-gc-top-style-token style={{display:'none',color:hudTokens.labelPrimary,background:hudTokens.bgLayer2,borderColor:hudTokens.borderL2}} />
     <style>{`
-      .dsh-gc-top-controls{padding:8px 10px;display:grid;grid-template-columns:46px minmax(0,1fr) 46px minmax(0,1fr) 24px;column-gap:4px;row-gap:6px;font-size:11px;align-items:center;white-space:nowrap;overflow:hidden;}
-      .dsh-gc-top-label{color:var(--dsw-alias-label-secondary,#cbd5e1);height:30px;display:inline-flex;align-items:center;}
-      .dsh-gc-select-wrap{position:relative;display:block;min-width:0;}
-      .dsh-gc-top-select{width:100%;height:30px;box-sizing:border-box;appearance:none;-webkit-appearance:none;border:1px solid var(--dsw-alias-border-l2,rgba(255,255,255,0.14));border-radius:10px;background:var(--dsw-alias-bg-layer-2,#202025);color:var(--dsw-alias-label-primary,#f8fafc);font:inherit;font-size:12px;padding:0 28px 0 10px;outline:none;}
-      .dsh-gc-top-select:focus-visible,.dsh-gc-help-button:focus-visible{outline:2px solid #8196ff;outline-offset:1px;}
-      .dsh-gc-top-chevron{position:absolute;right:9px;top:50%;width:14px;height:14px;transform:translateY(-50%);pointer-events:none;color:var(--dsw-alias-label-tertiary,#9ca3af);}
-      .dsh-gc-help-button{width:24px;height:28px;border-radius:9px;border:1px solid var(--dsw-alias-border-l2,rgba(255,255,255,0.14));background:var(--dsw-alias-bg-layer-2,#202025);color:var(--dsw-alias-label-secondary,#cbd5e1);font-size:13px;font-weight:700;cursor:pointer;}
-      .dsh-gc-top-error{grid-column:1 / -1;color:#fca5a5;white-space:normal;}
+      .dsh-gc-top-controls{
+        padding: 8px 10px;
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        font-size: 11px;
+        background: rgba(255, 255, 255, 0.015);
+        border-bottom: 1px solid var(--dsw-alias-border-l1, rgba(255, 255, 255, 0.06));
+      }
+      .dsh-gc-top-row{
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        width: 100%;
+      }
+      .dsh-gc-control-pill{
+        flex: 1;
+        min-width: 0;
+        display: flex;
+        align-items: center;
+        background: var(--dsw-alias-bg-layer-2, #1b1b1f);
+        border: 1px solid var(--dsw-alias-border-l2, rgba(255, 255, 255, 0.09));
+        border-radius: 8px;
+        height: 28px;
+        padding: 0 4px 0 8px;
+        transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        position: relative;
+      }
+      .dsh-gc-control-pill:hover{
+        border-color: rgba(99, 102, 241, 0.4);
+        background: var(--dsw-alias-bg-layer-3, #222228);
+      }
+      .dsh-gc-control-pill:focus-within{
+        border-color: #6366f1;
+        box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.2);
+      }
+      .dsh-gc-pill-label{
+        font-size: 10px;
+        font-weight: 600;
+        color: var(--dsw-alias-label-tertiary, #94a3b8);
+        margin-right: 4px;
+        flex-shrink: 0;
+        user-select: none;
+      }
+      .dsh-gc-select-wrap{
+        flex: 1;
+        min-width: 0;
+        position: relative;
+        height: 100%;
+        display: flex;
+        align-items: center;
+      }
+      .dsh-gc-top-select{
+        width: 100%;
+        height: 100%;
+        appearance: none;
+        -webkit-appearance: none;
+        background: transparent;
+        border: none;
+        outline: none;
+        color: var(--dsw-alias-label-primary, #f8fafc);
+        font-size: 11px;
+        font-weight: 500;
+        padding-right: 16px;
+        cursor: pointer;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        overflow: hidden;
+      }
+      .dsh-gc-top-chevron{
+        position: absolute;
+        right: 0;
+        top: 50%;
+        transform: translateY(-50%);
+        width: 12px;
+        height: 12px;
+        pointer-events: none;
+        color: var(--dsw-alias-label-tertiary, #64748b);
+      }
+      .dsh-gc-action-btn{
+        height: 28px;
+        border-radius: 8px;
+        border: 1px solid var(--dsw-alias-border-l2, rgba(255, 255, 255, 0.09));
+        background: var(--dsw-alias-bg-layer-2, #1b1b1f);
+        color: var(--dsw-alias-label-secondary, #cbd5e1);
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 4px;
+        font-size: 11px;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        flex-shrink: 0;
+        padding: 0 8px;
+      }
+      .dsh-gc-action-btn:hover{
+        background: var(--dsw-alias-bg-layer-3, #24242b);
+        color: #fff;
+        border-color: rgba(255, 255, 255, 0.2);
+      }
+      .dsh-gc-action-btn:active{
+        transform: scale(0.96);
+      }
+      .dsh-gc-clear-btn:hover{
+        color: #f87171;
+        border-color: rgba(239, 68, 68, 0.35);
+        background: rgba(239, 68, 68, 0.08);
+      }
+      .dsh-gc-top-error{
+        padding: 4px 8px;
+        border-radius: 6px;
+        background: rgba(239, 68, 68, 0.1);
+        border: 1px solid rgba(239, 68, 68, 0.25);
+        color: #fca5a5;
+        font-size: 11px;
+      }
       .dsh-gc-help-backdrop{position:fixed;inset:0;z-index:1000;display:grid;place-items:center;background:rgba(0,0,0,0.52);pointer-events:auto;}
       .dsh-gc-help-dialog{width:min(560px,calc(100vw - 32px));max-height:calc(100vh - 80px);overflow-y:auto;border:1px solid var(--dsw-alias-border-l2,rgba(255,255,255,0.14));border-radius:16px;background:var(--dsw-alias-bg-layer-1,#1f1f23);box-shadow:var(--dsw-shadow-lv3,0 20px 60px rgba(0,0,0,0.45));color:var(--dsw-alias-label-primary,#f8fafc);}
       .dsh-gc-help-head{display:flex;align-items:center;justify-content:space-between;padding:14px 16px;border-bottom:1px solid var(--dsw-alias-border-l1,rgba(255,255,255,0.08));gap:12px;}
@@ -62,55 +174,92 @@ export function GroupChatHudTopControls({selectedTheme, selectedMode, management
       .dsh-gc-help-scope{padding:10px 12px;border-radius:12px;background:rgba(16,185,129,0.08);border:1px solid rgba(16,185,129,0.24);}
     `}</style>
     <div className="dsh-gc-top-controls" aria-label={tx(locale,'群聊 HUD 顶部配置','Group chat HUD top settings')}>
-      <span className="dsh-gc-top-label">{tx(locale,'角色主题','Theme')}</span>
-      <span className="dsh-gc-select-wrap">
-        <select className="dsh-gc-top-select" aria-label={tx(locale,'角色主题','Theme')} value={selectedTheme} onChange={e=>void onThemeChange(e.target.value)}>
-          <option value="default">{tx(locale,'默认（沙雕整活）','Default (Meme squad)')}</option><option value="meme_comedy">{tx(locale,'沙雕整活','Meme squad')}</option><option value="genshin">{tx(locale,'原神提瓦特','Genshin / Teyvat')}</option><option value="modern">{tx(locale,'现代精英','Modern elite')}</option><option value="three_kingdoms">{tx(locale,'三国风云','Three Kingdoms')}</option><option value="legends">{tx(locale,'科技传奇','Tech legends')}</option>
-        </select>
-        <SelectChevron />
-      </span>
-      <span className="dsh-gc-top-label">{tx(locale,'调度模式','Mode')}</span>
-      <span className="dsh-gc-select-wrap">
-        <select className="dsh-gc-top-select" aria-label={tx(locale,'调度模式','Mode')} value={selectedMode} onChange={e=>void onModeChange(e.target.value)}>
-          <option value="default">{tx(locale,'默认（工作流）','Default (Workflow)')}</option><option value="mention_only">{tx(locale,'仅 @ 角色','@ mention only')}</option><option value="workflow_driven">{tx(locale,'工作流','Workflow')}</option><option value="moderator_led">{tx(locale,'主持人调度','Moderator-led')}</option><option value="free_discussion">{tx(locale,'自由讨论','Free discussion')}</option>
-        </select>
-        <SelectChevron />
-      </span>
-      <button type="button" className="dsh-gc-help-button" aria-label={tx(locale,'查看调度模式 QA 说明','View mode QA guide')} title={tx(locale,'调度模式 QA','Mode QA')} onClick={()=>setModeHelpOpen(true)}>?</button>
-      <button
-        type="button"
-        className="dsh-gc-clear-button"
-        aria-label={tx(locale,'清空对话记录','Clear history')}
-        title={tx(locale,'清空当前群聊对话与执行记录','Clear all messages and execution history')}
-        style={{
-          border: '1px solid var(--dsw-alias-border-l2,rgba(255,255,255,0.14))',
-          borderRadius: '8px',
-          background: 'var(--dsw-alias-bg-layer-2,#202025)',
-          color: 'var(--dsw-alias-label-secondary,#cbd5e1)',
-          cursor: 'pointer',
-          fontSize: '11px',
-          padding: '2px 7px',
-          height: '24px',
-          lineHeight: '20px',
-        }}
-        onClick={async () => {
-          if (window.confirm(tx(locale, '确定清空当前群聊对话与执行记录吗？', 'Are you sure you want to clear conversation records?'))) {
-            try {
-              await fetch('/dsh-group-chat/api/room/clear', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ roomId }),
-              })
-            } catch (err) {
-              console.error(err)
+      <div className="dsh-gc-top-row">
+        {/* Theme Pill */}
+        <div className="dsh-gc-control-pill" title={tx(locale, '选择角色名号与语言风格主题', 'Select character persona and theme')}>
+          <span className="dsh-gc-pill-label">🎨 {tx(locale,'主题','Theme')}</span>
+          <div className="dsh-gc-select-wrap">
+            <select
+              className="dsh-gc-top-select"
+              aria-label={tx(locale,'角色主题','Theme')}
+              value={selectedTheme}
+              onChange={e=>void onThemeChange(e.target.value)}
+            >
+              <option value="default">{tx(locale,'默认（沙雕整活）','Default (Meme squad)')}</option>
+              <option value="meme_comedy">{tx(locale,'沙雕整活','Meme squad')}</option>
+              <option value="genshin">{tx(locale,'原神提瓦特','Genshin / Teyvat')}</option>
+              <option value="modern">{tx(locale,'现代精英','Modern elite')}</option>
+              <option value="three_kingdoms">{tx(locale,'三国风云','Three Kingdoms')}</option>
+              <option value="legends">{tx(locale,'科技传奇','Tech legends')}</option>
+            </select>
+            <SelectChevron />
+          </div>
+        </div>
+
+        {/* Mode Pill */}
+        <div className="dsh-gc-control-pill" title={tx(locale, '选择群聊协作与流转调度机制', 'Select coordination and dispatch mode')}>
+          <span className="dsh-gc-pill-label">⚡ {tx(locale,'模式','Mode')}</span>
+          <div className="dsh-gc-select-wrap">
+            <select
+              className="dsh-gc-top-select"
+              aria-label={tx(locale,'调度模式','Mode')}
+              value={selectedMode}
+              onChange={e=>void onModeChange(e.target.value)}
+            >
+              <option value="default">{tx(locale,'默认（工作流）','Default (Workflow)')}</option>
+              <option value="mention_only">{tx(locale,'仅 @ 角色','@ mention only')}</option>
+              <option value="workflow_driven">{tx(locale,'工作流','Workflow')}</option>
+              <option value="moderator_led">{tx(locale,'主持人调度','Moderator-led')}</option>
+              <option value="free_discussion">{tx(locale,'自由讨论','Free discussion')}</option>
+            </select>
+            <SelectChevron />
+          </div>
+        </div>
+
+        {/* Mode QA Guide Button */}
+        <button
+          type="button"
+          className="dsh-gc-action-btn"
+          style={{ width: '28px', padding: 0 }}
+          aria-label={tx(locale,'查看调度模式 QA 说明','View mode QA guide')}
+          title={tx(locale,'调度模式 QA 速查','Mode QA guide')}
+          onClick={()=>setModeHelpOpen(true)}
+        >
+          ?
+        </button>
+
+        {/* Clear Conversation Button */}
+        <button
+          type="button"
+          className="dsh-gc-action-btn dsh-gc-clear-btn"
+          aria-label={tx(locale,'清空对话记录','Clear history')}
+          title={tx(locale,'清空当前群聊对话与执行记录','Clear all messages and execution history')}
+          disabled={clearing}
+          onClick={async () => {
+            if (window.confirm(tx(locale, '确定清空当前群聊对话与执行记录吗？', 'Are you sure you want to clear conversation records?'))) {
+              try {
+                setClearing(true)
+                await fetch('/dsh-group-chat/api/room/clear', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ roomId }),
+                })
+              } catch (err) {
+                console.error(err)
+              } finally {
+                setClearing(false)
+              }
             }
-          }
-        }}
-      >
-        🧹 {tx(locale, '清空', 'Clear')}
-      </button>
-      {managementError&&<div className="dsh-gc-top-error" role="alert">{managementError}</div>}
+          }}
+        >
+          <span>🧹</span>
+          <span>{clearing ? '...' : tx(locale, '清空', 'Clear')}</span>
+        </button>
+      </div>
+
+      {managementError && <div className="dsh-gc-top-error" role="alert">{managementError}</div>}
     </div>
+
     {modeHelpOpen && <div className="dsh-gc-help-backdrop" role="dialog" aria-modal="true" aria-label={tx(locale,'调度模式 QA 说明','Mode QA guide')} onClick={()=>setModeHelpOpen(false)}>
       <div className="dsh-gc-help-dialog" onClick={e=>e.stopPropagation()}>
         <div className="dsh-gc-help-head"><div><div className="dsh-gc-help-title">{tx(locale,'调度模式 QA 速查','Mode QA quick guide')}</div><div className="dsh-gc-help-subtitle">{tx(locale,'不知道怎么用时，直接按场景选下面四种。','When unsure, choose by scenario below.')}</div></div><button type="button" className="dsh-gc-help-close" onClick={()=>setModeHelpOpen(false)} aria-label={tx(locale,'关闭调度模式说明','Close mode guide')}>×</button></div>

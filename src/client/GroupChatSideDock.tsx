@@ -700,6 +700,7 @@ export function GroupChatSideDock(props?: GroupChatSideDockProps) {
           selectedTheme={selectedTheme}
           selectedMode={selectedMode}
           locale={locale}
+          roomId={room?.roomId || roomId}
           managementError={managementError}
           onThemeChange={theme=>updateRoom('theme',{theme})}
           onModeChange={mode=>updateRoom('mode',{mode})}
