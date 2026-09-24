@@ -110,12 +110,6 @@ export function GroupChatCockpitModal({
 
   const handleSwitchRoom = (targetRoomId: string | null) => {
     setCurrentGroupChatRoomId(targetRoomId, getActiveSessionId())
-    // Also smoothly ensure central Agent group chat tab is focused
-    const tabs = Array.from(document.querySelectorAll('*'))
-    const agentTab = tabs.find(el => el.textContent?.trim() === 'Agent 群聊' && (el.tagName === 'BUTTON' || el.getAttribute('role') === 'tab')) as HTMLElement | undefined
-    if (agentTab) {
-      agentTab.click()
-    }
     onClose()
   }
 

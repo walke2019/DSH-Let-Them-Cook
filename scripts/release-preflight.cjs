@@ -55,7 +55,6 @@ const required = [
   'src/client/GroupChatSideDock.tsx',
   'src/client/group-chat-hud-types.ts',
   'src/client/group-chat-hud-styles.ts',
-  'src/client/GroupChatConversationTab.tsx',
   'scripts/test-matrix.cjs',
   'scripts/api-smoke.cjs',
   'scripts/e2e-no-llm.cjs',
@@ -100,14 +99,8 @@ if (/ctx\.version/.test(read('src/compat/dsh.ts'))) errors.push('compat must not
 
 
 const clientEntry = read('src/client/index.ts')
-const safeTab = read('src/client/GroupChatConversationTab.tsx')
-if (!clientEntry.includes('ctx.slots.inject("conversation.view"')) errors.push('safe middle conversation.view tab missing')
-if (!clientEntry.includes('GroupChatConversationView')) errors.push('client entry must use safe conversation view adapter')
-if (clientEntry.includes('GroupChatPanel')) errors.push('client entry must not import GroupChatPanel directly')
-if (!clientEntry.includes('prepare: GroupChatConversationView.prepare') || !safeTab.includes('prepare: () => ({})')) errors.push('safe conversation.view adapter missing prepare')
-if (!clientEntry.includes('component: () => createElement(GroupChatConversationView)')) errors.push('safe conversation.view adapter missing component factory')
-if (!safeTab.includes('<GroupChatPanel mode="dock" />') || safeTab.includes('mode="full"')) errors.push('safe middle tab must mount GroupChatPanel in dock mode only')
-if (safeTab.includes('data-dsh-group-chat-tab-active') || safeTab.includes('[data-composer-seat]')) errors.push('safe conversation tab must not patch official composer or body markers')
+if (clientEntry.includes('conversation.view') || clientEntry.includes('GroupChatConversationView') || clientEntry.includes('GroupChatConversationTab')) errors.push('client entry must not register a duplicate middle Agent 群聊 tab')
+if (!clientEntry.includes('sidebar.right.pane.tab') || !clientEntry.includes('sidebarRightTabs')) errors.push('native rightbar Agent 群聊 tab missing')
 
 const dock = read('src/client/GroupChatSideDock.tsx')
 const topControls = read('src/client/GroupChatHudTopControls.tsx')

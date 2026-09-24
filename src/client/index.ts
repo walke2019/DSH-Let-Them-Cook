@@ -1,7 +1,5 @@
 import { disposeGroupChatEvents } from './group-chat-events.js';
-import { createElement } from 'react';
 import { GroupChatSideDock } from "./GroupChatSideDock.js";
-import { GroupChatConversationView } from "./GroupChatConversationTab.js";
 import { GroupChatApprovalDetail } from "./GroupChatApprovalDetail.js";
 import { setActiveSessionId } from "./current-room.js";
 
@@ -34,29 +32,6 @@ export function apply(ctx: ClientContext): void {
   };
   syncSession();
   ctx.effect(() => sessionsService.list.subscribe(syncSession), "dsh-group-chat: native session watch");
-
-  // Safe conversation view adapter without taking over the official chat
-  ctx.effect(() => {
-    return ctx.slots.inject("conversation.view", () => {
-      return ctx.slots.register(
-        {
-          name: "conversation.view",
-          id: "dsh-group-chat",
-          order: 20,
-          label: () => "Agent 群聊",
-          prepare: GroupChatConversationView.prepare,
-          component: () => createElement(GroupChatConversationView),
-        },
-        GroupChatConversationView,
-      );
-    });
-  }, "dsh-group-chat: safe conversation view tab");
-
-
-  ctx.effect(() => ctx.slots.inject("conversation.approval.detail", () => ctx.slots.register({
-    name: "conversation.approval.detail",
-    id: "dsh-group-chat-approval-detail",
-  }, GroupChatApprovalDetail)), "dsh-group-chat: native approval detail");
 
   // Native DSH rightbar tab: the host owns docking, width, fullscreen, and session scope.
   ctx.effect(() => {
