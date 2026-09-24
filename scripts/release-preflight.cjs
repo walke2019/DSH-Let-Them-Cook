@@ -56,7 +56,6 @@ const required = [
   'src/client/group-chat-hud-types.ts',
   'src/client/group-chat-hud-styles.ts',
   'src/client/GroupChatConversationTab.tsx',
-  'src/client/GroupChatHeroEntry.tsx',
   'scripts/test-matrix.cjs',
   'scripts/api-smoke.cjs',
   'scripts/e2e-no-llm.cjs',
@@ -99,10 +98,6 @@ if (!agents.includes('Universal Master Handoff')) errors.push('AGENTS.md univers
 if (!agents.includes('三纯原则')) errors.push('AGENTS.md pure principles guard missing')
 if (/ctx\.version/.test(read('src/compat/dsh.ts'))) errors.push('compat must not access ctx.version directly')
 
-const layout = read('src/client/layout-push.ts')
-if (layout.includes('padding-right: var(--dsh-group-chat-width')) errors.push('layout must not squeeze official center view')
-if (layout.includes('body[data-dsh-group-chat-active="true"]')) errors.push('layout must not use legacy global full-view body takeover')
-if (layout.includes('[data-composer-seat]') || layout.includes('[data-conversation-scroll]') || layout.includes('#root [data-dsh-frame]')) errors.push('layout must not patch DSH host DOM internals')
 
 const clientEntry = read('src/client/index.ts')
 const safeTab = read('src/client/GroupChatConversationTab.tsx')
@@ -112,8 +107,7 @@ if (clientEntry.includes('GroupChatPanel')) errors.push('client entry must not i
 if (!clientEntry.includes('prepare: GroupChatConversationView.prepare') || !safeTab.includes('prepare: () => ({})')) errors.push('safe conversation.view adapter missing prepare')
 if (!clientEntry.includes('component: () => createElement(GroupChatConversationView)')) errors.push('safe conversation.view adapter missing component factory')
 if (!safeTab.includes('<GroupChatPanel mode="dock" />') || safeTab.includes('mode="full"')) errors.push('safe middle tab must mount GroupChatPanel in dock mode only')
-if (!safeTab.includes('data-dsh-group-chat-tab-active')) errors.push('safe conversation tab must expose plugin active state for HUD coordination')
-if (layout.includes('[data-composer-seat]') || layout.includes('[data-conversation-scroll]')) errors.push('official conversation internals must remain untouched by layout CSS')
+if (safeTab.includes('data-dsh-group-chat-tab-active') || safeTab.includes('[data-composer-seat]')) errors.push('safe conversation tab must not patch official composer or body markers')
 
 const dock = read('src/client/GroupChatSideDock.tsx')
 const topControls = read('src/client/GroupChatHudTopControls.tsx')
@@ -124,7 +118,7 @@ const hudSurface = dock + '\n' + topControls + '\n' + workflowPanel + '\n' + ros
 if (dock.includes('GroupChatPanel') || dock.includes("label: '特遣对话'")) errors.push('HUD must not duplicate extension chat entry')
 if (clientEntry.includes('conversation.input.left') || clientEntry.includes('GroupChatInputEntry')) errors.push('official composer must remain 100% untouched without GroupChatInputEntry or conversation.input.left')
 if (dock.includes('<GroupChatHeroEntry') || dock.includes('GroupChatHeroEntry />')) errors.push('new session hero entry must not be mounted; keep official blank hero intact')
-for (const marker of ['浮动','停靠','结构化结果','标记已读','默认（沙雕整活）','默认（工作流）']) if (!hudSurface.includes(marker)) errors.push(`HUD marker missing: ${marker}`)
+for (const marker of ['结构化结果','标记已读','默认（沙雕整活）','默认（工作流）']) if (!hudSurface.includes(marker)) errors.push(`HUD marker missing: ${marker}`)
 
 const todo = read('docs/TODO.md')
 for (const phase of ['P0','P1','P2','P3','P4','P5','P6','P7','P8','P9','P10']) if (!todo.includes(`## ${phase}`)) errors.push(`TODO missing ${phase}`)

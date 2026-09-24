@@ -12,10 +12,56 @@ import type {GroupChatLocale} from '../client/i18n.js'
 
 const normalizeToolLocale = (value?: string): GroupChatLocale => value === 'en-US' ? 'en-US' : 'zh-CN'
 
+export interface DshNativeInteractionServices {
+  userQuestions?: {
+    ask(request: {
+      questions: Array<{ id: string; question: string; detail?: string; header?: string; options?: Array<{ label: string; description?: string }> }>
+      agent?: unknown
+      signal?: AbortSignal
+    }): Promise<{ answers: Array<{ id: string; selected: string[]; custom?: string }> }>
+  }
+  approval?: {
+    request(request: { agent: unknown; toolName: string; reason?: string; signal?: AbortSignal }): Promise<string>
+  }
+}
+
+function requireLiveAgent(exec: any, seamName: string): unknown {
+  const agent = exec?.agent
+  if (!agent) throw new Error(`${seamName} requires a live DSH agent in the current tool execution context`)
+  return agent
+}
+
 export function registerGroupChatTools(
   roomManager: RoomManager,
-  onTriggerAgentTurn?: (roomId: string, targetAgentId: string, assignmentId?: string) => Promise<void>
+  onTriggerAgentTurn?: (roomId: string, targetAgentId: string, assignmentId?: string) => Promise<void>,
+  nativeServices: DshNativeInteractionServices = {},
 ) {
+  function appendNativeWorkflowEvent(exec: any, type: string, data: Record<string, unknown>): void {
+    const session = exec?.agent?.session || exec?.session
+    if (!session || typeof session.append !== 'function') return
+    session.append(type as any, data as any)
+  }
+
+  function publishLetThemCookProjection(roomId: string, exec?: any): void {
+    const room = roomManager.getRoom(roomId)
+    if (!room) return
+    const session = exec?.agent?.session || exec?.session
+    if (!session || typeof session.append !== 'function') return
+    const currentStage = room.workflow?.stages?.[room.workflow.currentStageIndex]
+    session.append('let-them-cook/room-state', {
+      roomId,
+      title: room.title,
+      pendingTransactionCount: (room.approvalTransactions || []).filter(item => item.status === 'pending').length,
+      awaitingUserDecision: Boolean(room.awaitingUserDecision),
+      workflowStage: currentStage?.name,
+      workflowStatus: currentStage?.status,
+      assignmentCount: room.assignments?.length || 0,
+      openAssignmentCount: (room.assignments || []).filter(item => item.status === 'queued' || item.status === 'running').length,
+      ledgerTotalTokens: roomManager.getLedger(roomId)?.totalTokens || 0,
+      updatedAt: Date.now(),
+    })
+  }
+
   function resolveSessionRoomId(argsRoomId?: string, exec?: any): string {
     if (argsRoomId && typeof argsRoomId === 'string' && argsRoomId.trim()) {
       const trimmed = argsRoomId.trim()
@@ -99,6 +145,7 @@ export function registerGroupChatTools(
           WorkflowOrchestrator.updateTaskStatus(room, currentStage.id, task.taskId, 'running', { assignmentId })
           roomManager.saveRoom(room)
           roomManager.broadcast({ type: 'room:updated', roomId, payload: room, timestamp: Date.now() })
+        publishLetThemCookProjection(roomId, exec)
         }
 
         roomManager.addMessage(roomId, {
@@ -118,9 +165,16 @@ export function registerGroupChatTools(
           return locale === 'en-US' ? `Task assigned to @${member.name}, but agent runner is not attached.` : `任务已指派给 @${member.name}，但执行引擎未挂载。`
         }
 
+        const nativeRunId = `dsh-group-chat-${assignmentId || `${roomId}-${member.id}`}`
+        appendNativeWorkflowEvent(exec, 'tool-workflow/run-start', { runId: nativeRunId, name: `Let Them Cook · ${room.title}` })
+        appendNativeWorkflowEvent(exec, 'tool-workflow/agent-start', { runId: nativeRunId, seq: 1, label: member.name, phase: currentStage?.name, childId: `group-chat-${member.id}` })
         try {
           await onTriggerAgentTurn(roomId, member.id, assignmentId)
+          appendNativeWorkflowEvent(exec, 'tool-workflow/agent-end', { runId: nativeRunId, seq: 1, outcome: 'completed' })
+          appendNativeWorkflowEvent(exec, 'tool-workflow/run-end', { runId: nativeRunId, stopReason: 'completed' })
         } catch (err) {
+          appendNativeWorkflowEvent(exec, 'tool-workflow/agent-end', { runId: nativeRunId, seq: 1, outcome: 'failed' })
+          appendNativeWorkflowEvent(exec, 'tool-workflow/run-end', { runId: nativeRunId, stopReason: 'error' })
           const errMsg = err instanceof Error ? err.message : String(err)
           return locale === 'en-US'
             ? `❌ Task execution failed for @${member.name}: ${errMsg}`
@@ -290,6 +344,7 @@ export function registerGroupChatTools(
         }
 
         roomManager.saveRoom(room)
+        publishLetThemCookProjection(roomId, exec)
 
         // Agent tool surface for group-chat room, theme, scratchpad, workflow, and export actions.
         if (result.stage && onTriggerAgentTurn) {
@@ -322,6 +377,7 @@ export function registerGroupChatTools(
 
         const result = WorkflowOrchestrator.rejectStage(room, 'commander', args.reason, locale)
         roomManager.saveRoom(room)
+        publishLetThemCookProjection(roomId, exec)
 
         return result.message
       },
@@ -561,7 +617,18 @@ export function registerGroupChatTools(
         const roomId = resolveSessionRoomId(args.roomId, exec)
         const locale = normalizeToolLocale(args.locale)
         const tx = roomManager.createApprovalTransaction(roomId, args.title, args.summary, Array.isArray(args.willChange) ? args.willChange : [], Array.isArray(args.rollbackPlan) ? args.rollbackPlan : [], args.createdByRoleId || 'commander')
-        return tx ? (locale === 'en-US' ? `Approve & Run card created: ${tx.transactionId}` : `确认后执行卡片已创建：${tx.transactionId}`) : (locale === 'en-US' ? 'Room not found.' : '未找到房间。')
+        if (!tx) return locale === 'en-US' ? 'Room not found.' : '未找到房间。'
+        if (!nativeServices.approval?.request) throw new Error('DSH native approval.request is required for group_chat_transaction_create')
+        const outcome = await nativeServices.approval.request({
+          agent: requireLiveAgent(exec, 'DSH native approval.request'),
+          toolName: 'group_chat_transaction_create',
+          reason: `${args.title}\n\n${args.summary}`,
+        })
+        tx.nativeApprovalOutcome = outcome as any
+        roomManager.saveRoom(roomManager.getRoom(roomId)!)
+        return outcome === 'allowed-once'
+          ? (locale === 'en-US' ? `Native approval granted; transaction card created: ${tx.transactionId}` : `原生审批已通过；确认后执行卡片已创建：${tx.transactionId}`)
+          : (locale === 'en-US' ? `Native approval outcome ${outcome}; transaction card created but not approved: ${tx.transactionId}` : `原生审批结果为 ${outcome}；卡片已创建但未批准：${tx.transactionId}`)
       },
     }),
 
@@ -605,6 +672,7 @@ export function registerGroupChatTools(
         const locale = normalizeToolLocale(args.locale)
         const room = roomManager.getRoom(roomId)
         if (!room) return locale === 'en-US' ? 'Room not found.' : '未找到房间。'
+        if (!nativeServices.userQuestions?.ask) throw new Error('DSH native userQuestions.ask is required for group_chat_ask_user')
 
         const parsedOptions = (args.options || []).map((opt, idx) => {
           const key = String.fromCharCode(65 + idx)
@@ -628,7 +696,32 @@ export function registerGroupChatTools(
         }
         roomManager.saveRoom(room)
         roomManager.broadcast({ type: 'room:updated', roomId, payload: room, timestamp: Date.now() })
-        return locale === 'en-US' ? 'Question card sent to user composer. Waiting for user decision.' : '交互式抉择卡片已下发至用户输入区，等待拍板决策。'
+        publishLetThemCookProjection(roomId, exec)
+        publishLetThemCookProjection(roomId, exec)
+        const answer = await nativeServices.userQuestions.ask({
+          agent: requireLiveAgent(exec, 'DSH native userQuestions.ask'),
+          questions: [{
+            id: 'group-chat-decision',
+            question: args.question,
+            header: args.header || (locale === 'en-US' ? 'Decision Required' : '方案抉择'),
+            detail: args.detail,
+            options: parsedOptions.map(option => ({ label: option.label, description: option.description })),
+          }],
+        })
+        const chosen = answer.answers.find(item => item.id === 'group-chat-decision')
+        room.awaitingUserDecision = undefined
+        roomManager.addMessage(roomId, {
+          roomId,
+          sender: { kind: 'user', id: 'user', name: locale === 'en-US' ? 'Human lead' : '人类负责人', avatar: '👤' },
+          content: chosen?.custom || chosen?.selected?.join(', ') || (locale === 'en-US' ? 'Decision submitted.' : '已拍板。'),
+          mentions: [],
+          metadata: { locale, nativeUserQuestionAnswer: answer },
+        })
+        roomManager.saveRoom(room)
+        roomManager.broadcast({ type: 'room:updated', roomId, payload: room, timestamp: Date.now() })
+        publishLetThemCookProjection(roomId, exec)
+        publishLetThemCookProjection(roomId, exec)
+        return locale === 'en-US' ? `Native user question answered: ${JSON.stringify(answer)}` : `原生用户提问已收到答复：${JSON.stringify(answer)}`
       },
     }),
 

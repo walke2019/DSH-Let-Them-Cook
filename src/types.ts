@@ -366,6 +366,7 @@ export interface ApprovalTransaction {
   createdByRoleId: string
   createdAt: number
   updatedAt: number
+  nativeApprovalOutcome?: 'allowed-once' | 'rejected' | 'cancelled' | 'unavailable'
   resolvedByRoleId?: string
   resolvedAt?: number
 }
@@ -571,6 +572,7 @@ export interface GroupMessageEnvelope {
     assignmentId?: string
     structuredResult?: StructuredAgentResultMetadata
     toolCalls?: ToolCallRecord[]
+    nativeUserQuestionAnswer?: { answers: Array<{ id: string; selected: string[]; custom?: string }> }
     runtimeTrace?: DshRuntimeTrace
   }
   timestamp: number

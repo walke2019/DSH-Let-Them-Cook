@@ -129,4 +129,5 @@ export interface ApprovalTransaction {
   willChange: string[]
   rollbackPlan: string[]
   createdByRoleId: string
+  nativeApprovalOutcome?: 'allowed-once' | 'rejected' | 'cancelled' | 'unavailable'
 }

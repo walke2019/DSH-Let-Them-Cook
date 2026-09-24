@@ -19,13 +19,14 @@ import { createThemeDraft, createWorkflowDraft } from './engine/theme-factory.js
 import { buildAutoSetupDraft, classifyAutoSetupIntent, formatAutoSetupApplied, formatAutoSetupCancelled, formatAutoSetupDraft, DEFAULT_ROLE_MODEL_HINTS } from './engine/auto-setup.js'
 import { recommendModelsForRoles } from './engine/model-recommender.js'
 import { detectDshCompat, getCurrentModel, safeListModelCatalog } from './compat/dsh.js'
+import { letThemCookProjectionDefinition } from './engine/native-projection.js'
 import { isRuntimeLivenessActive, isRuntimeLivenessTerminal } from './engine/runtime-liveness.js'
 import { inferAgentTaskStatus, parseStructuredAgentResult, stripStructuredAgentResult } from './engine/structured-result.js'
 import type {GroupChatLocale} from './client/i18n.js'
 import type { DispatchMode, GroupTaskTier, PersonaThemeKey } from './types.js'
 
 export const name = '@dsh-external/dsh-let-them-cook'
-export const inject = ['tools', 'webServer', 'agents', 'systemPrompt', 'agentDefaultModel', 'llm']
+export const inject = ['tools', 'webServer', 'agents', 'systemPrompt', 'agentDefaultModel', 'llm', 'userQuestions', 'approval', 'sessionProjections']
 
 export interface Config {
   defaultMode: string
@@ -43,11 +44,17 @@ export type AppContext = RuntimeContext & {
   llm: {listProviders(): {id:string;name:string}[]; listModels(provider:string): Promise<{id:string;name:string}[]>}
   webServer: any
   tools: any
+  userQuestions: any
+  approval: any
+  sessionProjections: {
+    register(definition: typeof letThemCookProjectionDefinition): () => void
+  }
   logger: any
 }
 
 export function apply(ctx: AppContext, config: Config): void {
   const logger = ctx.logger?.('@dsh-external/dsh-group-chat') || console
+  ctx.effect(() => ctx.sessionProjections.register(letThemCookProjectionDefinition), 'dsh-group-chat: native session projection')
   const compatReport = detectDshCompat(ctx)
   for (const warning of compatReport.warnings) logger.warn?.(`[compat] ${warning}`)
 
@@ -98,6 +105,11 @@ export function apply(ctx: AppContext, config: Config): void {
       return Math.max(120000, Math.min(240000, policyTimeout + 30000))
     }
     return Math.max(360000, Math.min(720000, policyTimeout + 180000))
+  }
+  const appendNativeWorkflowEvent = (execOrAgent: any, type: string, data: Record<string, unknown>) => {
+    const session = execOrAgent?.session || execOrAgent?.agent?.session
+    if (!session || typeof session.append !== 'function') return
+    session.append(type as any, data as any)
   }
   const createTurnAssignment = (roomId: string, targetAgentId: string, brief: string, sourceMessageId?: string, createdByRoleId?: string, stageId?: string, taskTier?: GroupTaskTier) => {
     const current = roomManager.getRoom(roomId)
@@ -1277,7 +1289,10 @@ export function apply(ctx: AppContext, config: Config): void {
   }, '@dsh-external/dsh-group-chat: webServer API')
 
   // Host plugin entry: REST API, message dispatch, workflow actions, and lifecycle-safe registration.
-  const tools = registerGroupChatTools(roomManager, triggerAgentTurn)
+  const tools = registerGroupChatTools(roomManager, triggerAgentTurn, {
+    userQuestions: ctx.userQuestions,
+    approval: ctx.approval,
+  })
   for (const tool of tools) {
     ctx.effect(() => ctx.tools.register(tool), `@dsh-external/dsh-group-chat: ${tool.name}`)
   }

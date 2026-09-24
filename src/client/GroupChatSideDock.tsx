@@ -1,8 +1,7 @@
 import {subscribeGroupChat} from './group-chat-events.js'
-import React, { useState, useEffect, useRef } from 'react'
+import React, { useState, useEffect } from 'react'
 import {GroupChatRoleEditor} from './GroupChatRoleEditor.js'
 import {GroupChatCockpitModal} from './GroupChatCockpitModal.js'
-import {GroupChatDecisionTakeover} from './GroupChatDecisionTakeover.js'
 import {GroupChatHudTopControls} from './GroupChatHudTopControls.js'
 import {GroupChatHudWorkflowPanel} from './GroupChatHudWorkflowPanel.js'
 import {GroupChatHudRosterPanel} from './GroupChatHudRosterPanel.js'
@@ -12,11 +11,6 @@ import type {AssignmentEnvelope, AgentMailboxMessage, CompatReport, GroupMessage
 import type {AgentProfile} from './group-chat-view-types.js'
 import {detectGroupChatLocale, onGroupChatLocaleChange, setGroupChatLocale, tx, type GroupChatLocale} from './i18n.js'
 import {DEFAULT_GROUP_CHAT_ROOM_ID, getActiveSessionId, setCurrentGroupChatRoomId, useCurrentGroupChatRoomId} from './current-room.js'
-
-const SIDEBAR_DEFAULT_WIDTH = 360
-const SIDEBAR_MIN_WIDTH = 300
-const SIDEBAR_MAX_WIDTH = 520
-
 
 export interface GroupChatSideDockProps {
   useSessions?: (selector: (state: any) => any) => any;
@@ -30,7 +24,6 @@ export interface GroupChatSideDockProps {
 export function GroupChatSideDock(props?: GroupChatSideDockProps) {
   const hasSessionsHook = typeof props?.useSessions === 'function'
   const liveSessionId = hasSessionsHook ? (props.useSessions((s: any) => s?.current) ?? '') : undefined
-  const [isOpen, setIsOpen] = useState(false)
   const [cockpitModalOpen, setCockpitModalOpen] = useState(false)
   const [editingAgent,setEditingAgent] = useState<AgentProfile|null>(null)
   const [managementError,setManagementError] = useState('')
@@ -46,19 +39,6 @@ export function GroupChatSideDock(props?: GroupChatSideDockProps) {
   const [themeBusy,setThemeBusy] = useState(false)
   const [themeDraft,setThemeDraft] = useState<AgentProfile[]>([])
   const [workflowDraft,setWorkflowDraft] = useState<any>(null)
-  const [dockFloating, setDockFloating] = useState(false)
-  const [decisionSending, setDecisionSending] = useState(false)
-  const [dockPos, setDockPos] = useState({ x: 0, y: 24 })
-  const [hudWidth, setHudWidth] = useState(() => {
-    if (typeof localStorage === 'undefined') return SIDEBAR_DEFAULT_WIDTH
-    const stored = Number(localStorage.getItem('dsh-group-chat.hud-width'))
-    return Number.isFinite(stored) ? Math.max(SIDEBAR_MIN_WIDTH, Math.min(SIDEBAR_MAX_WIDTH, stored)) : SIDEBAR_DEFAULT_WIDTH
-  })
-  const dragRef = useRef<{ startX:number; startY:number; originX:number; originY:number } | null>(null)
-  const resizeRef = useRef<{ startX:number; startWidth:number; originX:number; floating:boolean; pointerId?:number } | null>(null)
-  const [isResizingHud, setIsResizingHud] = useState(false)
-  const [extensionTabActive, setExtensionTabActive] = useState(false)
-  const [heroMainActive, setHeroMainActive] = useState(false)
   const roomId = useCurrentGroupChatRoomId(liveSessionId)
   const currentSessionId = liveSessionId || getActiveSessionId() || ''
   const selectedTheme = room?.activeTheme === 'meme_comedy' ? 'default' : (room?.activeTheme || 'default')
@@ -66,45 +46,6 @@ export function GroupChatSideDock(props?: GroupChatSideDockProps) {
   const displayRoomTitle = (room?.title?.includes('特遣') || room?.title?.includes('AI 小队')) ? tx(locale,'DSH 开整天团工作台','DSH Let Them Cook Workspace') : (room?.title || tx(locale,'DSH 开整天团','DSH Let Them Cook'))
   const toggleLocale = () => setGroupChatLocale(locale === 'zh-CN' ? 'en-US' : 'zh-CN')
   useEffect(()=>onGroupChatLocaleChange(setLocale),[])
-  useEffect(() => {
-    if (heroMainActive) setIsOpen(true)
-  }, [heroMainActive])
-  useEffect(() => {
-    if (typeof document === 'undefined') return
-    const refresh = () => {
-      const tabActive = document.body.getAttribute('data-dsh-group-chat-tab-active') === 'true'
-      const heroActive = document.body.getAttribute('data-dsh-group-chat-hero-open') === 'true'
-      setExtensionTabActive(prev => {
-        if (prev && !tabActive && !heroActive) {
-          setIsOpen(false)
-        }
-        return tabActive
-      })
-      setHeroMainActive(heroActive)
-      if (tabActive || heroActive) {
-        setIsOpen(true)
-      }
-    }
-    refresh()
-    const observer = new MutationObserver(refresh)
-    observer.observe(document.body, { attributes: true, attributeFilter: ['data-dsh-group-chat-tab-active', 'data-dsh-group-chat-hero-open'] })
-    window.addEventListener('focus', refresh)
-    return () => { observer.disconnect(); window.removeEventListener('focus', refresh) }
-  }, []) // dsh-group-chat: observe active conversation tab and temporary hero surface
-
-  useEffect(() => {
-    const handleToggle = () => {
-      setIsOpen(prev => {
-        const next = !prev
-        if (next && !dockFloating) {
-          setDockPos({ x: Math.max(8, window.innerWidth - SIDEBAR_DEFAULT_WIDTH - 8), y: 24 })
-        }
-        return next
-      })
-    }
-    window.addEventListener('dsh-group-chat:toggle-hud', handleToggle)
-    return () => window.removeEventListener('dsh-group-chat:toggle-hud', handleToggle)
-  }, [dockFloating])
 
   const fetchCompatData = async () => {
     try {
@@ -149,8 +90,6 @@ export function GroupChatSideDock(props?: GroupChatSideDockProps) {
     fetchRoomData()
     fetchCompatData()
 
-    const pollTimer = window.setInterval(fetchRoomData, 2500)
-
     const unsubscribe=subscribeGroupChat(e=>{
         try {
           const data = JSON.parse(e.data)
@@ -165,141 +104,12 @@ export function GroupChatSideDock(props?: GroupChatSideDockProps) {
         } catch {}
     })
     return () => {
-      window.clearInterval(pollTimer)
       unsubscribe()
     }
   }, [roomId])
 
-  // Seamless native integration: completely remove the legacy Agent Chat tab from user view
-  useEffect(() => {
-    if (typeof document === 'undefined') return
-    const hideLegacyTab = () => {
-      const candidates = document.querySelectorAll('[role="tab"], button, [data-tab-id="dsh-group-chat"]')
-      for (const el of candidates) {
-        const text = (el.textContent || '').replace(/\s+/g, ' ').trim()
-        if (text === 'Agent 群聊' || text === '特遣对话' || text.includes('Agent 群聊')) {
-          ;(el as HTMLElement).style.setProperty('display', 'none', 'important')
-        }
-      }
-    }
-    hideLegacyTab()
-    const observer = new MutationObserver(hideLegacyTab)
-    observer.observe(document.body, { childList: true, subtree: true })
-    const timer = window.setInterval(hideLegacyTab, 300)
-    return () => {
-      observer.disconnect()
-      window.clearInterval(timer)
-    }
-  }, [])
-
   useEffect(()=>onGroupChatLocaleChange(setLocale),[])
-  useEffect(() => {
-    if (typeof document === 'undefined') return
-    const body = document.body
-    if (isOpen && !dockFloating) {
-      body.setAttribute('data-dsh-group-chat-hud-docked-open', 'true')
-      body.style.setProperty('--dsh-group-chat-hud-overlay-width', `${Math.max(0, hudWidth + 8)}px`)
-    } else {
-      body.removeAttribute('data-dsh-group-chat-hud-docked-open')
-      body.style.removeProperty('--dsh-group-chat-hud-overlay-width')
-    }
-    return () => {
-      body.removeAttribute('data-dsh-group-chat-hud-docked-open')
-      body.style.removeProperty('--dsh-group-chat-hud-overlay-width')
-    }
-  }, [isOpen, dockFloating, hudWidth])
 
-  useEffect(() => {
-    if (typeof localStorage !== 'undefined') localStorage.setItem('dsh-group-chat.hud-width', String(hudWidth))
-  }, [roomId])
-
-  // Companion HUD: status, configuration, scratchpad, team, workflow, and ledger without duplicating the central chat input.
-  useEffect(() => {
-    const handleKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && isOpen) setIsOpen(false)
-    }
-    window.addEventListener('keydown', handleKey)
-    return () => window.removeEventListener('keydown', handleKey)
-  }, [isOpen])
-
-  // Companion HUD: status, configuration, scratchpad, team, workflow, and ledger without duplicating the central chat input.
-  useEffect(() => {
-    const onMove = (e: MouseEvent) => {
-      const drag = dragRef.current
-      if (!drag) return
-      const width = hudWidth
-      const height = Math.min(720, Math.max(420, window.innerHeight - 24))
-      const x = Math.max(8, Math.min(window.innerWidth - width - 8, drag.originX + e.clientX - drag.startX))
-      const y = Math.max(8, Math.min(window.innerHeight - height - 8, drag.originY + e.clientY - drag.startY))
-      setDockFloating(true)
-      setDockPos({ x, y })
-    }
-    const onUp = () => { dragRef.current = null }
-    window.addEventListener('mousemove', onMove)
-    window.addEventListener('mouseup', onUp)
-    return () => { window.removeEventListener('mousemove', onMove); window.removeEventListener('mouseup', onUp) }
-  }, [hudWidth])
-
-  const startDockDrag = (e: React.MouseEvent) => {
-    if ((e.target as HTMLElement).closest('button,select,a,input,textarea')) return
-    const rect = (e.currentTarget.closest('.dsh-gc-sidebar-host') as HTMLElement | null)?.getBoundingClientRect()
-    const originX = rect?.left ?? Math.max(8, window.innerWidth - hudWidth - 8)
-    const originY = rect?.top ?? 24
-    dragRef.current = { startX: e.clientX, startY: e.clientY, originX, originY }
-  }
-
-  const resetDockPosition = () => {
-    dragRef.current = null
-    setDockFloating(false)
-    setDockPos({ x: 0, y: 24 })
-  }
-
-  // Companion HUD: status, configuration, scratchpad, team, workflow, and ledger without duplicating the central chat input.
-  useEffect(() => {
-    const clearResize = () => {
-      resizeRef.current = null
-      setIsResizingHud(false)
-      document.body.style.removeProperty('cursor')
-      document.body.style.removeProperty('user-select')
-      document.documentElement.style.removeProperty('cursor')
-    }
-    const onMove = (e: PointerEvent) => {
-      const resize = resizeRef.current
-      if (!resize) return
-      if (resize.pointerId !== undefined && e.pointerId !== resize.pointerId) return
-      e.preventDefault()
-      const max = Math.min(SIDEBAR_MAX_WIDTH, Math.max(SIDEBAR_MIN_WIDTH, window.innerWidth - 72))
-      const nextWidth = Math.max(SIDEBAR_MIN_WIDTH, Math.min(max, resize.startWidth + resize.startX - e.clientX))
-      setHudWidth(Math.round(nextWidth))
-      if (resize.floating) {
-        const fixedRight = resize.originX + resize.startWidth
-        setDockPos(pos => ({ ...pos, x: Math.max(8, fixedRight - nextWidth) }))
-      }
-    }
-    window.addEventListener('pointermove', onMove, { passive: false })
-    window.addEventListener('pointerup', clearResize)
-    window.addEventListener('pointercancel', clearResize)
-    window.addEventListener('blur', clearResize)
-    return () => {
-      window.removeEventListener('pointermove', onMove)
-      window.removeEventListener('pointerup', clearResize)
-      window.removeEventListener('pointercancel', clearResize)
-      window.removeEventListener('blur', clearResize)
-      clearResize()
-    }
-  }, [])
-
-  const startDockResize = (e: React.PointerEvent) => {
-    e.preventDefault()
-    e.stopPropagation()
-    ;(e.currentTarget as HTMLElement).setPointerCapture?.(e.pointerId)
-    document.body.style.setProperty('cursor', 'col-resize')
-    document.body.style.setProperty('user-select', 'none')
-    document.documentElement.style.setProperty('cursor', 'col-resize')
-    setIsResizingHud(true)
-    const rect = (e.currentTarget.closest('.dsh-gc-sidebar-host') as HTMLElement | null)?.getBoundingClientRect()
-    resizeRef.current = { startX: e.clientX, startWidth: rect?.width || hudWidth, originX: rect?.left || window.innerWidth - hudWidth, floating: dockFloating, pointerId: e.pointerId }
-  }
   // Companion HUD: status, configuration, scratchpad, team, workflow, and ledger without duplicating the central chat input.
   const handleSaveScratchpad = async () => {
     try {
@@ -403,16 +213,10 @@ export function GroupChatSideDock(props?: GroupChatSideDockProps) {
     finally { setThemeBusy(false) }
   }
 
-  const hudSurfaceActive = extensionTabActive || heroMainActive || isOpen
-
   return (
-    <div data-dsh-group-chat-overlay-root style={{display:'contents'}}>
+    <div data-dsh-group-chat-rightbar-body style={{display:'flex',flexDirection:'column',height:'100%',minHeight:0,width:'100%',overflow:'hidden'}}>
       <style>{`
         .gc-roster-avatar{width:22px;height:22px;border-radius:7px;display:inline-grid;place-items:center;flex-shrink:0;font-size:14px;color:var(--dsw-alias-state-business-primary,#4d6bfe);background:var(--dsw-alias-bg-layer-3,rgba(255,255,255,0.06));}
-        body[data-dsh-group-chat-hud-docked-open="true"] :is([class*="centerCol"], [data-pane="conversation"], .dshDesktopConversationSurface) {
-          margin-right: var(--dsh-group-chat-hud-overlay-width, 368px) !important;
-          transition: margin-right var(--ds-transition-duration-slow, 0.25s) var(--ds-ease-in-out, cubic-bezier(0.4, 0, 0.2, 1));
-        }
       `}</style>
       {editingAgent&&<GroupChatRoleEditor editingAgent={editingAgent} roomId={room?.roomId || roomId || DEFAULT_GROUP_CHAT_ROOM_ID} onClose={()=>setEditingAgent(null)} onSaved={()=>void fetchRoomData()}/>}
       <GroupChatCockpitModal
@@ -422,96 +226,16 @@ export function GroupChatSideDock(props?: GroupChatSideDockProps) {
         locale={locale}
         room={room}
       />
-      <GroupChatDecisionTakeover
-        room={room}
-        roomId={roomId}
-        locale={locale}
-        onDecisionSubmitted={fetchRoomData}
-        onDecisionDismissed={fetchRoomData}
-      />
-      {/**
- * Companion HUD: trigger capsule always available across official dialog and extension tabs
- */}
-      {!isOpen && (
-        <div
-          className="dsh-gc-hud-trigger-capsule"
-          onClick={() => { setIsOpen(true); if (!dockFloating) setDockPos({ x: Math.max(8, window.innerWidth - SIDEBAR_DEFAULT_WIDTH - 8), y: 24 }) }}
-          title={tx(locale,'展开群聊控制台 (HUD)','Open group chat console (HUD)')}
+      <div
+        className="dsh-gc-sidebar-host"
+          aria-label={tx(locale,'群聊管理侧栏','Group chat management sidebar')}
           style={{
-            position: 'fixed',
-            top: '72px',
-            right: '0px',
-            zIndex: 49,
-            pointerEvents: 'auto',
             display: 'flex',
-            alignItems: 'center',
-            gap: '6px',
-            padding: '5px 10px',
-            backgroundColor: 'var(--dsw-alias-bg-layer-2, #1b1b1f)',
-            border: '1px solid var(--dsw-alias-border-l2, rgba(255, 255, 255, 0.12))',
-            borderRight: 'none',
-            borderTopLeftRadius: '16px',
-            borderBottomLeftRadius: '16px',
-            boxShadow: 'var(--dsw-shadow-lv2, 0 4px 12px rgba(0,0,0,0.3))',
-            cursor: 'pointer',
-            userSelect: 'none',
-            color: 'var(--dsw-alias-label-primary, #f8fafc)',
-            fontSize: '11px',
-            fontWeight: 500,
-            transition: 'transform 0.15s ease',
+            flexDirection: 'column',
+            flex: '1 1 auto',
+            minHeight: 0,
+            backgroundColor: 'var(--dsw-alias-bg-layer-1, #151518)',
           }}
-          onMouseEnter={e => e.currentTarget.style.transform = 'translateX(-2px)'}
-          onMouseLeave={e => e.currentTarget.style.transform = 'translateX(0)'}
-        >
-          <span style={{ fontSize: '13px' }}>🧭</span>
-          <span>{tx(locale,'群聊副屏','Squad HUD')}</span>
-          {room?.awaitingUserDecision ? (
-            <span style={{
-              background: '#ef4444',
-              color: '#fff',
-              fontSize: '10px',
-              fontWeight: 700,
-              padding: '1px 5px',
-              borderRadius: '999px',
-            }}>
-              {tx(locale, '待拍板', 'Decision')}
-            </span>
-          ) : room?.workflow && !room.workflow.isCompleted && (
-            <span style={{
-              width: '6px',
-              height: '6px',
-              borderRadius: '50%',
-              backgroundColor: 'var(--dsw-alias-state-business-primary, #4d6bfe)',
-            }} />
-          )}
-        </div>
-      )}
-
-      {/**
- * Companion HUD: side dock host rendered when open or when extension tab is active
- */}
-      {(isOpen || extensionTabActive || heroMainActive) && (
-        <div
-          className="dsh-gc-sidebar-host"
-        aria-label={tx(locale,'群聊管理侧栏','Group chat management sidebar')}
-        aria-hidden={!isOpen}
-        inert={!isOpen}
-        data-collapsed={!isOpen}
-        data-floating={dockFloating}
-        data-resizing={isResizingHud}
-        style={{
-          pointerEvents: isOpen ? 'auto' : 'none',
-          left: dockFloating ? dockPos.x : undefined,
-          top: dockFloating ? dockPos.y : undefined,
-          right: dockFloating ? 'auto' : undefined,
-          bottom: dockFloating ? 'auto' : undefined,
-          width: `min(${hudWidth}px, calc(100vw - 72px))`,
-          height: dockFloating ? 'min(720px, calc(100vh - 24px))' : undefined,
-          borderRadius: dockFloating ? 14 : undefined,
-          display: 'flex',
-          flexDirection: 'column',
-          backgroundColor: 'var(--dsw-alias-bg-layer-1, #151518)',
-        }}
       >
         <style>{`
           .dsh-gc-sidebar-host,.dsh-gc-sidebar-host *{box-sizing:border-box;min-width:0;}
@@ -524,24 +248,14 @@ export function GroupChatSideDock(props?: GroupChatSideDockProps) {
           .dsh-gc-hud-subtitle{font-size:10px;color:var(--dsw-alias-label-tertiary,#94a3b8);white-space:nowrap!important;overflow:hidden!important;text-overflow:ellipsis!important;line-height:1.2;}
           .dsh-gc-hud-actions{display:inline-flex;align-items:center;gap:4px;flex-shrink:0;white-space:nowrap!important;}
           .dsh-gc-locale-toggle{width:56px;min-width:56px;height:24px;padding:0;border-radius:999px;border:1px solid var(--dsw-alias-border-l1,rgba(255,255,255,0.12));background:var(--dsw-alias-bg-layer-2,#202025);color:var(--dsw-alias-label-primary,#f8fafc);cursor:pointer;font-size:11px;font-weight:650;line-height:22px;white-space:nowrap!important;flex-shrink:0;display:inline-flex;align-items:center;justify-content:center;text-align:center;letter-spacing:-0.2px;}
-          .dsh-gc-hud-dock-btn{min-width:44px;height:24px;background:transparent;border:1px solid var(--dsw-alias-border-l1,rgba(255,255,255,0.08));color:var(--dsw-alias-label-secondary,#94a3b8);cursor:pointer;font-size:11px;padding:0 6px;border-radius:7px;white-space:nowrap!important;flex-shrink:0;display:inline-flex;align-items:center;justify-content:center;text-align:center;}
-          .dsh-gc-hud-close-btn{width:24px;height:24px;background:transparent;border:none;color:var(--dsw-alias-label-secondary,#94a3b8);cursor:pointer;font-size:14px;padding:0;border-radius:6px;white-space:nowrap!important;flex-shrink:0;display:inline-flex;align-items:center;justify-content:center;}
           .dsh-gc-sidebar-host details{width:auto!important;max-width:100%!important;overflow:hidden!important;}
           .dsh-gc-sidebar-host summary{max-width:100%!important;overflow:hidden!important;}
           .dsh-gc-sidebar-host select{min-width:0;max-width:100%;}
-          @media(max-width:760px){.dsh-gc-sidebar-host[data-floating="false"][data-collapsed="false"]{width:min(320px,calc(100vw - 72px))!important;transform:translateX(calc(100% - 44px));box-shadow:var(--dsw-shadow-lv2,-2px 0 12px rgba(0,0,0,.25));}.dsh-gc-sidebar-host[data-floating="false"][data-collapsed="false"]:hover,.dsh-gc-sidebar-host[data-floating="false"][data-collapsed="false"]:focus-within,.dsh-gc-sidebar-host[data-floating="false"][data-collapsed="false"][data-resizing="true"]{transform:translateX(0);}}
         `}</style>
-        <div
-          className="dsh-gc-resize-handle pI_x6G_handle"
-          aria-label={tx(locale,'拖动调整群聊右栏宽度','Drag to resize group chat sidebar')}
-          title={tx(locale,'拖动调整宽度','Drag to resize')}
-          onPointerDown={startDockResize}
-          style={{position:'absolute',left:-6,top:0,bottom:0,width:12,cursor:'col-resize',zIndex:3,touchAction:'none',background:'transparent',transition:'none',userSelect:'none'}}
-        />
         {/**
  * Companion HUD: status, configuration, scratchpad, team, workflow, and ledger without duplicating the central chat input.
  */}
-        <div onMouseDown={startDockDrag} title={tx(locale,'拖动 HUD','Drag HUD')} className="dsh-gc-hud-head" style={{cursor: dockFloating ? 'grab' : 'move'}}>
+        <div className="dsh-gc-hud-head">
           <div className="dsh-gc-hud-head-left">
             <span style={{ fontSize: '16px', flexShrink: 0 }}>🧭</span>
             <div style={{ minWidth: 0, overflow: 'hidden' }}>
@@ -563,21 +277,7 @@ export function GroupChatSideDock(props?: GroupChatSideDockProps) {
             >
               {locale === 'zh-CN' ? '中 / EN' : 'EN / 中'}
             </button>
-            <button
-              type="button"
-              className="dsh-gc-hud-dock-btn"
-              onClick={() => dockFloating ? resetDockPosition() : setDockFloating(true)}
-              title={dockFloating ? tx(locale,'贴回右侧','Dock to right') : tx(locale,'切到浮窗','Switch to floating')}
-            >
-              {dockFloating ? tx(locale,'停靠','Dock') : tx(locale,'浮动','Float')}
-            </button>
-            <button
-              type="button"
-              className="dsh-gc-hud-close-btn"
-              onClick={() => setIsOpen(false)}
-            >
-              ✕
-            </button>
+
           </div>
         </div>
 
@@ -842,9 +542,7 @@ export function GroupChatSideDock(props?: GroupChatSideDockProps) {
             />
           )}
         </div>
-
       </div>
-      )}
     </div>
   )
 }
