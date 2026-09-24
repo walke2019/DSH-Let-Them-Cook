@@ -2,7 +2,14 @@
 
 本项目遵循面向未来的 Agent 原生架构（Agent-Native Architecture），严格执行**“三层文档体系”**与**“防文档泛滥硬约束（Anti-Process Bloat Guardrail，文档总数 <= 15）”**。
 
-所有系统的业务定位、架构规约、长效专著与技术指标，统一收敛于以下核心文档：
+所有系统的业务定位、架构规约、长效专著与技术指标，统一收敛于以下核心文档。
+
+## 命名契约（必须统一）
+
+- **对外安装与 DSH profile 包名**：`@dsh-external/dsh-let-them-cook`
+- **内部运行时命名空间**：`dsh-group-chat`
+- 内部命名空间仅用于稳定 API 路径（如 `/dsh-group-chat/api/...`）、工作区目录（`.pm-workflow/dsh-group-chat/`）、Runtime Skill（`dsh-group-chat-orchestrator`）以及 CSS/data/event marker。
+- 文档、安装命令、DSH profile、发布元数据不得把 `@dsh-external/dsh-group-chat` 当作可安装包名；它只作为历史/内部标识出现。
 
 ---
 

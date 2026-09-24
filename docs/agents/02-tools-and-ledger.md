@@ -2,6 +2,8 @@
 
 本指南聚焦于 **DSH 底座原生工具直通、实时工具流式广播、结构化结果解析与 Prompt Cache 计费核算**。
 
+> 命名契约：对外包名为 `@dsh-external/dsh-let-them-cook`；本文若出现 `dsh-group-chat`，仅指内部运行时 namespace，不指安装包。
+
 ---
 
 ## 🏛️ 核心架构契约

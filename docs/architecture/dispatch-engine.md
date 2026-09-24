@@ -2,6 +2,7 @@
 
 更新日期：2026-09-09
 
+> 命名契约：对外安装/DSH profile 包名是 `@dsh-external/dsh-let-them-cook`；调度相关 API、事件与工作区状态使用内部 namespace `dsh-group-chat`。
 ## 1. 调度目标
 
 调度引擎的目标是让用户用自然语言描述任务后，由主 Agent 组织 SubAgent 完成项目协作，同时减少用户配置成本和理解成本。

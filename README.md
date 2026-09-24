@@ -61,6 +61,8 @@
 
 `@dsh-external/dsh-let-them-cook` runs as a **Cordis extension module** inside DeepSeek Harness. It adheres strictly to the **Zero-Hijacking & Scoped Lifecycle** contract:
 
+> **Naming contract:** `@dsh-external/dsh-let-them-cook` is the only external package name and the only value allowed in DSH profile registration. `dsh-group-chat` is an internal runtime namespace for stable API paths (`/dsh-group-chat/api/...`), workspace state (`.pm-workflow/dsh-group-chat/`), runtime skill id (`dsh-group-chat-orchestrator`), and CSS/data/event markers. Do not install or register `@dsh-external/dsh-group-chat`.
+
 ```text
 ┌──────────────────────────────────────────────────────────────────────────────────┐
 │                          DeepSeek Harness (DSH) Host                             │
@@ -229,6 +231,8 @@ Once built, the `lib/` directory will be generated:
 
 ### 3. Registering into DSH
 
+> **Package identity guard:** the external package and DSH profile entry must be exactly `@dsh-external/dsh-let-them-cook`. The legacy string `dsh-group-chat` is intentionally kept only for internal runtime URLs, workspace folders, CSS/data markers, and the runtime skill namespace; do not use `@dsh-external/dsh-group-chat` as the installed package name.
+
 #### Method A: Official Cordis Patch (Recommended)
 Edit the DSH web profile configuration on your machine:
 - **macOS / Linux**: `~/.dsh/profiles/web/cordis.patch.yml`
@@ -238,7 +242,7 @@ Add the plugin to the profile insert list:
 ```yaml
 # Add DSH Let Them Cook to the web profile
 - insert:
-    - id: group-chat
+    - id: let-them-cook
       name: '@dsh-external/dsh-let-them-cook'
 ```
 
@@ -257,7 +261,7 @@ If using an extension injector:
 dev_install_package --dir "/absolute/path/to/DSH-Let-Them-Cook"
 
 # 2. Trigger hot reload without restarting DSH
-dev_reload_package --packageName "dsh-let-them-cook"
+dev_reload_package --packageName "@dsh-external/dsh-let-them-cook"
 ```
 
 ---
@@ -283,6 +287,7 @@ The console will print an authenticated URL with an access token:
 | Symptom | Cause | Solution |
 | :--- | :--- | :--- |
 | `dsh web authentication required` | Opened bare `http://127.0.0.1:3080/` without the query token | Copy the complete link with `?token=...` printed by `dsh web` |
+| Plugin API works but the `Agent 群聊` / HUD entry is missing | Host side loaded but the Web client bundle was not refreshed, or the profile/package identity drifted | Ensure `package.json`, `src/index.ts`, and `~/.dsh/profiles/web/cordis.patch.yml` all use `@dsh-external/dsh-let-them-cook`; run `npm run build:all`, restart the old `dsh web` process on port `3080`, then hard-refresh the browser (`Cmd+Shift+R` / `Ctrl+F5`) |
 | `Cannot read properties of undefined (reading 'prepare')` | Legacy group chat plugin broke `conversation.view` lifecycle | Run `npm run build:all` to ensure the updated `prepare()` adapter is built |
 | React UI changes not reflecting | `lib/client.js` bundle not rebuilt | Run `npm run build:client` (takes ~30ms), then press `F5` / `Cmd + R` in browser |
 | Port conflict `EADDRINUSE: 3080` | Previous DSH process still running | Terminate lingering node instances (`lsof -i :3080` or kill process) and restart |

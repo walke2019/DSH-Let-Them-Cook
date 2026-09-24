@@ -1,4 +1,6 @@
-# TODO — dsh-group-chat 当前开发清单
+# TODO — DSH Let Them Cook 当前开发清单
+
+> 对外包名：`@dsh-external/dsh-let-them-cook`。本文中的 `dsh-group-chat` 仅表示内部 API、工作区、Runtime Skill 或 UI marker；历史验证路径保持原样，不作为安装包名。
 
 更新日期：2026-09-10
 

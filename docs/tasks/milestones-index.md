@@ -2,6 +2,7 @@
 
 本文档归档项目演进中的各阶段核心里程碑，所有技术细节已收敛重构于四大长效领域专著（`docs/agents/01~04`）与架构白皮书（`docs/architecture/`）。
 
+> 命名契约：对外包名固定为 `@dsh-external/dsh-let-them-cook`；历史里程碑中的 `dsh-group-chat` 仅代表内部运行时 namespace 或历史稳定标识。
 ---
 
 ## 📌 历史里程碑总览

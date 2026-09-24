@@ -4,7 +4,9 @@
 
 ## 1. 插件边界
 
-`dsh-group-chat` 必须作为 DSH Cordis 插件维护：
+对外安装与 DSH profile 注册的唯一包身份是 `@dsh-external/dsh-let-them-cook`。仓库内部仍使用 `dsh-group-chat` 作为运行时命名空间（API 路径、工作区目录、事件/CSS 标记和 Runtime Skill 名称），但它不是可安装的包名；两者不可混用。
+
+`@dsh-external/dsh-let-them-cook` 必须作为 DSH Cordis 插件维护：
 
 - 不修改 `@deepseek-ai/dsh` 核心源码。
 - 不覆盖官方 preset，如标准模式、极简模式、创造模式。
@@ -50,6 +52,8 @@
 扩展内置 Runtime Skill `dsh-group-chat-orchestrator`，用于给 DSH 内运行的群聊 Agent 注入协同规则。扩展负责 UI/API/状态机/持久化；Skill 负责角色协作说明、工具路由、模型能力标签与输出纪律。
 
 ## 6. 回归验证
+
+包身份与入口注册是发布门禁：`package.json#name`、`package-lock.json`、`src/index.ts export const name`、client bundle 的 `__ModuleLoader__` 注册，以及本机 `~/.dsh/profiles/web/cordis.patch.yml` 必须共同指向 `@dsh-external/dsh-let-them-cook`。`npm run preflight` 会阻断旧包名作为安装身份回流。
 
 任何 UI/布局/注册点改动后，至少运行：
 

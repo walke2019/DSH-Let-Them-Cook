@@ -2,6 +2,8 @@
 
 本指南聚焦于 **多 Agent 调度状态机、Universal Master Handoff 闭环、多阶段 DAG 门禁以及任务看门狗机制**。
 
+> 命名契约：对外包名为 `@dsh-external/dsh-let-them-cook`；`dsh-group-chat` 仅表示内部运行时 namespace 与历史稳定标识。
+
 ---
 
 ## 🏛️ 核心架构契约

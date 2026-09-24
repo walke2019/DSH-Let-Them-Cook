@@ -2,6 +2,7 @@
 
 更新日期：2026-09-10
 
+> 命名契约：对外安装/DSH profile 包名是 `@dsh-external/dsh-let-them-cook`；角色、工作流、房间和主题运行态归属内部 namespace `dsh-group-chat`。
 ## 1. 默认角色体系
 
 | 角色 ID | 用户可见角色 | 职责 |

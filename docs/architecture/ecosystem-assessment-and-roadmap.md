@@ -2,6 +2,8 @@
 
 更新日期：2026-09-10
 
+> 命名契约：对外安装/DSH profile 使用 `@dsh-external/dsh-let-them-cook`；内部 API、工作区、Runtime Skill、CSS/data/event marker 继续使用 `dsh-group-chat`。内部 namespace 不应被批量改名，否则会破坏既有 API 和工作区状态。
+
 ## 1. 当前完成度
 
 | 能力域 | 当前状态 | 完成度 |

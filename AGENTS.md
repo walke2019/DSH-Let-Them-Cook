@@ -2,6 +2,8 @@
 
 本文件是面向所有参与 `@dsh-external/dsh-let-them-cook` 核心开发、重构与功能演进的 **AI Coding Agent** 以及群聊协同中的 **Participant Agent** 的最高工程宪法。
 
+**命名契约红线**：对外安装、DSH profile 注册与发布元数据必须统一使用 `@dsh-external/dsh-let-them-cook`；`dsh-group-chat` 仅作为内部运行时命名空间保留，用于 `/dsh-group-chat/api/...`、`.pm-workflow/dsh-group-chat/`、`dsh-group-chat-orchestrator`、CSS/data/event marker。严禁把 `@dsh-external/dsh-group-chat` 当作可安装包名写回文档或配置。
+
 本项目全面践行 **“面向未来的 Agent 原生架构（Agent-Native Architecture）”**：
 **坚决不搞任何临时补丁（Monkey Patch）、坚决不做任何隐式降级兜底（Implicit Fallback）。完全一新，契约优先，编译即守护！**
 

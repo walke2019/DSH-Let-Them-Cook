@@ -2,6 +2,8 @@
 
 本指南聚焦于 **DSH 官方主对话与群聊副屏（HUD）的零入侵融合、中间视图挂载规范以及会话生命周期管理**。
 
+> 命名约定：本插件对外包名为 `@dsh-external/dsh-let-them-cook`；本文中的 `dsh-group-chat` 只表示内部运行时 namespace，例如 CSS/data/event marker，不表示可安装包。
+
 ---
 
 ## 🏛️ 核心架构契约

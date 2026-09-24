@@ -2,6 +2,8 @@
 
 本指南聚焦于 **全栈中英双语国际化、五大主题世界观声线以及会话工作区物理隔离**。
 
+> 命名约定：对外安装身份为 `@dsh-external/dsh-let-them-cook`；`.pm-workflow/dsh-group-chat/` 是内部工作区 namespace，必须保持稳定以避免已有会话状态丢失。
+
 ---
 
 ## 🏛️ 核心架构契约

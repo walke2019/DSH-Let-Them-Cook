@@ -1,13 +1,13 @@
 ---
 name: dsh-group-chat-orchestrator
-description: Use when working through the dsh-group-chat extension or coordinating multi-agent project tasks with a commander/subagent workflow, role creation, workflow drafting, tool routing, model capability hints, or workspace-scoped group chat automation.
+description: Use when working through the @dsh-external/dsh-let-them-cook extension runtime namespace dsh-group-chat, or coordinating multi-agent project tasks with a commander/subagent workflow, role creation, workflow drafting, tool routing, model capability hints, or workspace-scoped group chat automation.
 metadata:
-  short-description: Orchestrate dsh-group-chat multi-agent project work
+  short-description: Orchestrate Let Them Cook multi-agent project work
 ---
 
 # DSH Group Chat Orchestrator
 
-Use this skill when a task is being handled through the `dsh-group-chat` extension or when the user asks for multi-agent project collaboration, role/workflow creation, model-role matching, tool routing, or extension-specific orchestration.
+Use this skill when a task is being handled through `@dsh-external/dsh-let-them-cook` or its internal `dsh-group-chat` runtime namespace, or when the user asks for multi-agent project collaboration, role/workflow creation, model-role matching, tool routing, or extension-specific orchestration.
 
 This is a DSH extension runtime skill/protocol injected to group-chat Agents; 不是 Codex 开发助手技能，也不依赖 `C:/Users/Administrator/.codex/skills`。
 
