@@ -11,7 +11,7 @@ import {GroupChatHudDiagnosticsPanel} from './GroupChatHudDiagnosticsPanel.js'
 import type {AssignmentEnvelope, AgentMailboxMessage, CompatReport, GroupMessageData, LedgerData, WorkflowTask} from './group-chat-hud-types.js'
 import type {AgentProfile} from './group-chat-view-types.js'
 import {detectGroupChatLocale, onGroupChatLocaleChange, setGroupChatLocale, tx, type GroupChatLocale} from './i18n.js'
-import {DEFAULT_GROUP_CHAT_ROOM_ID, setCurrentGroupChatRoomId, useCurrentGroupChatRoomId} from './current-room.js'
+import {DEFAULT_GROUP_CHAT_ROOM_ID, getActiveSessionId, setCurrentGroupChatRoomId, useCurrentGroupChatRoomId} from './current-room.js'
 
 const SIDEBAR_DEFAULT_WIDTH = 360
 const SIDEBAR_MIN_WIDTH = 300
@@ -60,6 +60,7 @@ export function GroupChatSideDock(props?: GroupChatSideDockProps) {
   const [extensionTabActive, setExtensionTabActive] = useState(false)
   const [heroMainActive, setHeroMainActive] = useState(false)
   const roomId = useCurrentGroupChatRoomId(liveSessionId)
+  const currentSessionId = liveSessionId || getActiveSessionId() || ''
   const selectedTheme = room?.activeTheme === 'meme_comedy' ? 'default' : (room?.activeTheme || 'default')
   const selectedMode = room?.dispatchMode === 'workflow_driven' ? 'default' : (room?.dispatchMode || 'default')
   const displayRoomTitle = (room?.title?.includes('特遣') || room?.title?.includes('AI 小队')) ? tx(locale,'DSH 开整天团工作台','DSH Let Them Cook Workspace') : (room?.title || tx(locale,'DSH 开整天团','DSH Let Them Cook'))
@@ -118,7 +119,13 @@ export function GroupChatSideDock(props?: GroupChatSideDockProps) {
 
   const fetchRoomData = async () => {
     try {
-      const res = await fetch(`/dsh-group-chat/api/room?id=${encodeURIComponent(roomId)}&ensure=1`)
+      const sessionScope = currentSessionId || 'new-session'
+      const sessionQuery = `&sessionId=${encodeURIComponent(sessionScope)}`
+      const res = await fetch(`/dsh-group-chat/api/room?id=${encodeURIComponent(roomId)}&ensure=1${sessionQuery}`)
+      if (res.status === 409) {
+        setCurrentGroupChatRoomId(null, currentSessionId)
+        return
+      }
       if (!res.ok) return
       const data = await res.json()
       if (data.room) {

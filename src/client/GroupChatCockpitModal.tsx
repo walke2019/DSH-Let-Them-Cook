@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react'
 import { GroupChatLocale, tx } from './i18n.js'
-import { setCurrentGroupChatRoomId } from './current-room.js'
+import { getActiveSessionId, setCurrentGroupChatRoomId } from './current-room.js'
 import type { AssignmentEnvelope } from './types.js'
 
 interface WarRoomItem {
@@ -44,7 +44,8 @@ export function GroupChatCockpitModal({
   const fetchRooms = async () => {
     setLoadingRooms(true)
     try {
-      const res = await fetch('/dsh-group-chat/api/rooms')
+      const sessionId = getActiveSessionId() || ''
+      const res = await fetch(`/dsh-group-chat/api/rooms?sessionId=${encodeURIComponent(sessionId)}`)
       if (res.ok) {
         const data = await res.json()
         if (Array.isArray(data.rooms)) {
@@ -108,7 +109,7 @@ export function GroupChatCockpitModal({
   const isAutoMode = typeof localStorage !== 'undefined' && !localStorage.getItem('dsh-group-chat.selected-room-id')
 
   const handleSwitchRoom = (targetRoomId: string | null) => {
-    setCurrentGroupChatRoomId(targetRoomId)
+    setCurrentGroupChatRoomId(targetRoomId, getActiveSessionId())
     // Also smoothly ensure central Agent group chat tab is focused
     const tabs = Array.from(document.querySelectorAll('*'))
     const agentTab = tabs.find(el => el.textContent?.trim() === 'Agent 群聊' && (el.tagName === 'BUTTON' || el.getAttribute('role') === 'tab')) as HTMLElement | undefined

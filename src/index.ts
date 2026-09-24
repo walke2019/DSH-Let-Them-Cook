@@ -612,9 +612,16 @@ export function apply(ctx: AppContext, config: Config): void {
 
         // Host plugin entry: REST API, message dispatch, workflow actions, and lifecycle-safe registration.
         if (method === 'GET' && (pathname === '/rooms' || pathname === '')) {
-          const rooms = roomManager.getAllRooms()
+          const requestedSessionId = (url.searchParams.get('sessionId') || '').trim()
+          const includeAll = url.searchParams.get('scope') === 'all'
+          const allRooms = roomManager.getAllRooms()
+          const rooms = includeAll
+            ? allRooms
+            : requestedSessionId
+              ? allRooms.filter(room => room.masterSessionId === requestedSessionId || room.roomId === `dsh-${requestedSessionId}`)
+              : allRooms.filter(room => room.roomId === 'dev-team-alpha' || room.roomId === 'dsh-new-session')
           res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' })
-          res.end(JSON.stringify({ rooms }))
+          res.end(JSON.stringify({ rooms, scope: includeAll ? 'all' : 'session', sessionId: requestedSessionId || undefined }))
           return
         }
 
@@ -622,7 +629,14 @@ export function apply(ctx: AppContext, config: Config): void {
         if (method === 'GET' && pathname === '/room') {
           const roomId = url.searchParams.get('id') || url.searchParams.get('roomId') || 'dev-team-alpha'
           const shouldEnsure = url.searchParams.get('ensure') === '1'
-          const room = shouldEnsure ? roomManager.ensureRoomForSession(roomId, roomId.replace(/^dsh-/, '')) : roomManager.getRoom(roomId)
+          const requestedSessionId = (url.searchParams.get('sessionId') || '').trim()
+          const inferredSessionId = requestedSessionId || roomId.replace(/^dsh-/, '')
+          const room = shouldEnsure ? roomManager.ensureRoomForSession(roomId, inferredSessionId) : roomManager.getRoom(roomId)
+          if (room && requestedSessionId && room.masterSessionId !== requestedSessionId && room.roomId !== `dsh-${requestedSessionId}`) {
+            res.writeHead(409, { 'Content-Type': 'application/json; charset=utf-8' })
+            res.end(JSON.stringify({ error: 'Room does not belong to current DSH session', roomId, sessionId: requestedSessionId, masterSessionId: room.masterSessionId }))
+            return
+          }
           if (!room) {
             res.writeHead(404, { 'Content-Type': 'application/json' })
             res.end(JSON.stringify({ error: 'Room not found' }))

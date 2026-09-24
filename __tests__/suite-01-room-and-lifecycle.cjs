@@ -60,4 +60,12 @@ const isolatedRoom = manager.getRoom(roomId)
 assert.equal(isolatedRoom.roomId, roomId)
 assert.equal(isolatedRoom.assignments.length, 1)
 
+// 5. DSH Session-Bound Room Identity
+const sessionA = manager.ensureRoomForSession('dsh-session-a', 'session-a')
+const sessionB = manager.ensureRoomForSession('dsh-session-b', 'session-b')
+assert.equal(sessionA.masterSessionId, 'session-a')
+assert.equal(sessionB.masterSessionId, 'session-b')
+assert.equal(manager.getAllRooms().filter(r => r.masterSessionId === 'session-a').map(r => r.roomId).join(','), 'dsh-session-a')
+assert.equal(manager.getAllRooms().filter(r => r.masterSessionId === 'session-b').map(r => r.roomId).join(','), 'dsh-session-b')
+
 console.log('SUITE_01_ROOM_LIFECYCLE_EXIT:0')

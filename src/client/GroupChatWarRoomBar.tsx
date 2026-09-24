@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react'
 import { GroupChatLocale, tx } from './i18n.js'
-import { setCurrentGroupChatRoomId, resolveCurrentGroupChatRoomId } from './current-room.js'
+import { getActiveSessionId, setCurrentGroupChatRoomId, resolveCurrentGroupChatRoomId } from './current-room.js'
 import type { AssignmentEnvelope } from './types.js'
 
 interface WarRoomItem {
@@ -71,7 +71,8 @@ export function GroupChatWarRoomBar({
     setPickerOpen(true)
     setLoadingRooms(true)
     try {
-      const res = await fetch('/dsh-group-chat/api/rooms')
+      const sessionId = getActiveSessionId() || ''
+      const res = await fetch(`/dsh-group-chat/api/rooms?sessionId=${encodeURIComponent(sessionId)}`)
       const data = await res.json()
       if (Array.isArray(data.rooms)) {
         // Sort rooms: rooms with active tasks first, then dev-team-alpha, then others
@@ -93,7 +94,7 @@ export function GroupChatWarRoomBar({
   }
 
   const handleSwitchRoom = (targetRoomId: string | null) => {
-    setCurrentGroupChatRoomId(targetRoomId)
+    setCurrentGroupChatRoomId(targetRoomId, getActiveSessionId())
     setPickerOpen(false)
   }
 

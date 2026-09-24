@@ -2,12 +2,17 @@ import {useEffect, useState} from 'react'
 
 export const DEFAULT_GROUP_CHAT_ROOM_ID = 'dev-team-alpha'
 export const NEW_SESSION_ROOM_ID = 'dsh-new-session'
+const LEGACY_SELECTED_ROOM_KEY = 'dsh-group-chat.selected-room-id'
+const SELECTED_ROOM_KEY_PREFIX = 'dsh-group-chat.selected-room-id.'
 
 function sanitizeRoomId(value: string): string {
   return value.trim().replace(/[^a-zA-Z0-9_-]/g, '-').slice(0, 96)
 }
 
-let lastObservedSessionId: string | null = null
+function selectedRoomKey(sessionId: string): string {
+  return `${SELECTED_ROOM_KEY_PREFIX}${sanitizeRoomId(sessionId)}`
+}
+
 let currentActiveSessionId: string | null = null
 
 export function setActiveSessionId(sessionId: string | null | undefined): void {
@@ -24,7 +29,7 @@ export function getActiveSessionId(): string | null {
   return currentActiveSessionId
 }
 
-export function resolveCurrentGroupChatRoomId(explicitSessionId?: string | null): string {
+export function resolveCurrentDshSessionId(explicitSessionId?: string | null): string {
   let sessionId = ''
 
   if (explicitSessionId !== undefined) {
@@ -89,34 +94,45 @@ export function resolveCurrentGroupChatRoomId(explicitSessionId?: string | null)
     currentActiveSessionId = sessionId
   }
 
-  // Detect official session change in DSH: clear manual room override so room always follows active session
-  if (lastObservedSessionId !== null && lastObservedSessionId !== sessionId) {
-    try {
-      if (typeof localStorage !== 'undefined') localStorage.removeItem('dsh-group-chat.selected-room-id')
-    } catch {}
-  }
-  lastObservedSessionId = sessionId
+  return sessionId
+}
+
+export function resolveDefaultGroupChatRoomId(sessionId: string): string {
+  return sessionId ? `dsh-${sanitizeRoomId(sessionId)}` : NEW_SESSION_ROOM_ID
+}
+
+export function resolveCurrentGroupChatRoomId(explicitSessionId?: string | null): string {
+  const sessionId = resolveCurrentDshSessionId(explicitSessionId)
 
   if (typeof localStorage !== 'undefined') {
     try {
-      const override = localStorage.getItem('dsh-group-chat.selected-room-id')
-      if (override && override !== 'auto') return override
+      // Remove the previous global override key so a room selected in one DSH session cannot leak into another.
+      localStorage.removeItem(LEGACY_SELECTED_ROOM_KEY)
+      if (sessionId) {
+        const override = localStorage.getItem(selectedRoomKey(sessionId))
+        if (override && override !== 'auto') return override
+      }
     } catch {}
   }
 
-  if (sessionId) return `dsh-${sanitizeRoomId(sessionId)}`
-  // Fresh / new session with no DSH session ID yet: return clean new session room
-  return NEW_SESSION_ROOM_ID
+  return resolveDefaultGroupChatRoomId(sessionId)
 }
 
-export function setCurrentGroupChatRoomId(roomId: string | null): void {
+export function setCurrentGroupChatRoomId(roomId: string | null, explicitSessionId?: string | null): void {
   if (typeof localStorage === 'undefined') return
-  if (!roomId || roomId === 'auto') {
-    localStorage.removeItem('dsh-group-chat.selected-room-id')
-  } else {
-    localStorage.setItem('dsh-group-chat.selected-room-id', roomId)
-  }
-  window.dispatchEvent(new CustomEvent('dsh-group-chat:room-changed', {detail: {roomId}}))
+  const sessionId = resolveCurrentDshSessionId(explicitSessionId)
+  try {
+    localStorage.removeItem(LEGACY_SELECTED_ROOM_KEY)
+    if (sessionId) {
+      const key = selectedRoomKey(sessionId)
+      if (!roomId || roomId === 'auto') {
+        localStorage.removeItem(key)
+      } else {
+        localStorage.setItem(key, roomId)
+      }
+    }
+  } catch {}
+  window.dispatchEvent(new CustomEvent('dsh-group-chat:room-changed', {detail: {roomId, sessionId}}))
 }
 
 export function useCurrentGroupChatRoomId(explicitSessionId?: string | null): string {
@@ -175,4 +191,3 @@ export function useCurrentGroupChatRoomId(explicitSessionId?: string | null): st
   }, [explicitSessionId])
   return roomId
 }
-

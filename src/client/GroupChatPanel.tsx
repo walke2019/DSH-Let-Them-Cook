@@ -8,7 +8,7 @@ import {getThemeVoice} from '../engine/theme-voice.js'
 import {detectGroupChatLocale, onGroupChatLocaleChange, tx, txRoleName, type GroupChatLocale} from './i18n.js'
 import type {AssignmentEnvelope} from './group-chat-hud-types.js'
 import type {AgentProfile, AgentStatus, GroupMessage} from './group-chat-view-types.js'
-import {useCurrentGroupChatRoomId} from './current-room.js'
+import {getActiveSessionId, useCurrentGroupChatRoomId} from './current-room.js'
 import {GroupChatQuestionComposer} from './GroupChatQuestionComposer.js'
 import type {UserDecisionPrompt} from '../types.js'
 
@@ -215,7 +215,10 @@ export function GroupChatPanel({mode='full'}:GroupChatPanelProps) {
     setLoading(true);setError('')
     const fetchWithRetry = async (attemptsLeft = 2): Promise<void> => {
       try {
-        const r = await fetch(`/dsh-group-chat/api/room?id=${encodeURIComponent(roomId)}&ensure=1`, {signal: controller.signal})
+        const sessionId = getActiveSessionId() || 'new-session'
+        const sessionQuery = `&sessionId=${encodeURIComponent(sessionId)}`
+        const r = await fetch(`/dsh-group-chat/api/room?id=${encodeURIComponent(roomId)}&ensure=1${sessionQuery}`, {signal: controller.signal})
+        if (r.status === 409) throw Error(tx(locale, '该作战室不属于当前 DSH 会话', 'This war room does not belong to the current DSH session'))
         if (!r.ok) throw Error(tx(locale, '群聊加载失败', 'Group chat load failed') + ` (${r.status})`)
         const data = await r.json()
         if (!data.room) throw Error(tx(locale, '群聊数据暂未就绪', 'Group chat data is not ready yet'))
