@@ -6,6 +6,14 @@ const errors = []
 const exists = p => fs.existsSync(path.join(root, p))
 const read = p => fs.readFileSync(path.join(root, p), 'utf8')
 
+const CANONICAL_PACKAGE_NAME = '@dsh-external/dsh-let-them-cook'
+const LEGACY_PACKAGE_NAME = '@dsh-external/dsh-group-chat'
+const DSH_WEB_PROFILE_PATCH = path.join(process.env.HOME || '', '.dsh', 'profiles', 'web', 'cordis.patch.yml')
+
+function assertTextIncludes(file, text, message) {
+  if (!read(file).includes(text)) errors.push(message)
+}
+
 for (const file of fs.readdirSync(root)) {
   if (/\.(md|txt)$/i.test(file) && !['README.md', 'AGENTS.md'].includes(file)) errors.push(`root document must live under docs/: ${file}`)
 }
@@ -62,11 +70,27 @@ const required = [
 for (const file of required) if (!exists(file)) errors.push(`missing required artifact: ${file}`)
 
 const pkg = JSON.parse(read('package.json'))
+const lock = JSON.parse(read('package-lock.json'))
 for (const script of ['typecheck', 'build:all', 'test', 'test:matrix', 'smoke:api', 'test:e2e:no-llm', 'preflight']) {
   if (!pkg.scripts?.[script]) errors.push(`missing package script: ${script}`)
 }
+if (pkg.name !== CANONICAL_PACKAGE_NAME) errors.push(`package name drift: expected ${CANONICAL_PACKAGE_NAME}, got ${pkg.name}`)
+if (lock.name !== CANONICAL_PACKAGE_NAME) errors.push(`package-lock root name drift: expected ${CANONICAL_PACKAGE_NAME}, got ${lock.name}`)
+if (lock.packages?.['']?.name !== CANONICAL_PACKAGE_NAME) errors.push(`package-lock packages[""] name drift: expected ${CANONICAL_PACKAGE_NAME}, got ${lock.packages?.['']?.name}`)
 if (pkg.main !== './lib/index.js') errors.push('package main must point to ./lib/index.js')
 if (!pkg.dsh?.client?.inject?.includes('@deepseek-ai/dsh-client-runtime')) errors.push('dsh client runtime injection missing')
+
+const hostEntry = read('src/index.ts')
+const tsdown = read('tsdown.config.ts')
+if (!hostEntry.includes(`export const name = '${CANONICAL_PACKAGE_NAME}'`)) errors.push(`host plugin export name must be ${CANONICAL_PACKAGE_NAME}`)
+if (!tsdown.includes(`id: "${CANONICAL_PACKAGE_NAME}"`)) errors.push(`client bundle must register ${CANONICAL_PACKAGE_NAME} with __ModuleLoader__`)
+if (hostEntry.includes(`export const name = '${LEGACY_PACKAGE_NAME}'`)) errors.push(`host plugin export name must not use legacy package name ${LEGACY_PACKAGE_NAME}`)
+if (pkg.name === LEGACY_PACKAGE_NAME || lock.name === LEGACY_PACKAGE_NAME || lock.packages?.['']?.name === LEGACY_PACKAGE_NAME) errors.push(`legacy package identity ${LEGACY_PACKAGE_NAME} is forbidden in package metadata`)
+if (fs.existsSync(DSH_WEB_PROFILE_PATCH)) {
+  const profilePatch = fs.readFileSync(DSH_WEB_PROFILE_PATCH, 'utf8')
+  if (!profilePatch.includes(`name: '${CANONICAL_PACKAGE_NAME}'`) && !profilePatch.includes(`name: "${CANONICAL_PACKAGE_NAME}"`) && !profilePatch.includes(`name: ${CANONICAL_PACKAGE_NAME}`)) errors.push(`DSH web profile patch must load ${CANONICAL_PACKAGE_NAME}`)
+  if (profilePatch.includes(LEGACY_PACKAGE_NAME)) errors.push(`DSH web profile patch must not load legacy package ${LEGACY_PACKAGE_NAME}`)
+}
 
 const agents = read('AGENTS.md')
 if (!agents.includes('不破坏底座核心源码')) errors.push('AGENTS.md core-source guard missing')
