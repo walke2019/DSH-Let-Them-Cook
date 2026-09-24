@@ -33,20 +33,19 @@ function requireLiveAgent(exec: any, seamName: string): unknown {
 
 export function registerGroupChatTools(
   roomManager: RoomManager,
-  onTriggerAgentTurn?: (roomId: string, targetAgentId: string, assignmentId?: string) => Promise<void>,
+  onTriggerAgentTurn?: (roomId: string, targetAgentId: string, assignmentId?: string, parentSession?: { append(type: string, data: Record<string, unknown>): void }) => Promise<void>,
   nativeServices: DshNativeInteractionServices = {},
 ) {
-  function appendNativeWorkflowEvent(exec: any, type: string, data: Record<string, unknown>): void {
+  function nativeSession(exec: any, seamName: string): { append(type: string, data: Record<string, unknown>): void } {
     const session = exec?.agent?.session || exec?.session
-    if (!session || typeof session.append !== 'function') return
-    session.append(type as any, data as any)
+    if (!session || typeof session.append !== 'function') throw new Error(`${seamName} requires the live DSH session for durable workflow/projection state`)
+    return session
   }
 
-  function publishLetThemCookProjection(roomId: string, exec?: any): void {
+  function publishLetThemCookProjection(roomId: string, exec: any): void {
     const room = roomManager.getRoom(roomId)
-    if (!room) return
-    const session = exec?.agent?.session || exec?.session
-    if (!session || typeof session.append !== 'function') return
+    if (!room) throw new Error(`Cannot publish Let Them Cook projection: room ${roomId} does not exist`)
+    const session = nativeSession(exec, 'Let Them Cook session projection')
     const currentStage = room.workflow?.stages?.[room.workflow.currentStageIndex]
     session.append('let-them-cook/room-state', {
       roomId,
@@ -145,7 +144,7 @@ export function registerGroupChatTools(
           WorkflowOrchestrator.updateTaskStatus(room, currentStage.id, task.taskId, 'running', { assignmentId })
           roomManager.saveRoom(room)
           roomManager.broadcast({ type: 'room:updated', roomId, payload: room, timestamp: Date.now() })
-        publishLetThemCookProjection(roomId, exec)
+          publishLetThemCookProjection(roomId, exec)
         }
 
         roomManager.addMessage(roomId, {
@@ -165,16 +164,9 @@ export function registerGroupChatTools(
           return locale === 'en-US' ? `Task assigned to @${member.name}, but agent runner is not attached.` : `任务已指派给 @${member.name}，但执行引擎未挂载。`
         }
 
-        const nativeRunId = `dsh-group-chat-${assignmentId || `${roomId}-${member.id}`}`
-        appendNativeWorkflowEvent(exec, 'tool-workflow/run-start', { runId: nativeRunId, name: `Let Them Cook · ${room.title}` })
-        appendNativeWorkflowEvent(exec, 'tool-workflow/agent-start', { runId: nativeRunId, seq: 1, label: member.name, phase: currentStage?.name, childId: `group-chat-${member.id}` })
         try {
           await onTriggerAgentTurn(roomId, member.id, assignmentId)
-          appendNativeWorkflowEvent(exec, 'tool-workflow/agent-end', { runId: nativeRunId, seq: 1, outcome: 'completed' })
-          appendNativeWorkflowEvent(exec, 'tool-workflow/run-end', { runId: nativeRunId, stopReason: 'completed' })
         } catch (err) {
-          appendNativeWorkflowEvent(exec, 'tool-workflow/agent-end', { runId: nativeRunId, seq: 1, outcome: 'failed' })
-          appendNativeWorkflowEvent(exec, 'tool-workflow/run-end', { runId: nativeRunId, stopReason: 'error' })
           const errMsg = err instanceof Error ? err.message : String(err)
           return locale === 'en-US'
             ? `❌ Task execution failed for @${member.name}: ${errMsg}`
@@ -697,7 +689,6 @@ export function registerGroupChatTools(
         roomManager.saveRoom(room)
         roomManager.broadcast({ type: 'room:updated', roomId, payload: room, timestamp: Date.now() })
         publishLetThemCookProjection(roomId, exec)
-        publishLetThemCookProjection(roomId, exec)
         const answer = await nativeServices.userQuestions.ask({
           agent: requireLiveAgent(exec, 'DSH native userQuestions.ask'),
           questions: [{
@@ -719,7 +710,6 @@ export function registerGroupChatTools(
         })
         roomManager.saveRoom(room)
         roomManager.broadcast({ type: 'room:updated', roomId, payload: room, timestamp: Date.now() })
-        publishLetThemCookProjection(roomId, exec)
         publishLetThemCookProjection(roomId, exec)
         return locale === 'en-US' ? `Native user question answered: ${JSON.stringify(answer)}` : `原生用户提问已收到答复：${JSON.stringify(answer)}`
       },

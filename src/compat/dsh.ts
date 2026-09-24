@@ -26,7 +26,7 @@ export interface DshCompatReport {
     watchdog: 'dsh-runtime-liveness'
     toolEvents: 'dsh-tool-event-adapter'
     approval: 'dsh-user-approval' | 'plugin-transaction-card'
-    workflow: 'dsh-workflow-run' | 'plugin-workflow-dag'
+    workflow: 'dsh-workflow-events' | 'dsh-workflow-run' | 'plugin-workflow-dag'
   }
   warnings: string[]
   optimizations: string[]
@@ -70,6 +70,7 @@ export function detectDshCompat(ctx: any): DshCompatReport {
   const projections = typeof ctx?.get === 'function' ? ctx.get('sessionProjections', false) : undefined
   const userQuestions = typeof ctx?.get === 'function' ? ctx.get('userQuestions', false) : undefined
   const bridge = detectDshApprovalWorkflowBridge(ctx)
+  const workflowEvents = typeof ctx?.on === 'function' || typeof ctx?.session?.append === 'function'
   const features = {
     llmCatalog: !!ctx?.llm && typeof ctx.llm.listProviders === 'function' && typeof ctx.llm.listModels === 'function',
     currentModel: !!ctx?.agentDefaultModel && typeof ctx.agentDefaultModel.currentSelection === 'function',
@@ -80,6 +81,7 @@ export function detectDshCompat(ctx: any): DshCompatReport {
     sessionProjectionStateOf: !!projections && typeof projections.stateOf === 'function',
     userQuestions: !!userQuestions,
     ...bridge.features,
+    workflowEvents,
   }
   if (!features.llmCatalog) warnings.push('DSH llm.listProviders/listModels 不可用，模型目录将降级为空列表。')
   if (!features.currentModel) warnings.push('DSH agentDefaultModel.currentSelection 不可用，将使用空默认模型。')
@@ -90,7 +92,9 @@ export function detectDshCompat(ctx: any): DshCompatReport {
   else warnings.push('DSH sessionProjections.stateOf 不可用：账本将降级为事件流 usage 深度解析。')
   if (features.agents) optimizations.push('DSH agents.create 可用：群聊角色以独立 subagent session 运行，保留 DSH 原生事件、工具与计量能力。')
   if (features.toolRestrict) optimizations.push('DSH tools.restrict 可用：角色工具白名单可由底座强制执行。')
-  warnings.push(...bridge.warnings)
+  warnings.push(...bridge.warnings.filter(warning => !warning.startsWith('DSH workflow run seam 不可用')))
+  if (workflowEvents) optimizations.push('DSH workflow event seam 可用：使用 tool-workflow/* 记录原生 workflow run 生命周期。')
+  else warnings.push('DSH workflow event seam 不可用：无法记录原生 workflow run 生命周期。')
   optimizations.push(...bridge.optimizations)
   const requiredOk = features.llmCatalog && features.currentModel && features.toolRestrict && features.webServer && features.agents
   return {
@@ -102,7 +106,7 @@ export function detectDshCompat(ctx: any): DshCompatReport {
       watchdog: 'dsh-runtime-liveness',
       toolEvents: 'dsh-tool-event-adapter',
       approval: bridge.sources.approval,
-      workflow: bridge.sources.workflow,
+      workflow: bridge.sources.workflow === 'dsh-workflow-run' ? 'dsh-workflow-run' : workflowEvents ? 'dsh-workflow-events' : 'plugin-workflow-dag',
     },
     warnings,
     optimizations,

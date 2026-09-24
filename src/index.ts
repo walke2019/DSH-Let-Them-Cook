@@ -53,7 +53,7 @@ export type AppContext = RuntimeContext & {
 }
 
 export function apply(ctx: AppContext, config: Config): void {
-  const logger = ctx.logger?.('@dsh-external/dsh-group-chat') || console
+  const logger = ctx.logger?.('@dsh-external/dsh-let-them-cook') || console
   ctx.effect(() => ctx.sessionProjections.register(letThemCookProjectionDefinition), 'dsh-group-chat: native session projection')
   const compatReport = detectDshCompat(ctx)
   for (const warning of compatReport.warnings) logger.warn?.(`[compat] ${warning}`)
@@ -105,11 +105,6 @@ export function apply(ctx: AppContext, config: Config): void {
       return Math.max(120000, Math.min(240000, policyTimeout + 30000))
     }
     return Math.max(360000, Math.min(720000, policyTimeout + 180000))
-  }
-  const appendNativeWorkflowEvent = (execOrAgent: any, type: string, data: Record<string, unknown>) => {
-    const session = execOrAgent?.session || execOrAgent?.agent?.session
-    if (!session || typeof session.append !== 'function') return
-    session.append(type as any, data as any)
   }
   const createTurnAssignment = (roomId: string, targetAgentId: string, brief: string, sourceMessageId?: string, createdByRoleId?: string, stageId?: string, taskTier?: GroupTaskTier) => {
     const current = roomManager.getRoom(roomId)
@@ -274,6 +269,7 @@ export function apply(ctx: AppContext, config: Config): void {
           roleId: member.id,
           roleName: member.name,
           allowedTools: member.permissions.allowedTools, locale,
+          workflow: assignmentId ? { runId: `dsh-group-chat-${assignmentId}`, name: `Let Them Cook · ${room.title}`, phase: room.workflow?.stages?.[room.workflow.currentStageIndex]?.name, parentSession: (ctx as any).session } : undefined,
           onProgress: (liveToolCalls, liveness) => {
             toolCalls = liveToolCalls
             if (assignmentId) {

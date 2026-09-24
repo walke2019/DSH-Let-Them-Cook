@@ -160,6 +160,13 @@ export interface MemberTurnRuntimeOptions {
   allowedTools?: readonly string[]
   locale?: GroupChatLocale
   onProgress?: (toolCalls: ToolCallRecord[], liveness?: RuntimeLivenessSnapshot) => void
+  workflow?: {
+    runId: string
+    name: string
+    phase?: string
+    parentSession?: { append(type: string, data: Record<string, unknown>): void }
+    onEvent?: (session: { append(type: string, data: Record<string, unknown>): void }) => void
+  }
 }
 
 function normalizeAllowedTools(allowedTools?: readonly string[]): string[] {
@@ -183,6 +190,15 @@ export async function runMemberTurn(ctx: RuntimeContext, model: ModelRef, prompt
   const cancel = () => handle?.agent.cancel({ kind: 'hook', reason: 'group-chat turn cancelled' })
   signal.addEventListener('abort', cancel, { once: true })
   const turnStartTime = Date.now()
+  let workflowSettled = false
+  const settleWorkflow = (outcome: 'completed' | 'failed' | 'cancelled') => {
+    if (!options.workflow || workflowSettled) return
+    workflowSettled = true
+    const workflowSession = options.workflow.parentSession
+    if (!workflowSession) throw new Error('DSH workflow event recording requires the parent session')
+    workflowSession.append('tool-workflow/agent-end', { runId: options.workflow.runId, seq: 1, outcome })
+    workflowSession.append('tool-workflow/run-end', { runId: options.workflow.runId, stopReason: outcome === 'completed' ? 'completed' : outcome === 'cancelled' ? 'cancelled' : 'error' })
+  }
   try {
     handle = await ctx.agents.create({
       sessionId: `group-chat-${randomUUID()}` as SessionId,
@@ -212,6 +228,15 @@ export async function runMemberTurn(ctx: RuntimeContext, model: ModelRef, prompt
       },
     })
     signal.throwIfAborted()
+    if (options.workflow) {
+      const workflowSession = handle.agent.session
+      const childId = String((workflowSession as any).id || (workflowSession as any).sessionId || '')
+      if (!childId) throw new Error('DSH workflow event recording requires a child session id')
+      const parentSession = options.workflow.parentSession
+      if (!parentSession) throw new Error('DSH workflow event recording requires the parent session')
+      parentSession.append('tool-workflow/run-start', { runId: options.workflow.runId, name: options.workflow.name })
+      parentSession.append('tool-workflow/agent-start', { runId: options.workflow.runId, seq: 1, label: options.roleName || options.roleId || 'group-chat-agent', phase: options.workflow.phase, childId })
+    }
     const roleTag = options.roleName || options.roleId || ''
     const followText = options.locale === 'en-US'
       ? (roleTag
@@ -257,6 +282,9 @@ export async function runMemberTurn(ctx: RuntimeContext, model: ModelRef, prompt
     const events = asRuntimeEvents(handle.agent.session?.events)
     const end = findLastRuntimeEvent(events, e => e.type === 'turn/end')
     if (end && end.data?.reason?.kind !== 'completed') {
+      if (options.workflow) {
+        settleWorkflow('failed')
+      }
       throw new Error(`Group-chat agent turn failed: ${JSON.stringify(end.data?.reason)}`)
     }
     const content = extractAssistantTextFromEvents(events) || extractAssistantTextFromSurface(handle.agent.session)
@@ -300,8 +328,12 @@ export async function runMemberTurn(ctx: RuntimeContext, model: ModelRef, prompt
       }
     } catch {}
 
+    if (options.workflow) {
+      settleWorkflow('completed')
+    }
     return { content, reasoningContent: '', providerUsed: selected.provider, modelUsed: selected.model, metrics, toolCalls: summarizeToolCalls(events), runtimeTrace }
   } finally {
+    if (signal.aborted) settleWorkflow('cancelled')
     signal.removeEventListener('abort', cancel)
     await handle?.dispose()
   }

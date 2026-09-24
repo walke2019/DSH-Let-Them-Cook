@@ -537,7 +537,7 @@ export function GroupChatSideDock(props?: GroupChatSideDockProps) {
               watchdogSource={compat?.sources?.watchdog || 'dsh-runtime-liveness'}
               toolEventSource={compat?.sources?.toolEvents || 'dsh-tool-event-adapter'}
               approvalSource={compat?.sources?.approval || 'plugin-transaction-card'}
-              workflowSource={compat?.sources?.workflow || 'plugin-workflow-dag'}
+              workflowSource={compat?.sources?.workflow || 'dsh-workflow-events'}
               locale={locale}
             />
           )}

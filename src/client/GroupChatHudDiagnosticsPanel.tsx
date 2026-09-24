@@ -34,7 +34,7 @@ function SourcePill({label, value}: {label: string; value: string}) {
   return <div className="gc-diagnostics-source-pill"><span>{label}</span><b>{value}</b></div>
 }
 
-export function GroupChatHudDiagnosticsPanel({compat, ledgerSource = compat?.sources?.ledger || 'dsh-session-projections', watchdogSource = compat?.sources?.watchdog || 'dsh-runtime-liveness', toolEventSource = compat?.sources?.toolEvents || 'dsh-tool-event-adapter', approvalSource = compat?.sources?.approval || 'plugin-transaction-card', workflowSource = compat?.sources?.workflow || 'plugin-workflow-dag', locale = 'zh-CN'}: Props) {
+export function GroupChatHudDiagnosticsPanel({compat, ledgerSource = compat?.sources?.ledger || 'dsh-session-projections', watchdogSource = compat?.sources?.watchdog || 'dsh-runtime-liveness', toolEventSource = compat?.sources?.toolEvents || 'dsh-tool-event-adapter', approvalSource = compat?.sources?.approval || 'plugin-transaction-card', workflowSource = compat?.sources?.workflow || 'dsh-workflow-events', locale = 'zh-CN'}: Props) {
   const features = compat?.features || {}
   const warnings = compat?.warnings || []
   const optimizations = compat?.optimizations || []
@@ -69,7 +69,8 @@ export function GroupChatHudDiagnosticsPanel({compat, ledgerSource = compat?.sou
       <CapabilityRow label="agentDefaultModel.currentSelection" ok={!!features.currentModel} detail={tx(locale,'读取官方当前模型选择。','Reads the official current model selection.')} />
       <CapabilityRow label="llm.listProviders/listModels" ok={!!features.llmCatalog} detail={tx(locale,'读取官方模型目录。','Reads the official model catalog.')} />
       <CapabilityRow label="approval.request" ok={!!features.nativeApprovalRequest} detail={tx(locale,'可用时只记录 DSH 原生 approval seam 引用；不可用时保持插件事务卡，不伪装。','When available, records DSH-native approval seam references; otherwise stays as plugin transaction cards without pretending to be native.')} />
-      <CapabilityRow label="workflow.run" ok={!!features.nativeWorkflowRun} detail={tx(locale,'可用时为群聊阶段推进附加 native workflow run reference。','When available, attaches native workflow run references to group workflow stages.')} />
+      <CapabilityRow label="tool-workflow/* events" ok={!!features.workflowEvents} detail={tx(locale,'使用 DSH 原生 run/agent start/end 事件记录阶段执行生命周期。','Uses DSH-native run/agent start/end events for stage execution lifecycle.')} />
+      <CapabilityRow label="workflow.run service" ok={!!features.nativeWorkflowRun} detail={tx(locale,'可选的独立 workflow service；事件 seam 不依赖该 service。','Optional standalone workflow service; the event seam does not depend on it.')} />
     </section>
 
     <section style={hudCardStyle}>

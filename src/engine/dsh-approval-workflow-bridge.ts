@@ -8,7 +8,7 @@ export interface DshApprovalWorkflowBridgeReport {
   }
   sources: {
     approval: 'dsh-user-approval' | 'plugin-transaction-card'
-    workflow: 'dsh-workflow-run' | 'plugin-workflow-dag'
+    workflow: 'dsh-workflow-events' | 'dsh-workflow-run' | 'plugin-workflow-dag'
   }
   warnings: string[]
   optimizations: string[]
@@ -36,7 +36,7 @@ export function detectDshApprovalWorkflowBridge(ctx: any): DshApprovalWorkflowBr
   const optimizations: string[] = []
   const sources = {
     approval: features.nativeApprovalRequest ? 'dsh-user-approval' as const : 'plugin-transaction-card' as const,
-    workflow: features.nativeWorkflowRun ? 'dsh-workflow-run' as const : 'plugin-workflow-dag' as const,
+    workflow: features.nativeWorkflowRun ? 'dsh-workflow-run' as const : (typeof ctx?.on === 'function' || typeof ctx?.session?.append === 'function') ? 'dsh-workflow-events' as const : 'plugin-workflow-dag' as const,
   }
   if (features.nativeApprovalRequest) {
     optimizations.push('DSH approval.request 可用：群聊确认后执行事务可记录为 DSH 原生 approval seam 引用；插件仍保留业务语义卡片。')
@@ -45,8 +45,10 @@ export function detectDshApprovalWorkflowBridge(ctx: any): DshApprovalWorkflowBr
   }
   if (features.nativeWorkflowRun) {
     optimizations.push('DSH workflow run seam 可用：群聊阶段推进可附加 native workflow run reference。')
+  } else if (typeof ctx?.on === 'function' || typeof ctx?.session?.append === 'function') {
+    optimizations.push('DSH workflow run service 不可用，但 workflow event seam 可用：使用 tool-workflow/* 记录原生 workflow run 生命周期。')
   } else {
-    warnings.push('DSH workflow run seam 不可用：群聊阶段推进保持插件内 workflow DAG，不伪装为 native workflow。')
+    warnings.push('DSH workflow event seam 不可用：无法记录原生 workflow run 生命周期。')
   }
   return { features, sources, warnings, optimizations }
 }
