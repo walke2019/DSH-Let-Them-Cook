@@ -8,8 +8,8 @@ export interface ClientContext {
     inject(slotName: string, callback: () => unknown): () => void;
     register(meta: Record<string, unknown>, component?: unknown): unknown;
   };
-  sidebarRight?: { openTab(kind: string, options?: Record<string, unknown>): void };
-  sidebarRightTabs?: { register(definition: Record<string, unknown>): () => void };
+  sidebarRight: { openTab(kind: string, options?: Record<string, unknown>): void };
+  sidebarRightTabs: { register(definition: Record<string, unknown>): () => void };
   sessions: {
     list: {
       getSnapshot(): { current?: string };
@@ -35,7 +35,7 @@ export function apply(ctx: ClientContext): void {
 
   // Native DSH rightbar tab: the host owns docking, width, fullscreen, and session scope.
   ctx.effect(() => {
-    const disposeType = ctx.sidebarRightTabs?.register({
+    const disposeType = ctx.sidebarRightTabs.register({
       id: "@dsh-external/dsh-let-them-cook",
       kind: "let-them-cook",
       priority: "extension",
@@ -53,7 +53,7 @@ export function apply(ctx: ClientContext): void {
     return () => {
       disposeTitle();
       disposeBody();
-      disposeType?.();
+      disposeType();
     };
   }, "dsh-group-chat: native rightbar tab");
 }
