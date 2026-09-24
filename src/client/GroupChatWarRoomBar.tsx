@@ -61,7 +61,7 @@ export function GroupChatWarRoomBar({
 
   const visibleRooms = availableRooms.filter(r => !archivedRoomIds.includes(r.roomId) || r.roomId === roomId)
 
-  const isAutoMode = typeof localStorage !== 'undefined' && !localStorage.getItem('dsh-group-chat.selected-room-id')
+  const isAutoMode = roomId === resolveCurrentGroupChatRoomId(getActiveSessionId())
 
   const displayRoomTitle = room?.title || (roomId === 'dev-team-alpha' ? tx(locale, '默认小队工作台', 'Default Team Cockpit') : `${tx(locale, '作战室', 'War Room')} (${roomId.replace(/^dsh-session-/, '').slice(0, 8)}…)`)
 

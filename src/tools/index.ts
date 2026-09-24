@@ -33,8 +33,6 @@ export function registerGroupChatTools(
         return scopedId
       }
     }
-    const active = roomManager.getActiveRoomId()
-    if (active && active !== 'dev-team-alpha') return active
     return 'dsh-new-session'
   }
 

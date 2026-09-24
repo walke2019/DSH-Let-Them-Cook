@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react'
 import { GroupChatLocale, tx } from './i18n.js'
-import { getActiveSessionId, setCurrentGroupChatRoomId } from './current-room.js'
+import { getActiveSessionId, resolveCurrentGroupChatRoomId, setCurrentGroupChatRoomId } from './current-room.js'
 import type { AssignmentEnvelope } from './types.js'
 
 interface WarRoomItem {
@@ -106,7 +106,7 @@ export function GroupChatCockpitModal({
   }
 
   const visibleRooms = availableRooms.filter(r => !archivedRoomIds.includes(r.roomId) || r.roomId === roomId)
-  const isAutoMode = typeof localStorage !== 'undefined' && !localStorage.getItem('dsh-group-chat.selected-room-id')
+  const isAutoMode = roomId === resolveCurrentGroupChatRoomId(getActiveSessionId())
 
   const handleSwitchRoom = (targetRoomId: string | null) => {
     setCurrentGroupChatRoomId(targetRoomId, getActiveSessionId())
