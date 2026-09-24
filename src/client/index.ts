@@ -50,6 +50,7 @@ export function apply(ctx: ClientContext): void {
       name: "sidebar.right.pane.tab.title",
       key: "@dsh-external/dsh-let-them-cook",
     }, () => "Agent 群聊"));
+    ctx.sidebarRight.openTab("let-them-cook");
     return () => {
       disposeTitle();
       disposeBody();
