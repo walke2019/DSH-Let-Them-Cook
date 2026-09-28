@@ -5,7 +5,7 @@ const root = path.resolve(__dirname, '..')
 const { WorkflowOrchestrator } = require(path.join(root, 'lib/engine/workflow-orchestrator.js'))
 const { RoomManager } = require(path.join(root, 'lib/engine/room-manager.js'))
 
-console.log('[SUITE-02] Pure Domain Behavioral Test: Multi-Stage Workflow DAG & Quality Gates...')
+console.log('[SUITE-02] Standard Verification Suite: Multi-Stage Workflow DAG & Quality Gates...')
 
 const manager = new RoomManager()
 const roomId = 'test-workflow-dag-' + Date.now()

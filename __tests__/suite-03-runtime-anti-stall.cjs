@@ -5,7 +5,7 @@ const root = path.resolve(__dirname, '..')
 const { RoomManager } = require(path.join(root, 'lib/engine/room-manager.js'))
 const { runMemberTurn } = require(path.join(root, 'lib/engine/agent-runtime.js'))
 
-console.log('[SUITE-03] Pure Domain Behavioral Test: Anti-Stall, Watchdogs & Master Handoff Protocol...')
+console.log('[SUITE-03] Standard Verification Suite: Anti-Stall, Watchdogs & Master Handoff Protocol...')
 
 // 1. Universal Master Handoff Protocol: SubAgents MUST report back to Commander
 function resolveNextHandoffRole(report, masterId = 'commander') {

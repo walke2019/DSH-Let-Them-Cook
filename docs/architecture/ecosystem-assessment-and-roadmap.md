@@ -14,7 +14,7 @@
 | anti-stall | active-assignment tuple dedupe and failed-healer report consumption |
 | roles | commander plus research/backend/frontend/QA/writer specialists |
 
-The project is a usable candidate when all six domain suites and preflight pass and browser verification confirms native sidebar registration.
+The project is a usable candidate when all six standard verification suites and preflight pass and browser verification confirms native sidebar registration.
 
 ## DSH ecosystem boundary
 

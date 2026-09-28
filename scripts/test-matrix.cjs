@@ -27,4 +27,4 @@ for (const [cmd, args] of steps) {
 if (failed) {
   process.exit(1)
 }
-console.log('\n[MATRIX] ALL 6 DOMAIN SUITES PASSED CLEANLY!')
+console.log('\n[MATRIX] ALL 6 STANDARD VERIFICATION SUITES PASSED CLEANLY!')

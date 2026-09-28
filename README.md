@@ -114,7 +114,7 @@ npm test
 npm run preflight
 ```
 
-The six domain suites cover room lifecycle, workflow DAGs, anti-stall behavior, tools and ledger, personas and localization, and the end-to-end delivery loop.
+The six standard verification suites cover room lifecycle, workflow DAGs, anti-stall behavior, tools and ledger, personas and localization, and the end-to-end delivery loop.
 
 ## Architecture references
 

@@ -5,7 +5,7 @@ const root = path.resolve(__dirname, '..')
 const { parseStructuredAgentResult, stripStructuredAgentResult } = require(path.join(root, 'lib/engine/structured-result.js'))
 const { assertExactNativeToolFilter } = require(path.join(root, 'lib/engine/agent-runtime.js'))
 
-console.log('[SUITE-04] Pure Domain Behavioral Test: Native Tools Whitelist, Streaming Diff & Token Accounting...')
+console.log('[SUITE-04] Standard Verification Suite: Native Tools Whitelist, Streaming Diff & Token Accounting...')
 
 // 1. Native Tool Filter: exact names only, no aliasing or silent deduplication
 const exactTools = ['bash', 'web_search', 'read']

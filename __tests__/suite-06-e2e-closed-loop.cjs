@@ -8,7 +8,7 @@ const { parseStructuredAgentResult, stripStructuredAgentResult } = require(path.
 const { recommendModelsForRoles } = require(path.join(root, 'lib/engine/model-recommender.js'))
 const { DEFAULT_ROLE_MODEL_HINTS } = require(path.join(root, 'lib/engine/auto-setup.js'))
 
-console.log('[SUITE-06] Pure Domain Behavioral Test: Full Orchestration Closed-Loop E2E...')
+console.log('[SUITE-06] Standard Verification Suite: Full Orchestration Closed-Loop E2E...')
 
 const manager = new RoomManager()
 const roomId = 'e2e-pure-loop-' + Date.now()

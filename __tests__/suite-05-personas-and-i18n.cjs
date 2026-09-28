@@ -6,7 +6,7 @@ const { RoomManager } = require(path.join(root, 'lib/engine/room-manager.js'))
 const { buildAutoSetupDraft } = require(path.join(root, 'lib/engine/auto-setup.js'))
 const { getThemeVoice } = require(path.join(root, 'lib/engine/theme-voice.js'))
 
-console.log('[SUITE-05] Pure Domain Behavioral Test: Zero-Friction Setup, Personas & Bilingual Runtime...')
+console.log('[SUITE-05] Standard Verification Suite: Zero-Friction Setup, Personas & Bilingual Runtime...')
 
 const manager = new RoomManager()
 const defaultFleet = manager.createDefaultFleet('meme_comedy')

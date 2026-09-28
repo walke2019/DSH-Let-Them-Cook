@@ -5,7 +5,7 @@ lib/
 .pm-workflow/
 .playwright-cli/
 
-Docs/**/.browser-runner.js
+docs/**/.browser-runner.js
 __tests__/.browser-runner.js
 __tests__/last-run.*
 __tests__/*.png

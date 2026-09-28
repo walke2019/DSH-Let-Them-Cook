@@ -14,8 +14,10 @@ function assertTextIncludes(file, text, message) {
   if (!read(file).includes(text)) errors.push(message)
 }
 
-for (const file of fs.readdirSync(root)) {
-  if (/\.(md|txt)$/i.test(file) && !['README.md', 'AGENTS.md'].includes(file)) errors.push(`root document must live under docs/: ${file}`)
+const rootEntries = fs.readdirSync(root, {withFileTypes: true})
+for (const entry of rootEntries) {
+  if (/\.(md|txt)$/i.test(entry.name) && !['README.md', 'AGENTS.md'].includes(entry.name)) errors.push(`root document must live under docs/: ${entry.name}`)
+  if (entry.isDirectory() && entry.name.toLowerCase() === 'docs' && entry.name !== 'docs') errors.push(`documentation directory must use canonical lowercase path: ${entry.name}`)
 }
 const tempDocs = fs.readdirSync(path.join(root, 'docs')).filter(file => /^_patch/i.test(file))
 if (tempDocs.length) errors.push(`temporary patch docs remain: ${tempDocs.join(', ')}`)
@@ -24,8 +26,8 @@ function collectNumberedPhasePaths(dir) {
   const matches = []
   for (const entry of fs.readdirSync(dir, {withFileTypes: true})) {
     const full = path.join(dir, entry.name)
-    const relative = path.relative(root, full)
-    if (/(^|\/)p\d+(?:[-_.\/]|$)/i.test(relative)) matches.push(relative)
+    const relative = path.relative(root, full).split(path.sep).join('/')
+    if (/(^|\/)(?:p\d+|phase[-_]?\d+|\d+[-_]?phase)(?:[-_.\/]|$)/i.test(relative)) matches.push(relative)
     if (entry.isDirectory()) matches.push(...collectNumberedPhasePaths(full))
   }
   return matches
@@ -55,7 +57,7 @@ const required = [
   'README.md',
   'AGENTS.md',
   'docs/TODO.md',
-  'docs/tasks/milestones-index.md',
+  'docs/tasks/domain-index.md',
   'docs/agents/01-ui-and-lifecycle.md',
   'docs/agents/02-tools-and-ledger.md',
   'docs/agents/03-orchestration-and-anti-stall.md',
@@ -82,7 +84,8 @@ for (const file of required) if (!exists(file)) errors.push(`missing required ar
 
 const pkg = JSON.parse(read('package.json'))
 const lock = JSON.parse(read('package-lock.json'))
-for (const script of ['typecheck', 'build:all', 'test', 'test:matrix', 'smoke:api', 'test:e2e:no-llm', 'preflight']) {
+const requiredPackageScripts = ['typecheck', 'build:all', 'test', 'test:matrix', 'smoke:api', 'test:e2e:no-llm', 'preflight']
+for (const script of requiredPackageScripts) {
   if (!pkg.scripts?.[script]) errors.push(`missing package script: ${script}`)
 }
 if (pkg.name !== CANONICAL_PACKAGE_NAME) errors.push(`package name drift: expected ${CANONICAL_PACKAGE_NAME}, got ${pkg.name}`)
@@ -132,7 +135,6 @@ for (const domain of ['UI 与生命周期','工具、账本与权限','调度、
 }
 
 if (errors.length) { console.error(JSON.stringify({PREFLIGHT_EXIT:1, errors}, null, 2)); process.exit(1) }
-console.log(JSON.stringify({PREFLIGHT_EXIT:0, rootDocumentsOk:true, tempPatchDocs:0, requiredArtifacts:required.length, packageScripts:['typecheck','build:all','test:matrix','smoke:api','test:e2e:no-llm','test:ui:visual','test:ui:switch','test:ui:refresh','test:ui:entry','test:diagnostic:prepare','test:theme-copy','test:i18n-panel-smoke',
-  'test:bilingual-ui','test:agent-loop-quality','test:agent-timeout-diagnostic','test:real-moderator-loop','test:task-tier-progress','test:autosetup-dispatch-guard','test:message-ledger-persistence','test:interrupted-assignment-recovery','test:bilingual-export-summary','test:runtime-autosetup-i18n','test:agent-runtime-prompt-i18n','test:tool-workflow-api-i18n','test:theme-workflow-content-i18n','test:tech-legends-theme','test:english-source-bilingual-runtime','test:runtime-agent-watchdog','test:assignment-watchdog-timeout','test:chat-ui-composer-progression','test:captain-task-protocol','test:durable-subagent-resume','test:approve-run-transaction-card','test:team-coordination-tools','test:task-cockpit-productization','test:model-health-switching','test:new-session-agent-entry','test:hud-message-margins','test:hero-left-collapse','test:session-room-binding','test:distinct-theme-copy','test:hud-locale-toggle-header','test:central-live-status','test:agent-turn-surface-fallback','test:composer-outside-scroll','test:central-loading-state','test:workflow-commander-delegation','test:official-like-central-execution','test:hero-entry-self-click-guard','preflight']}, null, 2))
+console.log(JSON.stringify({PREFLIGHT_EXIT:0, rootDocumentsOk:true, tempPatchDocs:0, requiredArtifacts:required.length, packageScripts:requiredPackageScripts}, null, 2))
 
 

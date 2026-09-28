@@ -6,7 +6,7 @@ const { RoomManager } = require(path.join(root, 'lib/engine/room-manager.js'))
 const { registerGroupChatTools } = require(path.join(root, 'lib/tools/index.js'))
 const { summarizeAssignments } = require(path.join(root, 'lib/engine/assignment-view.js'))
 
-console.log('[SUITE-01] Pure Domain Behavioral Test: Room Lifecycle, Assignments, Mailbox & State Transition...')
+console.log('[SUITE-01] Standard Verification Suite: Room Lifecycle, Assignments, Mailbox & State Transition...')
 
 const manager = new RoomManager()
 const roomId = 'test-room-lifecycle-' + Date.now()

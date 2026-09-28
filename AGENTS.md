@@ -21,7 +21,7 @@
 
 3. **零过程性杂质与测试硬防护（Anti-Bloat Engineering Firewall）**
    - **文档总数硬封顶 `<= 15`**：严禁新建任何按阶段编号的切片或临时过程记录，所有演进知识直接收敛重写于 `/docs` 长效专著。
-   - **测试文件硬封顶 `<= 8`**：严禁为单一 issue 新增切片测试脚本，全量行为验证必须收敛在 6 大标准领域套件（`__tests__/suite-01~06.cjs`）。超额流水线直接阻断。
+   - **测试文件硬封顶 `<= 8`**：严禁为单一 issue 新增切片测试脚本，全量行为验证必须收敛在 6 个标准验证套件（`__tests__/suite-01~06.cjs`）。超额流水线直接阻断。
 
 ---
 
@@ -31,7 +31,7 @@
 
 | 领域模块 | 领域专著全景指南 | 核心架构契约与纯血规范 |
 | :--- | :--- | :--- |
-| **1. UI & 生命周期** | **[docs/agents/01-ui-and-lifecycle.md](./docs/agents/01-ui-and-lifecycle.md)** | • **0 独立 Tab、0 输入框入侵**：100% 融入原生对话，仅以右侧 HUD 伴随舱作为唯一扩展入口。<br>• **强契约视图注入**：中间视图强制挂载稳定 `prepare` 契约，切换会话时完全无状态残留。 |
+| **1. UI & 生命周期** | **[docs/agents/01-ui-and-lifecycle.md](./docs/agents/01-ui-and-lifecycle.md)** | • **0 独立 Tab、0 输入框入侵**：100% 融入原生对话，仅以原生右侧栏工作台作为唯一扩展入口。<br>• **原生生命周期**：仅注册 guide、tab body 与 title，由用户显式打开；不注入中间视图或 `prepare` 适配器。 |
 | **2. 工具与计费账本** | **[docs/agents/02-tools-and-ledger.md](./docs/agents/02-tools-and-ledger.md)** | • **DSH 原生工具直通**：真实映射底座原生能力（read/edit/bash/grep/glob），拒绝虚拟假工具。<br>• **真实 Prompt Cache 计费**：跨网关精准解析 cached_tokens，拒绝 0 命中误报。<br>• **行号流式 Diff 广播**：毫秒级捕获代码变更行号差异。 |
 | **3. 调度与防死锁** | **[docs/agents/03-orchestration-and-anti-stall.md](./docs/agents/03-orchestration-and-anti-stall.md)** | • **Universal Master Handoff**：专员完工必须且只能回传总指挥官（commander）收口，根除死循环。<br>• **DAG 自动化质量门禁**：阶段晋级由 `verifyCommand` 阻断式把关，未通过直接拒绝流转。 |
 | **4. 国际化与主题** | **[docs/agents/04-i18n-personas-workspaces.md](./docs/agents/04-i18n-personas-workspaces.md)** | • **全栈中英双语运行时**：System Prompt、UI 文案、API 契约全面本地化。<br>• **五大世界观独立调性**：沙雕、现代、提瓦特、三国、科技传奇人设声线隔离。<br>• **工作区作用域隔离**：按官方 Session 强隔离房间数据，严禁跨会话串台。 |
@@ -55,7 +55,7 @@
 4. **编译与回归闭环**：任何改动必须确保以下三道门禁 100% 秒级全绿：
    ```bash
    npm run typecheck    # 1. 强类型静态检验（零类型逃逸、零隐式 any）
-   npm test             # 2. 6 大领域行为测试（100% 确定性，~2 秒秒级通过）
+   npm test             # 2. 6 个标准验证套件（100% 确定性，~2 秒秒级通过）
    npm run preflight    # 3. 全局架构与硬上限防火墙核验
    ```
 
