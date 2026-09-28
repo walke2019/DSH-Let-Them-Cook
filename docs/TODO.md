@@ -1,8 +1,12 @@
 # TODO — DSH Let Them Cook 当前开发清单
 
-> 对外包名：`@dsh-external/dsh-let-them-cook`。本文中的 `dsh-group-chat` 仅表示内部 API、工作区、Runtime Skill 或 UI marker；历史验证路径保持原样，不作为安装包名。
+> 对外包名：`@dsh-external/dsh-let-them-cook`。本文中的 `dsh-group-chat` 仅表示内部 API、工作区、Runtime Skill 或 CSS/data marker，不作为安装包名。
+>
+> **Current-contract override（当前契约覆盖全部历史 P 项）**：下文 P0–P98 是演进档案。凡提到中间 Agent Chat 视图、`conversation.view`、`shell.overlay`、浮动/停靠 HUD、自定义避让/缩放、第二输入框、Hero 入口或 `prepare()` 适配器，均属 **superseded 历史实现**，不是当前功能，也不得恢复。当前 UI 仅通过 DSH 原生右侧栏 guide、`sidebarRightTabs`、`sidebar.right.pane.tab` 与 `sidebar.right.pane.tab.title` 注册；只能由用户显式打开，绝不自动打开。
+>
+> **Current runtime invariants**：终态 Assignment 必须使用精确 live parent 调用 `ctx.subagents.start('spawn', ...)`，`await SubagentRun.result`，并在 `finally` 中始终 `run.dispose()`；房间状态只持久化到 `.pm-workflow/dsh-group-chat/`，禁止插件私有 `let-them-cook/*` 或 `room-state` Session 事件；`tool-workflow` run/agent start/end 在成功、失败、取消路径均 exactly-once 成对闭合；活跃 Assignment 按 `ownerRoleId + stageId + workflowTaskId` 去重；system-healer 失败后必须消费其处理的相关未读报告。
 
-更新日期：2026-09-10
+更新日期：2026-09-28
 
 ## 已完成主线
 

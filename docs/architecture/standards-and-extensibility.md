@@ -1,78 +1,48 @@
-# DSH 多 Agent 群聊：规范接入与扩展标准
+# Extension Standards and Extensibility
 
-更新日期：2026-09-10
+## Package boundary
 
-## 1. 插件边界
+`@dsh-external/dsh-let-them-cook` is the sole installable and DSH profile identity. `dsh-group-chat` is runtime-only: API URLs, `.pm-workflow/dsh-group-chat/`, `dsh-group-chat-orchestrator`, and CSS/data markers.
 
-对外安装与 DSH profile 注册的唯一包身份是 `@dsh-external/dsh-let-them-cook`。仓库内部仍使用 `dsh-group-chat` 作为运行时命名空间（API 路径、工作区目录、事件/CSS 标记和 Runtime Skill 名称），但它不是可安装的包名；两者不可混用。
+The extension must not modify DSH core, replace official presets, issue hard-coded model HTTP calls, or hijack the native conversation. All host and client resources are registered through lifecycle-owned `ctx.effect()` cleanup.
 
-`@dsh-external/dsh-let-them-cook` 必须作为 DSH Cordis 插件维护：
+## Client seam
 
-- 不修改 `@deepseek-ai/dsh` 核心源码。
-- 不覆盖官方 preset，如标准模式、极简模式、创造模式。
-- 不劫持官方 `对话`。
-- 不硬编码外部模型 HTTP 请求。
-- 所有生命周期资源必须挂在 `ctx.effect()` 或等价清理机制内。
+The only supported client integration is the DSH-native right sidebar:
 
-## 2. Client UI seam
+| Contract | Requirement |
+|---|---|
+| discovery | contribute a native guide entry |
+| type registration | `sidebarRightTabs.register(...)` |
+| body | keyed `sidebar.right.pane.tab` |
+| title | keyed `sidebar.right.pane.tab.title` |
+| open behavior | explicit user action only; never auto-open |
+| layout | owned entirely by DSH |
 
-| 区域 | 当前做法 | 禁止事项 |
-|---|---|---|
-| 官方左栏 | 保持官方导航壳 | 不伪装 Workspace / Conversation，不强改左栏结构 |
-| 中间区 | `conversation.view` 新增 `Agent 群聊` | 不覆盖官方 `对话`，不注册全局 composer |
-| 右侧区 | `shell.overlay` HUD | 不挤压官方 AppFrame，不重复聊天输入 |
-| 详情栏 | 保持官方行为 | 不长期 transform / padding hack |
+No middle plugin view, overlay, floating/docked HUD, duplicate composer, custom resize handle, host padding/transform, hero injection, or view lifecycle adapter is permitted.
 
-## 3. 布局与拖拽标准
+## Runtime execution seam
 
-- HUD 默认覆盖停靠，不参与 DSH 官方 grid 布局。
-- HUD 展开时只让 `Agent 群聊` 标签自身避让，官方对话保持原样。
-- 中间输入框在 HUD 展开时左右 padding 对称。
-- HUD 内组件统一 `min-width:0`、`max-width:100%`，长文本省略或换行。
-- 右栏左边线缩放必须使用 Pointer Capture，避免拖动丢失。
-- 右栏拖拽视觉对齐官方左栏：透明 12px 热区、`col-resize`、无额外高亮条。
+Terminal assignments require the exact live parent Agent, `ctx.subagents.start('spawn', ...)`, `await SubagentRun.result`, and `run.dispose()` in `finally`. Tool filters use exact registered names and fail loudly on invalid input.
 
-## 4. 数据作用域
+Every native workflow run and agent start has exactly one matching end on success, failure, and cancellation. Active assignments deduplicate by `ownerRoleId + stageId + workflowTaskId`. Failed system-healer reviews consume the relevant unread reports that caused the attempt.
 
-默认工作区路径：`.pm-workflow/dsh-group-chat/`。
+## Data scope
 
-以下数据不得无提示写全局：
+Room metadata, members, themes, workflows, assignments, mailboxes, messages, approvals, scratchpad, model settings, and ledger stay in the current workspace under `.pm-workflow/dsh-group-chat/`. They are not mirrored through private `let-them-cook/*` or `room-state` Session events. Native DSH events remain runtime evidence only.
 
-- 角色主题
-- 角色定义
-- 工作流定义
-- 最近模型与回退模型
-- 黑板
-- assignments
-- mailboxes
-- ledger
+## Runtime skill
 
-## 5. Runtime Skill
+`dsh-group-chat-orchestrator` defines collaboration behavior, role boundaries, tool routing, and stability rules. The extension remains responsible for native UI registration, APIs, state machine transitions, and persistence.
 
-扩展内置 Runtime Skill `dsh-group-chat-orchestrator`，用于给 DSH 内运行的群聊 Agent 注入协同规则。扩展负责 UI/API/状态机/持久化；Skill 负责角色协作说明、工具路由、模型能力标签与输出纪律。
-
-## 6. 回归验证
-
-包身份与入口注册是发布门禁：`package.json#name`、`package-lock.json`、`src/index.ts export const name`、client bundle 的 `__ModuleLoader__` 注册，以及本机 `~/.dsh/profiles/web/cordis.patch.yml` 必须共同指向 `@dsh-external/dsh-let-them-cook`。`npm run preflight` 会阻断旧包名作为安装身份回流。
-
-任何 UI/布局/注册点改动后，至少运行：
+## Release validation
 
 ```bash
 npm run typecheck
-npm run build:all
-npm run test:matrix
+npm test
+npm run preflight
 ```
 
-涉及浏览器显示的改动还必须在 `http://127.0.0.1:3080/` 进行实测，关注：
+Browser acceptance verifies that the right-sidebar guide entry appears, remains closed until selected by the user, renders its body/title through the native keyed slots, and leaves the DSH conversation unchanged.
 
-- 官方 `对话` 可用。
-- `Agent 群聊` 标签存在且 prepare 不报错。
-- HUD 不遮挡中间输入框。
-- HUD 文本无可见溢出。
-- 左侧官方栏展开/收起不破坏中间布局。
-## 7. External references and coexistence
-
-- DSH official seams are the hard integration boundary: `conversation.view`, `shell.overlay`, `ctx.effect()`, `ctx.webServer`, and `agent/request`.
-- Hermes is used as a reference for named roles, capability isolation, and centralized message delivery.
-- OpenClaw is used as a reference for silence tokens, anti-loop behavior, and role-scoped execution.
-- dsh-mnemon is treated as a coexisting memory/context-injection plugin. Do not hijack it, do not store group-chat workspace state inside it, and keep official Dialog compatibility tests green.
+Package metadata, bundle registration, profile patches, and client module identity must all use `@dsh-external/dsh-let-them-cook`.

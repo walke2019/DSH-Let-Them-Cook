@@ -1,32 +1,35 @@
-# 02-tools-and-ledger.md — 原生工具调用、流式状态机与计费审计
+# 02 — Native Tools and Ledger
 
-本指南聚焦于 **DSH 底座原生工具直通、实时工具流式广播、结构化结果解析与 Prompt Cache 计费核算**。
+This guide defines tool execution, workflow accounting, and usage evidence for `@dsh-external/dsh-let-them-cook`. `dsh-group-chat` is an internal runtime namespace only.
 
-> 命名契约：对外包名为 `@dsh-external/dsh-let-them-cook`；本文若出现 `dsh-group-chat`，仅指内部运行时 namespace，不指安装包。
+## Native tool execution
 
----
+- Specialists receive exact registered DSH tool names such as `read`, `edit`, `bash`, `grep`, and `glob`.
+- The official `toolFilter: { allow }` is the capability boundary. Empty, duplicate, unknown, or unauthorized names fail loudly; aliases and prompt-only fallbacks are forbidden.
+- Tool results, file diffs, exit codes, and model usage must come from actual DSH runtime evidence, never estimates or simulated tools.
 
-## 🏛️ 核心架构契约
+## Workflow accounting
 
-### 1. DSH 底座原生工具直通（Native Tool Passthrough）
-- 赋予专员真实的 DSH 底座能力（`read` / `edit` / `bash` / `grep` / `glob`），严禁使用任何未落地的虚拟假工具。
-- 角色工具白名单必须使用 DSH 注册表中的精确原生工具名；禁止别名猜测。未知工具在官方 `toolFilter` 边界立即拒绝。
+Every started terminal assignment has one unique workflow `runId` in its exact parent Session:
 
-### 2. 毫秒级流式 Diff 探针
-- 实时广播工具执行状态。对于文件编辑（`edit`）自动精确解析 `+add -del` 行号差异与代码补丁指标。
-- bash 工具实时捕获执行意图与退出状态码，执行失败显式标红。
+1. emit `tool-workflow/run-start` exactly once;
+2. emit `tool-workflow/agent-start` exactly once;
+3. emit `tool-workflow/agent-end` exactly once;
+4. emit `tool-workflow/run-end` exactly once.
 
-### 3. 真实 Prompt Cache 计费审计
-- 跨模型网关精准解析 `cached_tokens`，基于真实缓存读取量精确计算缓存命中率（`cacheRead / (inTokens + cacheRead + cacheWrite)`），杜绝计费误报为 0%。
+Success maps to `completed`, failure and validation errors to `failed/error`, and cancellation to `cancelled`. No code path may omit an end event or emit an end event twice. This pairing is the authoritative native workflow ledger and prevents orphaned “running” cards.
 
-### 4. 结构化交付结果（Structured Agent Result）
-- 专员交付结果采用统一的结构化代码块（`agent-result`），包含明确的 `RESULT_STATUS`、`SUMMARY`、`NEXT` 与 `EVIDENCE`。
-- 渲染层在中央消息流中无损剥离控制块，仅展示纯净的人类可读正文，控制块直接驱动状态机流转。
+## State boundary
 
-### 5. 团队协同工具箱（Captain Task Protocol）
-- 提供 `claim` / `block` / `handoff` / `report` / `close` 五大标准协同原子，确保多 Agent 分工互斥且有序。
+Room metadata, assignments, mailbox, messages, workflow state, scratchpad, and token ledger are persisted under `.pm-workflow/dsh-group-chat/`. The plugin does not append private `let-them-cook/*` or `room-state` Session events. Native DSH events may provide execution evidence but are not the room-state persistence channel.
 
----
+## Structured delivery and collaboration
 
-## 🧪 对应标准验证套件
-- `__tests__/suite-04-tools-and-ledger.cjs`（原生工具直通、Diff 提取与账本计费）
+- Specialist results use structured status, summary, next action, and evidence fields.
+- Captain Task Protocol exposes `claim`, `block`, `handoff`, `report`, and `close` operations.
+- Active assignments are deduplicated by the exact tuple `ownerRoleId + stageId + workflowTaskId`.
+
+## Verification
+
+- `__tests__/suite-04-tools-and-ledger.cjs`
+- `__tests__/suite-03-runtime-anti-stall.cjs`

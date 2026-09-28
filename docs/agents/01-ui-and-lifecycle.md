@@ -1,31 +1,24 @@
-# 01-ui-and-lifecycle.md — UI 布局、插槽生命周期与交互规范
+# 01 — UI and Lifecycle
 
-本指南聚焦于 **DSH 官方主对话与群聊副屏（HUD）的零入侵融合、中间视图挂载规范以及会话生命周期管理**。
+This guide defines the only supported client surface for `@dsh-external/dsh-let-them-cook`.
 
-> 命名约定：本插件对外包名为 `@dsh-external/dsh-let-them-cook`；本文中的 `dsh-group-chat` 只表示内部运行时 namespace，例如 CSS/data/event marker，不表示可安装包。
+> `@dsh-external/dsh-let-them-cook` is the sole installable package identity. `dsh-group-chat` is reserved for runtime API paths, `.pm-workflow/dsh-group-chat/`, the `dsh-group-chat-orchestrator` skill, and CSS/data markers.
 
----
+## Current UI contract
 
-## 🏛️ 核心架构契约
+1. **Native right sidebar only.** The client registers one DSH-native right-sidebar type through `sidebarRightTabs`, contributes its guide entry, and supplies content through the keyed `sidebar.right.pane.tab` and `sidebar.right.pane.tab.title` seats.
+2. **Explicit user open.** Registration exposes the entry in the native sidebar guide. The plugin never opens it during startup, session switching, task dispatch, event delivery, or restoration.
+3. **No parallel conversation surface.** The native DSH conversation remains the sole prompt surface. The plugin adds no middle conversation tab and no second composer.
+4. **Native layout ownership.** DSH owns sidebar placement, sizing, panes, and tab lifetime. The plugin does not inject overlays, floating docks, custom resize handles, body-padding shifts, or host-layout transforms.
+5. **Scoped cleanup.** Every tab type and slot registration is owned by `ctx.effect()` and disposed with the client fiber. Session selection is read from the native sessions service.
+6. **Sidebar-contained interaction.** Team, workflow, scratchpad, ledger, diagnostics, and approval controls render only inside the explicitly opened native sidebar pane.
 
-### 1. 布局零入侵红线（Zero Intrusion Principle）
-- **0 独立 Tab**：不向顶栏注入独立的二级对话 Tab，所有多 Agent 协作直接在官方对话中展现。
-- **0 输入框入侵**：官方输入框保持 100% 原始纯净，不注入任何插件按钮。
-- **1 唯一扩展入口**：右侧常驻微型贴边胶囊 `🧭 群聊副屏`，展开后为 HUD 伴随舱，官方主对话区向左平滑避让 368px，收起时完全无任何视觉残留。
+## Retired implementations
 
-### 2. 安全视图挂载与 prepare 契约
-- 向 `conversation.view` 注入中间视图适配层时，必须提供稳定 `prepare = () => ({})`，确保官方对话与群聊标签在切换或刷新时零报错。
-- 切入官方原生会话时，彻底清理 body 上的扩展标记（`data-dsh-group-chat-tab-active` 等），消除 DOM 残留。
+The following are historical and superseded; they are not current architecture and must not be restored: middle-view injection, overlay or floating HUDs, hero-entry injection, custom resize behavior, custom conversation padding, and view lifecycle adapters.
 
-### 3. 输入框常驻与长消息遮罩
-- 输入框组件独立于滚动区外，无论消息列表多长均常驻于视口底部。
-- 超长消息自动启用双层抽屉与渐进遮罩，点击展开/折叠，防止界面被单条长输出刷屏。
+## Verification
 
-### 4. 作战室交互式拍板卡片
-- 官方同款提问接管输入框，支持一键确认、驳回或回滚，实现人机协同交互闭环。
-
----
-
-## 🧪 对应标准验证套件
-- `__tests__/suite-01-room-and-lifecycle.cjs`（生命周期与会话隔离）
-- `__tests__/suite-06-e2e-closed-loop.cjs`（端到端交互闭环）
+- `__tests__/suite-01-room-and-lifecycle.cjs`
+- `__tests__/suite-06-e2e-closed-loop.cjs`
+- Browser verification confirms that the native guide entry exists, the tab stays closed until a user opens it, and the DSH conversation remains unchanged.

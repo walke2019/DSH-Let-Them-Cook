@@ -1,96 +1,45 @@
-# 生态评估、完成度与路线图
+# Ecosystem Assessment and Roadmap
 
-更新日期：2026-09-10
+## Current architecture
 
-> 命名契约：对外安装/DSH profile 使用 `@dsh-external/dsh-let-them-cook`；内部 API、工作区、Runtime Skill、CSS/data/event marker 继续使用 `dsh-group-chat`。内部 namespace 不应被批量改名，否则会破坏既有 API 和工作区状态。
+`@dsh-external/dsh-let-them-cook` is a Cordis host/client extension that does not modify DSH core. `dsh-group-chat` remains an internal runtime namespace only.
 
-## 1. 当前完成度
+| Capability | Current contract |
+|---|---|
+| UI | DSH-native right-sidebar guide, `sidebarRightTabs`, keyed tab body/title; explicit user open and never auto-open |
+| conversation | native DSH conversation is the sole prompt surface |
+| execution | exact live parent + `ctx.subagents.start('spawn')` + awaited `SubagentRun.result` + unconditional disposal |
+| state | workspace persistence under `.pm-workflow/dsh-group-chat/`; no private room-state Session events |
+| accounting | exactly-once paired `tool-workflow` run/agent start/end events |
+| anti-stall | active-assignment tuple dedupe and failed-healer report consumption |
+| roles | commander plus research/backend/frontend/QA/writer specialists |
 
-| 能力域 | 当前状态 | 完成度 |
-|---|---|---:|
-| DSH 插件化接入 | Cordis Host + Client slot + WebServer API，不改核心 | 95% |
-| 官方对话兼容 | 官方 `对话 / 新会话` 隔离，P38/P39/P40 覆盖切换与刷新 | 98% |
-| 右侧 HUD | 覆盖式群聊控制台、可浮动、可拖动、可缩放、四标签、文本防溢出 | 92% |
-| 角色/主题 | 默认沙雕、原神、三国、现代等主题，支持 AI 草案与工作区确认写入 | 90% |
-| 工作流/确认写入 | 一句话生成角色/工作流草案，确认后写入当前工作区 | 90% |
-| Assignment/Mailbox/DAG | 持久结构、HUD 展示、完整账本、无 LLM E2E 与浏览器回归 | 92% |
-| 模型推荐 | 最近模型、回退模型、能力标签推荐、角色级建议 | 88% |
-| 工具路由 | allowedTools + tools.restrict 兼容层，主 Agent 分派，工具专员归口 | 90% |
-| 真实入口体验 | P42 覆盖真实进入 Agent 群聊、输入框、友好文案、HUD 四标签 | 88% |
+The project is a usable candidate when all six domain suites and preflight pass and browser verification confirms native sidebar registration.
 
-综合：当前已经从 Alpha 收敛到 **可用候选版**。核心目标已经达成：用户在 DSH 中保留官方源版 `对话`，同时可以进入 `Agent 群聊` 使用一个更自由、有趣、主 Agent + SubAgent 驱动的项目协同扩展。
+## DSH ecosystem boundary
 
-## 2. 生态参考
+- DSH owns the conversation, sidebar layout, pane sizing, and tab navigation.
+- The extension contributes one native sidebar type and its guide/body/title registrations.
+- dsh-mnemon and other context plugins remain independent; this plugin neither replaces their storage nor injects room state into them.
+- Native DSH Session events may represent execution lifecycle. Room state itself remains workspace-persisted.
 
-### DSH 官方扩展 seam
+## Historical UI experiments — superseded
 
-- 官方左栏是导航壳，不适合插件强行改成自有页面系统。
-- 中间适合通过 `conversation.view` 新增会话级标签。
-- 右侧适合通过 `shell.overlay` 做伴随控制台。
-- 当前项目遵循“不改官方对话、不挤压官方 AppFrame、仅插件自身避让 HUD”。
+Earlier milestones explored a middle Agent Chat view, overlays, floating or docked HUDs, custom layout avoidance, custom resizing, hero entries, and view lifecycle adapters. Those experiments are retained only as history in the TODO/milestone archive. They are not current behavior and must not be reintroduced.
 
-### Hermes / OpenClaw
+## Current differentiators
 
-- Hermes 借鉴点：具名 Bot、能力隔离、消息收口、防 Bot 私自外呼。
-- OpenClaw 借鉴点：`NO_REPLY` 静默协议、主控路由、每 Agent 独立状态。
-- 本项目差异点：更强调 DSH 内工作区级体验、对话创建角色/工作流、主题趣味性和用户确认写入。
+1. Users state goals in the native DSH conversation instead of configuring a graph first.
+2. Commander and specialist boundaries are explicit, with real native tools and evidence.
+3. Workflow stages allow distinct-role parallelism while assignment tuple dedupe prevents duplicate active runs.
+4. Native workflow event pairing makes success, failure, and cancellation visible without orphaned “running” records.
+5. Workspace-scoped persistence prevents cross-session room leakage.
+6. The optional native sidebar workbench provides status and controls without becoming another chat surface.
 
-### dsh-mnemon / memory integration
+## Roadmap
 
-- dsh-mnemon 属于 DSH 当前环境里的记忆/上下文注入链路，不应被本插件接管或替代。
-- 本插件只通过 `conversation.view` 新增 Agent Chat 标签，通过 `shell.overlay` 新增 HUD；离开 Agent Chat 标签后必须卸载 HUD 和 body 标记，避免污染官方对话与 dsh-mnemon 注入流程。
-- 历史 `Cannot read properties of undefined (reading 'prepare')` 需要分两类排查：
-  1. 前端 slot：`conversation.view` 是否提供稳定 `prepare()`；
-  2. 后端工具调度：是否因多份 `@deepseek-ai/dsh-tools` 导致 scheduler Symbol 不一致。
-- 结论：dsh-mnemon 是共存对象和诊断参考，不是本插件状态存储；本插件自己的记忆/黑板/账本继续写入工作区 `.pm-workflow/dsh-group-chat/`。
-
-## 3. 已达成的差异化边界
-
-1. 用户通过中间对话表达目标，而不是先填一堆配置。
-2. AI 自动生成角色/工作流/模型建议，但确认后才写入。
-3. 每套工作流有 `commander` 主 Agent，其他成员为 SubAgent。
-4. workflow 阶段并发保留，工具任务由专员归口，避免所有 Agent 重复搜索/爬取。
-5. 右侧 HUD 是导播台，不是另一个聊天框。
-6. 工作区作用域优先，避免全局污染。
-7. 文案保持人话和趣味性，默认沙雕主题，但不牺牲任务推进。
-
-## 4. 已完成路线
-
-P18：UI 稳定性与官方风格对齐
-- [x] 修复 HUD 遮挡 Agent 群聊输入区。
-- [x] 修复左右间距不一致。
-- [x] 右栏边线缩放对齐官方左栏拖拽方案。
-- [x] 修复 HUD 文本溢出。
-- [x] 增加浏览器端自动化视觉回归脚本。
-- [x] HUD 顶部配置区改为更像官方的紧凑控件组。
-
-P19：真实项目任务闭环
-- [x] 用一个小型代码任务跑完整“草案确认 → 多 Agent 执行 → QA → 文档收口”。
-- [x] 记录失败恢复和重复执行防护。
-- [x] 强化 mailbox 主 Agent 汇总体验。
-
-P20：用户低理解成本
-- [x] 首次进入显示 3 步引导卡。
-- [x] 调度模式 QA 与当前模式状态联动。
-- [x] 常用任务模板和一键生成工作流。
-
-P21-P42：工程收敛与回归体系
-- [x] HUD 顶部、工作流、团队、黑板、账本组件化。
-- [x] 公共 HUD 类型与样式 token。
-- [x] 工作流面板渐进式展示与手风琴高级详情。
-- [x] 团队 / 工作流 / 黑板 / 账本标签重组。
-- [x] 账本完整流水搜索与筛选。
-- [x] 官方源对话页保护。
-- [x] 源版对话 / Agent 群聊切换回归。
-- [x] 刷新 / 重载后的状态清理回归。
-- [x] Agent 群聊真实入口可用性回归。
-
-## 5. 剩余非阻塞优化
-
-这些不是当前可用版阻塞项，不需要继续无限“下一步”：
-
-1. **真实 LLM 长链路压测**：在有稳定模型额度时，跑 3-5 个真实项目任务，观察 token、失败恢复和 mailbox 汇总质量。
-2. **主题市场化**：把沙雕、原神、三国、现代等主题做成可导入/导出的主题包。
-3. **模型目录体验**：如果 DSH 官方未来暴露更稳定的模型选择 API，可进一步复用官方下拉搜索能力。
-4. **更多工作区样例**：为修 Bug、做 UI、写文档、调研、发布检查分别沉淀默认工作流模板。
-5. **视觉精修**：继续按官方主题变量微调阴影、圆角、动画，但不改变当前架构边界。
+1. Run longer real-model workflows and evaluate token usage, cancellation, and mailbox reduction quality.
+2. Add more workspace workflow templates without weakening the current execution contracts.
+3. Improve persona/theme import and export while preserving role permissions.
+4. Continue visual polish inside native sidebar primitives only; do not introduce custom host layout behavior.
+5. Keep documentation, six domain suites, and preflight synchronized with every architecture change.

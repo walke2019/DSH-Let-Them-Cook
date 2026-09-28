@@ -1,39 +1,41 @@
-# 03-orchestration-and-anti-stall.md — 调度编排、防死循环与自愈机制
+# 03 — Orchestration and Anti-Stall
 
-本指南聚焦于 **多 Agent 调度状态机、Universal Master Handoff 闭环、多阶段 DAG 门禁以及任务看门狗机制**。
+This guide owns the multi-Agent state machine, DAG gates, handoff, cancellation, and self-healing contracts.
 
-> 命名契约：对外包名为 `@dsh-external/dsh-let-them-cook`；`dsh-group-chat` 仅表示内部运行时 namespace 与历史稳定标识。
+> The sole package identity is `@dsh-external/dsh-let-them-cook`. `dsh-group-chat` is limited to runtime API paths, workspace storage, the runtime skill id, and CSS/data markers.
 
----
+## Terminal assignment contract
 
-## 🏛️ 核心架构契约
+- A tool-triggered assignment receives the exact live parent Agent from `exec.agent`; autonomous continuation resolves the same live registry instance bound to `room.masterSessionId`. A matching string id is insufficient.
+- Terminal specialist work calls `ctx.subagents.start('spawn', ...)` with that parent and an exact native tool filter.
+- The runtime must `await SubagentRun.result` as the only terminal delivery boundary.
+- `run.dispose()` executes in `finally` for success, failure, validation error, and cancellation. Disposal failure is reported but cannot rewrite an already settled workflow outcome.
+- Terminal one-shot assignments and continuable subagents are distinct lifecycles and must not be mixed.
 
-### 1. Universal Master Handoff（完工必回主控）
-- 专员（SubAgent）完成阶段任务后，默认且必须将上下文和结果回传总指挥官（commander）进行统一收口与审批。
-- 严禁专员之间私下相互自激触发或死循环客套，中枢自动拦截无意义发言。
+## Workflow event invariant
 
-### 2. 阶段流转双语模糊识别
-- 支持中英文自然语言意图判定（“通过 / 批准 / 同意推进 / Approved / LGTM”），主控审核后自动驱动 DAG 流转至下一阶段。
+For every started run, `tool-workflow/run-start` pairs with exactly one `tool-workflow/run-end`, and `tool-workflow/agent-start` pairs with exactly one `tool-workflow/agent-end`. Success, failure, empty output, result rejection, validation failure, and cancellation all settle explicitly. Orphaned or duplicate end events are contract violations.
 
-### 3. 看门狗超时报警与显式中断
-- 建立任务级与轮次级看门狗监控。任务执行超时立即显式熔断标记为 `failed`，并向指挥官邮箱注入报警信。
-- 拒绝任何假死等待与隐式静默失败。
+## Assignment uniqueness
 
-### 4. 动态任务预算与分层
-- 快速单任务执行轻量快速模式；复杂多阶段工程任务分配充足交互配额（最高 24 轮），支持阶段并发执行。
+A room may have only one active (`queued` or `running`) assignment for the exact tuple:
 
-### 5. DAG 阶段自动化门禁（Stage Gates）
-- 每个阶段配置自动化验收命令（`verifyCommand`）。阶段晋级时强制执行门禁检验，未达标直接阻断流转。
+```text
+ownerRoleId + stageId + workflowTaskId
+```
 
-### 6. DSH 官方 Subagent 原生编排与纯血融合 (Official Subagent Integration)
-- **终态 Assignment 使用官方 one-shot seam**：角色专员（`researcher`、`backend`、`frontend`、`qa`、`writer`）通过当前主会话的精确 live parent Agent 调用 `ctx.subagents.start('spawn', ...)`；唯一完成边界是 `SubagentRun.result`，并始终执行 `run.dispose()`。持续对话才使用 Continuable Subagent，两种生命周期禁止混用。
-- **零模糊别名、零 Prompt 弱降级（Zero Fallback）**：彻底剔除工具正则别名映射（`SEMANTIC_TOOL_ALIASES`）与“工具不支持则降级为 Prompt 约束”的隐式妥协。专员工具白名单由官方 `toolFilter: { allow }` 强制执行，空名、重复名或环境缺失立即 Loud Throw。
-- **精确父会话所有权**：工具触发必须由 `exec.agent` 提供父 Agent，自动后续调度只能按 `room.masterSessionId` 从 `ctx.agents` 取得同一 live 实例；父 Agent 缺失或不一致时终止 Assignment，禁止读取全局当前房间或 Session 猜测。
-- **工作流事件严格成对闭合**：每个终态 Assignment 使用唯一 `runId`，在父 Session 依次记录 `tool-workflow/run-start` 与 `tool-workflow/agent-start`；无论成功、模型失败、空输出、结果校验异常或用户中断，都必须且只能记录一次对应的 `tool-workflow/agent-end` 与 `tool-workflow/run-end`。成功映射为 `completed`，异常映射为 `failed/error`，中断映射为 `cancelled`，禁止留下被原生 UI 永久解释为“运行中”的孤儿 Run。
-- **活跃 Assignment 确定性去重**：同一房间中，`ownerRoleId + stageId + workflowTaskId` 相同的 `queued/running` Assignment 是唯一活跃实例；调度器与防停滞自愈流程必须复用该实例，不得重复创建。由系统自愈创建的总指挥官收口任务若失败，相关未读交付报告必须显式转为已处理状态，阻断周期性重复唤醒。
+Dispatch and anti-stall paths reuse that active assignment instead of creating another run.
 
----
+## Handoff, gates, and healer behavior
 
-## 🧪 对应标准验证套件
-- `__tests__/suite-02-workflow-dag.cjs`（DAG 依赖与自动化门禁）
-- `__tests__/suite-03-runtime-anti-stall.cjs`（防死锁、看门狗报警与主控回传）
+- Specialists report evidence to `commander`; they do not trigger unbounded peer-to-peer loops.
+- DAG stages advance only after their quality contracts and `verifyCommand` gates pass.
+- Watchdogs convert stalled work into an explicit failed state and mailbox alert.
+- A system-healer review is created only when no equivalent active assignment exists.
+- If a system-healer assignment fails, the relevant unread reports that triggered that attempt are marked handled so the same evidence cannot wake the commander forever.
+- Missing parent ownership, timeout, or malformed results fail loudly; no history guessing or implicit fallback is allowed.
+
+## Verification
+
+- `__tests__/suite-02-workflow-dag.cjs`
+- `__tests__/suite-03-runtime-anti-stall.cjs`

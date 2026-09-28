@@ -1,61 +1,58 @@
 ---
 name: dsh-group-chat-orchestrator
-description: Use when working through the @dsh-external/dsh-let-them-cook extension runtime namespace dsh-group-chat, or coordinating multi-agent project tasks with a commander/subagent workflow, role creation, workflow drafting, tool routing, model capability hints, or workspace-scoped group chat automation.
+description: Orchestrate multi-Agent project delivery through @dsh-external/dsh-let-them-cook and its internal dsh-group-chat runtime namespace.
 metadata:
-  short-description: Orchestrate Let Them Cook multi-agent project work
+  short-description: Orchestrate Let Them Cook project work
 ---
 
 # DSH Group Chat Orchestrator
 
-Use this skill when a task is being handled through `@dsh-external/dsh-let-them-cook` or its internal `dsh-group-chat` runtime namespace, or when the user asks for multi-agent project collaboration, role/workflow creation, model-role matching, tool routing, or extension-specific orchestration.
+## Identity
 
-This is a DSH extension runtime skill/protocol injected to group-chat Agents; 不是 Codex 开发助手技能，也不依赖 `C:/Users/Administrator/.codex/skills`。
+`@dsh-external/dsh-let-them-cook` is the only package/profile identity. `dsh-group-chat` is limited to runtime API paths, `.pm-workflow/dsh-group-chat/`, this skill id, and CSS/data markers.
 
-## Core stance
+## UI contract
 
-The extension is a high-freedom multi-Agent project collaboration engine, not a static role-play panel and not a conservative single-agent wrapper.
+The native DSH conversation is the only prompt surface. Controls and status register exclusively through the native right-sidebar guide, `sidebarRightTabs`, `sidebar.right.pane.tab`, and `sidebar.right.pane.tab.title`. The user opens the tab explicitly; never auto-open it. Do not add a middle plugin view, overlay, floating HUD, duplicate composer, custom resize/layout behavior, hero entry, or view lifecycle adapter.
 
-Default behavior:
-- Let the user describe the project in the middle conversation area.
-- If intent is clear, generate a workspace-scoped role + workflow draft.
-- Show the draft in the conversation and wait for user confirmation before writing it into workspace state.
-- If intent is materially unclear, ask one concise follow-up question before drafting.
-- After confirmation, allow multi-Agent work to proceed through the workflow.
+## Commander and specialist behavior
 
-## Commander + SubAgent contract
+- `commander` clarifies intent, decomposes work, dispatches, reviews evidence, advances gates, and produces the final reduction.
+- `researcher`, `backend`, `frontend`, `qa`, and `writer` execute only their assigned specialty and report to commander.
+- Preserve parallelism across distinct responsibilities, not duplicate execution of the same task.
+- Deduplicate active assignments by the exact tuple `ownerRoleId + stageId + workflowTaskId`.
 
-- `commander` is the master Agent: understand intent, ask clarifying questions, split work, route tools, review specialist output, approve stage transitions, and produce the final reducer decision.
-- All other roles are SubAgents: perform their specialty, report concise findings back to commander, and avoid doing another role's job.
-- Preserve DSH workflow stage parallelism: if a workflow stage assigns several different roles, those roles may run concurrently on their own responsibilities.
-- Do not allow duplicate tool races: multiple Agents should not call the same search/crawl/edit/test task redundantly.
+## Terminal assignment lifecycle
+
+For terminal specialist work:
+
+1. use the exact live parent Agent;
+2. call `ctx.subagents.start('spawn', ...)` with that parent and exact tool names;
+3. await `SubagentRun.result`;
+4. validate and commit the result;
+5. always call `run.dispose()` in `finally`, including success, failure, and cancellation.
+
+Do not mix terminal one-shot runs with continuable subagent lifecycles. Do not guess a parent from global current state and do not degrade unavailable tools into prompt instructions.
+
+## Workflow accounting and healing
+
+- Emit exactly one paired `tool-workflow/run-start` and `tool-workflow/run-end`.
+- Emit exactly one paired `tool-workflow/agent-start` and `tool-workflow/agent-end`.
+- Close both pairs for success, failure, validation error, empty output, and cancellation.
+- A system-healer may create a review only when no equivalent active assignment exists.
+- If the healer fails, consume/mark handled the relevant unread reports it evaluated so they cannot retrigger indefinitely.
+
+## State contract
+
+Persist room metadata, assignments, mailbox, messages, workflow state, approvals, scratchpad, and ledger in the current workspace under `.pm-workflow/dsh-group-chat/`. Never introduce plugin-private `let-them-cook/*` or `room-state` Session events. Native workflow events are execution evidence, not room-state storage.
 
 ## Tool routing
 
-Route concrete tool-heavy tasks to one responsible role:
+- research and source extraction → `researcher`
+- backend/state/API/repository changes → `backend`
+- React/CSS/browser UI work → `frontend`
+- tests, edge cases, red-team review → `qa`
+- documentation and release notes → `writer`
+- decomposition, approval, final decision → `commander`
 
-- Web search, crawling, source extraction, competitive research: `researcher`.
-- Backend architecture, data model, API/state-machine logic, server code: `backend`.
-- Frontend UI, React/TS/CSS, visual polish, browser UI debugging: `frontend`.
-- Regression tests, edge cases, red-team review, safety/quality gates: `qa`.
-- Documentation, release notes, user-facing explanations, summaries: `writer`.
-- Cross-role reduction, conflicts, final decision, stage approval: `commander`.
-
-## Model matching
-
-Prefer capability tags over hard-coded model IDs. User-selected role models always win; otherwise use recent compatible models, then provider catalog matches, then host default.
-
-Recommended capability tags:
-- commander: reasoning, long_context, qa_audit, tool_use.
-- researcher: web_research, tool_use, data_extraction, long_context.
-- backend: coding, reasoning, tool_use, long_context.
-- frontend: coding, ui_design, tool_use, fast_reply.
-- qa: qa_audit, reasoning, coding.
-- writer: writing, fast_reply, low_cost, long_context.
-
-## Token and stability rules
-
-- Prefer current-stage assigned roles over all-agent broadcast.
-- Ask only when a missing answer changes the workflow or deliverable.
-- Summarize specialist outputs before passing them forward.
-- Keep role persona fun and human, but do not let flavor replace delivery.
-- Keep workspace state changes explicit and reversible.
+Prefer current-stage roles, ask only when missing information changes the deliverable, summarize specialist evidence, and keep persona flavor subordinate to delivery.
