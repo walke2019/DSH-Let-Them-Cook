@@ -29,7 +29,8 @@
 - **终态 Assignment 使用官方 one-shot seam**：角色专员（`researcher`、`backend`、`frontend`、`qa`、`writer`）通过当前主会话的精确 live parent Agent 调用 `ctx.subagents.start('spawn', ...)`；唯一完成边界是 `SubagentRun.result`，并始终执行 `run.dispose()`。持续对话才使用 Continuable Subagent，两种生命周期禁止混用。
 - **零模糊别名、零 Prompt 弱降级（Zero Fallback）**：彻底剔除工具正则别名映射（`SEMANTIC_TOOL_ALIASES`）与“工具不支持则降级为 Prompt 约束”的隐式妥协。专员工具白名单由官方 `toolFilter: { allow }` 强制执行，空名、重复名或环境缺失立即 Loud Throw。
 - **精确父会话所有权**：工具触发必须由 `exec.agent` 提供父 Agent，自动后续调度只能按 `room.masterSessionId` 从 `ctx.agents` 取得同一 live 实例；父 Agent 缺失或不一致时终止 Assignment，禁止读取全局当前房间或 Session 猜测。
-- **工作流事件与官方投影深度融合**：专员任务执行全程派发 `tool-workflow/agent-start` 与 `tool-workflow/agent-end` 原生事件，并经由 `native-projection.ts` 投影至当前 DSH Session。
+- **工作流事件严格成对闭合**：每个终态 Assignment 使用唯一 `runId`，在父 Session 依次记录 `tool-workflow/run-start` 与 `tool-workflow/agent-start`；无论成功、模型失败、空输出、结果校验异常或用户中断，都必须且只能记录一次对应的 `tool-workflow/agent-end` 与 `tool-workflow/run-end`。成功映射为 `completed`，异常映射为 `failed/error`，中断映射为 `cancelled`，禁止留下被原生 UI 永久解释为“运行中”的孤儿 Run。
+- **活跃 Assignment 确定性去重**：同一房间中，`ownerRoleId + stageId + workflowTaskId` 相同的 `queued/running` Assignment 是唯一活跃实例；调度器与防停滞自愈流程必须复用该实例，不得重复创建。由系统自愈创建的总指挥官收口任务若失败，相关未读交付报告必须显式转为已处理状态，阻断周期性重复唤醒。
 
 ---
 
