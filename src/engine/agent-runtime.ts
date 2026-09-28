@@ -178,9 +178,10 @@ export async function runMemberTurn(ctx: RuntimeContext, model: ModelRef, prompt
   }
 
   let run: SubagentRun | undefined
+  let workflowStarted = false
   let workflowSettled = false
   const settleWorkflow = (outcome: 'completed' | 'failed' | 'cancelled') => {
-    if (!options.workflow || workflowSettled) return
+    if (!options.workflow || !workflowStarted || workflowSettled) return
     workflowSettled = true
     const session = options.workflow.parentSession
     if (!session) throw new Error('DSH workflow event recording requires the parent session')
@@ -213,6 +214,7 @@ export async function runMemberTurn(ctx: RuntimeContext, model: ModelRef, prompt
         phase: options.workflow.phase,
         childId: String(run.id),
       })
+      workflowStarted = true
     }
 
     const result = await run.result
@@ -270,8 +272,14 @@ export async function runMemberTurn(ctx: RuntimeContext, model: ModelRef, prompt
       toolCalls,
       runtimeTrace,
     }
+  } catch (error) {
+    settleWorkflow(signal.aborted ? 'cancelled' : 'failed')
+    throw error
   } finally {
-    if (signal.aborted) settleWorkflow('cancelled')
-    await run?.dispose()
+    try {
+      await run?.dispose()
+    } catch (disposeError) {
+      console.error('[GroupChat] Native subagent disposal failed after workflow settlement:', disposeError)
+    }
   }
 }

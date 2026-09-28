@@ -319,6 +319,11 @@ export function apply(ctx: AppContext, config: Config): void {
         content: locale === 'en-US' ? `${member.name} model call failed: ${message}` : `${member.name} 模型调用失败：${message}`, mentions: [], metadata: { systemNotice: 'model-error', assignmentId, taskTier: room.assignments?.find(a=>a.assignmentId===assignmentId)?.taskTier },
       })
       const failedAssignment = roomManager.completeAssignment(roomId, assignmentId, 'model-error', message)
+      if (failedAssignment?.createdByRoleId === 'system-healer') {
+        for (const report of roomManager.getMailbox(roomId, member.id)) {
+          if (!report.readAt && report.fromRoleId !== member.id) roomManager.markMailboxRead(roomId, report.mailboxMessageId, member.id)
+        }
+      }
       if (failedAssignment?.stageId && failedAssignment.workflowTaskId) {
         const current = roomManager.getRoom(roomId)
         if (current) {
@@ -517,6 +522,8 @@ export function apply(ctx: AppContext, config: Config): void {
         return false
       }
 
+      const activeReview = roomManager.findActiveAssignment(roomId, masterId, currentStage.id, undefined)
+      if (activeReview) return false
       logger.info?.(`[GroupChat Anti-Stall] Room ${roomId} stalled in 待收口 (${unreadReports.length} unread reports). Waking up ${masterId}...`)
       const brief = `[自愈流转] 汇总 ${unreadReports.length} 份 SubAgent 交付汇报，请总指挥官审阅并收口阶段 [${currentStage.name}]。`
       const assignment = createTurnAssignment(roomId, masterId, brief, undefined, 'system-healer', currentStage.id, 'long')

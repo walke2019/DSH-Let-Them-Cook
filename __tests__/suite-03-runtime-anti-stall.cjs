@@ -49,6 +49,11 @@ target.failureReason = 'watchdog-timeout'
 assert.equal(target.status, 'failed', 'timed out task must explicitly fail')
 assert.equal(target.failureReason, 'watchdog-timeout')
 
+const duplicateOne = manager.createAssignment(roomId, 'commander', 'First review', { stageId: 'stage-review' })
+const duplicateTwo = manager.createAssignment(roomId, 'commander', 'Duplicate review', { stageId: 'stage-review' })
+assert.equal(duplicateTwo.assignmentId, duplicateOne.assignmentId, 'same active role/stage/task assignment must be reused')
+assert.equal(manager.getRoom(roomId).assignments.filter(item => item.ownerRoleId === 'commander' && item.stageId === 'stage-review').length, 1)
+
 // 3. Deterministic Surface State Verification: Strict Content Extraction
 function parseAssistantSurfaceContent(messages) {
   if (!Array.isArray(messages)) throw new TypeError('messages must be an array')
@@ -73,6 +78,7 @@ async function verifyNativeSubagentContract() {
   }
   let startRequest
   let disposeCount = 0
+  const workflowEvents = []
   const childSession = {
     id: 'child-session-1',
     snapshotEvents() { return [] },
@@ -97,11 +103,36 @@ async function verifyNativeSubagentContract() {
     roleId: 'qa',
     roleName: 'QA',
     allowedTools: ['read', 'bash'],
+    workflow: { runId: 'run-success', name: 'Success Run', parentSession: { append(type, data) { workflowEvents.push({ type, data }) } } },
   })
   assert.equal(result.content, 'native result')
   assert.equal(startRequest.parent, parent)
   assert.deepEqual(startRequest.toolFilter, { allow: ['read', 'bash'] })
   assert.equal(disposeCount, 1)
+  assert.deepEqual(workflowEvents.map(event => event.type), ['tool-workflow/run-start', 'tool-workflow/agent-start', 'tool-workflow/agent-end', 'tool-workflow/run-end'])
+  assert.equal(workflowEvents.at(-1).data.stopReason, 'completed')
+
+  const failedEvents = []
+  const failingCtx = {
+    agents: ctx.agents,
+    subagents: {
+      async start() {
+        return {
+          id: 'child-failure',
+          localAgent: { session: childSession },
+          result: Promise.reject(new Error('provider failure')),
+          async dispose() {},
+        }
+      },
+    },
+  }
+  await assert.rejects(() => runMemberTurn(failingCtx, { provider: 'test-provider', model: 'test-model' }, 'execute assignment', new AbortController().signal, {
+    parentAgent: parent,
+    roleId: 'qa',
+    workflow: { runId: 'run-failure', name: 'Failure Run', parentSession: { append(type, data) { failedEvents.push({ type, data }) } } },
+  }), /provider failure/)
+  assert.deepEqual(failedEvents.map(event => event.type), ['tool-workflow/run-start', 'tool-workflow/agent-start', 'tool-workflow/agent-end', 'tool-workflow/run-end'])
+  assert.equal(failedEvents.at(-1).data.stopReason, 'error')
 
   await assert.rejects(() => runMemberTurn(ctx, { provider: 'test-provider', model: 'test-model' }, 'execute assignment', new AbortController().signal, {
     parentAgent: { ...parent },

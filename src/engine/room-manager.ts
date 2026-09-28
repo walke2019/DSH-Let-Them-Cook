@@ -711,9 +711,19 @@ export class RoomManager {
   }
 
 
+  public findActiveAssignment(roomId: string, ownerRoleId: string, stageId?: string, workflowTaskId?: string): AssignmentEnvelope | undefined {
+    return this.getRoom(roomId)?.assignments?.find(item =>
+      item.ownerRoleId === ownerRoleId
+      && item.stageId === stageId
+      && item.workflowTaskId === workflowTaskId
+      && (item.status === 'queued' || item.status === 'running'))
+  }
+
   public createAssignment(roomId: string, ownerRoleId: string, brief: string, options: { stageId?: string; workflowTaskId?: string; sourceMessageId?: string; createdByRoleId?: string; taskType?: AssignmentTaskType; taskTier?: GroupTaskTier; expectedMs?: number } = {}): AssignmentEnvelope | undefined {
     const room = this.getRoom(roomId)
     if (!room) return undefined
+    const active = this.findActiveAssignment(roomId, ownerRoleId, options.stageId, options.workflowTaskId)
+    if (active) return active
     const now = Date.now()
     const assignment: AssignmentEnvelope = {
       assignmentId: randomUUID(),
