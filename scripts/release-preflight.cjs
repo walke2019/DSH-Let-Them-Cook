@@ -20,6 +20,19 @@ for (const file of fs.readdirSync(root)) {
 const tempDocs = fs.readdirSync(path.join(root, 'docs')).filter(file => /^_patch/i.test(file))
 if (tempDocs.length) errors.push(`temporary patch docs remain: ${tempDocs.join(', ')}`)
 
+function collectNumberedPhasePaths(dir) {
+  const matches = []
+  for (const entry of fs.readdirSync(dir, {withFileTypes: true})) {
+    const full = path.join(dir, entry.name)
+    const relative = path.relative(root, full)
+    if (/(^|\/)p\d+(?:[-_.\/]|$)/i.test(relative)) matches.push(relative)
+    if (entry.isDirectory()) matches.push(...collectNumberedPhasePaths(full))
+  }
+  return matches
+}
+const numberedPhasePaths = collectNumberedPhasePaths(path.join(root, 'docs'))
+if (numberedPhasePaths.length) errors.push(`numbered phase paths are forbidden: ${numberedPhasePaths.join(', ')}`)
+
 function countDocs(dir) {
   let count = 0
   for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
@@ -118,8 +131,8 @@ for (const domain of ['UI 与生命周期','工具、账本与权限','调度、
   if (!todo.includes(`## ${domain}`)) errors.push(`TODO missing domain: ${domain}`)
 }
 
-if (errors.length) { console.error(JSON.stringify({P11_PREFLIGHT_EXIT:1, errors}, null, 2)); process.exit(1) }
-console.log(JSON.stringify({P11_PREFLIGHT_EXIT:0, rootDocumentsOk:true, tempPatchDocs:0, requiredArtifacts:required.length, packageScripts:['typecheck','build:all','test:matrix','smoke:api','test:e2e:no-llm','test:ui:visual','test:ui:switch','test:ui:refresh','test:ui:entry','test:diagnostic:prepare','test:theme-copy','test:i18n-panel-smoke',
+if (errors.length) { console.error(JSON.stringify({PREFLIGHT_EXIT:1, errors}, null, 2)); process.exit(1) }
+console.log(JSON.stringify({PREFLIGHT_EXIT:0, rootDocumentsOk:true, tempPatchDocs:0, requiredArtifacts:required.length, packageScripts:['typecheck','build:all','test:matrix','smoke:api','test:e2e:no-llm','test:ui:visual','test:ui:switch','test:ui:refresh','test:ui:entry','test:diagnostic:prepare','test:theme-copy','test:i18n-panel-smoke',
   'test:bilingual-ui','test:agent-loop-quality','test:agent-timeout-diagnostic','test:real-moderator-loop','test:task-tier-progress','test:autosetup-dispatch-guard','test:message-ledger-persistence','test:interrupted-assignment-recovery','test:bilingual-export-summary','test:runtime-autosetup-i18n','test:agent-runtime-prompt-i18n','test:tool-workflow-api-i18n','test:theme-workflow-content-i18n','test:tech-legends-theme','test:english-source-bilingual-runtime','test:runtime-agent-watchdog','test:assignment-watchdog-timeout','test:chat-ui-composer-progression','test:captain-task-protocol','test:durable-subagent-resume','test:approve-run-transaction-card','test:team-coordination-tools','test:task-cockpit-productization','test:model-health-switching','test:new-session-agent-entry','test:hud-message-margins','test:hero-left-collapse','test:session-room-binding','test:distinct-theme-copy','test:hud-locale-toggle-header','test:central-live-status','test:agent-turn-surface-fallback','test:composer-outside-scroll','test:central-loading-state','test:workflow-commander-delegation','test:official-like-central-execution','test:hero-entry-self-click-guard','preflight']}, null, 2))
 
 
