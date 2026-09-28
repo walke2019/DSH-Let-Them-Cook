@@ -582,3 +582,10 @@ pm run test:hero-entry-self-click-guard 并接入 matrix/preflight。
   - 在 `docs/agents/03-orchestration-and-anti-stall.md`、`docs/agents/02-tools-and-ledger.md` 与 `docs/architecture/dispatch-engine.md` 沉淀官方编排融合标准。
 - [x] **领域套件全绿与发版红线门禁**：
   - 已在 `suite-03` 补齐官方 one-shot subagent、精确父 Agent 与必定 dispose 的确定性行为测试，在 `suite-04` 补齐精确工具过滤强断言；`npm run typecheck`、`npm test`、`npm run preflight` 100% 通过。
+
+## P98 — Reliability matrix and assignment-state separation
+- [x] Define one exhaustive assignment summary: active is only `queued | running`, attention is `blocked`, and terminal history is `completed | failed | cancelled`.
+- [x] Replace lifetime `assignments.length` live badges with active/attention/history counts in the native right-sidebar workbench.
+- [x] Prevent terminal assignment history from entering the Agent prompt's current-assignment section.
+- [x] Extend `suite-03` with deterministic success, provider rejection, empty output, pre-abort, in-run cancellation, exactly-once workflow closure, disposal, and Assignment tuple-reuse checks.
+- [x] Keep real-model soak testing outside deterministic CI; use it as an explicit release qualification step.

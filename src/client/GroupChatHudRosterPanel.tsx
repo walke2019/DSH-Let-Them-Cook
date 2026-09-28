@@ -4,6 +4,7 @@ import type {AgentProfile} from './group-chat-view-types.js'
 import type {AgentMailboxMessage, AssignmentEnvelope, LedgerData, RuntimeMetrics} from './group-chat-hud-types.js'
 import {hudCardStyle, hudGhostButtonStyle, hudPanelStackStyle, hudPrimaryButtonStyle, hudTextAreaStyle, hudTokens} from './group-chat-hud-styles.js'
 import {tx, txRoleName, txRoleTitle, type GroupChatLocale} from './i18n.js'
+import {summarizeAssignments} from '../engine/assignment-view.js'
 
 interface ThemeWorkflowDraft { title?: string; stages?: unknown[] }
 
@@ -91,10 +92,11 @@ export function GroupChatHudRosterPanel({
   const [teamSearch, setTeamSearch] = useState('')
   const [ledgerSearch, setLedgerSearch] = useState('')
   const [ledgerFilter, setLedgerFilter] = useState<'all' | 'active' | 'unread'>('all')
-  const assignmentRecords = useMemo(() => [...(room?.assignments || [])].reverse(), [room?.assignments])
+  const assignmentSummary = useMemo(() => summarizeAssignments(room?.assignments || []), [room?.assignments])
+  const assignmentRecords = useMemo(() => [...assignmentSummary.active, ...assignmentSummary.attention, ...assignmentSummary.history], [assignmentSummary])
   const mailboxRecords = useMemo(() => Object.entries(room?.mailboxes || {}).flatMap(([to, list]) => list.map(message => ({to, message}))).reverse(), [room?.mailboxes])
   const unreadMailboxCount = mailboxRecords.filter(item => !item.message.readAt).length
-  const activeAssignmentCount = assignmentRecords.filter(item => item.status === 'queued' || item.status === 'running').length
+  const activeAssignmentCount = assignmentSummary.counts.active
   const ledgerNeedle = ledgerSearch.trim().toLowerCase()
 
   const computedMetrics = useMemo(() => {
@@ -233,7 +235,7 @@ export function GroupChatHudRosterPanel({
       {isLedgerPanel && <details style={{...hudCardStyle,display:'grid',gap:8}} data-dsh-gc-ledger-records>
         <summary style={{cursor:'pointer',userSelect:'none',display:'flex',justifyContent:'space-between',alignItems:'center',gap:8,flexWrap:'wrap'}}>
           <div style={{fontSize:11,fontWeight:700,color:hudTokens.labelPrimary}}>📁 {tx(locale,'协同流转留痕 (任务分派 & 邮箱通讯审计)','Collaboration Audit Logs (Assignments & Mailbox)')}</div>
-          <div style={{fontSize:10,color:hudTokens.labelTertiary}}>{tx(locale,'完整流水','Full ledger')} · {tx(locale,'分派','Assignments')} {assignmentRecords.length} · {tx(locale,'邮箱','Mailbox')} {mailboxRecords.length}</div>
+          <div style={{fontSize:10,color:hudTokens.labelTertiary}}>{tx(locale,'活跃','Active')} {assignmentSummary.counts.active} · {tx(locale,'需关注','Attention')} {assignmentSummary.counts.attention} · {tx(locale,'历史','History')} {assignmentSummary.counts.history} · {tx(locale,'邮箱','Mailbox')} {mailboxRecords.length}</div>
         </summary>
         <div style={{fontSize:10,color:hudTokens.labelTertiary,marginTop:4}}>
           {tx(locale,'注：此部分为后台事件调度留痕，各 Agent 模型数据消耗请以上方“角色与模型消耗流水”为准。','Note: This section logs background event routing; refer to the ledger above for token & model metrics.')}

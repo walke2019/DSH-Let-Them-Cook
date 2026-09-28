@@ -49,10 +49,21 @@ target.failureReason = 'watchdog-timeout'
 assert.equal(target.status, 'failed', 'timed out task must explicitly fail')
 assert.equal(target.failureReason, 'watchdog-timeout')
 
-const duplicateOne = manager.createAssignment(roomId, 'commander', 'First review', { stageId: 'stage-review' })
-const duplicateTwo = manager.createAssignment(roomId, 'commander', 'Duplicate review', { stageId: 'stage-review' })
+const duplicateOne = manager.createAssignment(roomId, 'commander', 'First review', { stageId: 'stage-review', workflowTaskId: 'task-review' })
+const duplicateTwo = manager.createAssignment(roomId, 'commander', 'Duplicate review', { stageId: 'stage-review', workflowTaskId: 'task-review' })
 assert.equal(duplicateTwo.assignmentId, duplicateOne.assignmentId, 'same active role/stage/task assignment must be reused')
-assert.equal(manager.getRoom(roomId).assignments.filter(item => item.ownerRoleId === 'commander' && item.stageId === 'stage-review').length, 1)
+manager.markAssignmentRunning(roomId, duplicateOne.assignmentId)
+const duplicateRunning = manager.createAssignment(roomId, 'commander', 'Duplicate running review', { stageId: 'stage-review', workflowTaskId: 'task-review' })
+assert.equal(duplicateRunning.assignmentId, duplicateOne.assignmentId, 'running tuple must also be reused')
+const differentStage = manager.createAssignment(roomId, 'commander', 'Different stage', { stageId: 'stage-other', workflowTaskId: 'task-review' })
+const differentTask = manager.createAssignment(roomId, 'commander', 'Different task', { stageId: 'stage-review', workflowTaskId: 'task-other' })
+const differentOwner = manager.createAssignment(roomId, 'backend', 'Different owner', { stageId: 'stage-review', workflowTaskId: 'task-review' })
+assert.notEqual(differentStage.assignmentId, duplicateOne.assignmentId)
+assert.notEqual(differentTask.assignmentId, duplicateOne.assignmentId)
+assert.notEqual(differentOwner.assignmentId, duplicateOne.assignmentId)
+manager.completeAssignment(roomId, duplicateOne.assignmentId, 'done')
+const retryAfterTerminal = manager.createAssignment(roomId, 'commander', 'Retry after terminal', { stageId: 'stage-review', workflowTaskId: 'task-review' })
+assert.notEqual(retryAfterTerminal.assignmentId, duplicateOne.assignmentId, 'terminal tuple permits a new attempt')
 
 // 3. Deterministic Surface State Verification: Strict Content Extraction
 function parseAssistantSurfaceContent(messages) {
@@ -133,6 +144,41 @@ async function verifyNativeSubagentContract() {
   }), /provider failure/)
   assert.deepEqual(failedEvents.map(event => event.type), ['tool-workflow/run-start', 'tool-workflow/agent-start', 'tool-workflow/agent-end', 'tool-workflow/run-end'])
   assert.equal(failedEvents.at(-1).data.stopReason, 'error')
+
+  const emptyEvents = []
+  await assert.rejects(() => runMemberTurn({
+    agents: ctx.agents,
+    subagents: { async start() { return { id: 'child-empty', localAgent: { session: childSession }, result: Promise.resolve({ stopReason: 'completed', output: [{ type: 'text', text: '   ' }] }), async dispose() {} } } },
+  }, { provider: 'test-provider', model: 'test-model' }, 'execute assignment', new AbortController().signal, {
+    parentAgent: parent,
+    roleId: 'qa',
+    workflow: { runId: 'run-empty', name: 'Empty Run', parentSession: { append(type, data) { emptyEvents.push({ type, data }) } } },
+  }), /without assistant output/)
+  assert.deepEqual(emptyEvents.map(event => event.type), ['tool-workflow/run-start', 'tool-workflow/agent-start', 'tool-workflow/agent-end', 'tool-workflow/run-end'])
+  assert.equal(emptyEvents.at(-1).data.stopReason, 'error')
+
+  const cancelledEvents = []
+  const cancelled = new AbortController()
+  const cancellationCtx = {
+    agents: ctx.agents,
+    subagents: { async start(_provider, request) { cancelled.abort(); return { id: 'child-cancelled', localAgent: { session: childSession }, result: Promise.resolve({ stopReason: 'aborted', output: [], diagnostic: String(request.signal.aborted) }), async dispose() {} } } },
+  }
+  await assert.rejects(() => runMemberTurn(cancellationCtx, { provider: 'test-provider', model: 'test-model' }, 'execute assignment', cancelled.signal, {
+    parentAgent: parent,
+    roleId: 'qa',
+    workflow: { runId: 'run-cancelled', name: 'Cancelled Run', parentSession: { append(type, data) { cancelledEvents.push({ type, data }) } } },
+  }), /ended with aborted/)
+  assert.deepEqual(cancelledEvents.map(event => event.type), ['tool-workflow/run-start', 'tool-workflow/agent-start', 'tool-workflow/agent-end', 'tool-workflow/run-end'])
+  assert.equal(cancelledEvents.at(-1).data.stopReason, 'cancelled')
+
+  let startCalled = false
+  const preAborted = new AbortController()
+  preAborted.abort()
+  await assert.rejects(() => runMemberTurn({ agents: ctx.agents, subagents: { async start() { startCalled = true; throw new Error('must not start') } } }, { provider: 'test-provider', model: 'test-model' }, 'execute assignment', preAborted.signal, {
+    parentAgent: parent,
+    roleId: 'qa',
+  }), /abort/i)
+  assert.equal(startCalled, false)
 
   await assert.rejects(() => runMemberTurn(ctx, { provider: 'test-provider', model: 'test-model' }, 'execute assignment', new AbortController().signal, {
     parentAgent: { ...parent },

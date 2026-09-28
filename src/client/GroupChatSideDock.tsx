@@ -11,6 +11,7 @@ import type {AssignmentEnvelope, AgentMailboxMessage, CompatReport, GroupMessage
 import type {AgentProfile} from './group-chat-view-types.js'
 import {detectGroupChatLocale, onGroupChatLocaleChange, setGroupChatLocale, tx, type GroupChatLocale} from './i18n.js'
 import {DEFAULT_GROUP_CHAT_ROOM_ID, getActiveSessionId, setCurrentGroupChatRoomId, useCurrentGroupChatRoomId} from './current-room.js'
+import {summarizeAssignments} from '../engine/assignment-view.js'
 
 export interface GroupChatSideDockProps {
   useSessions?: (selector: (state: any) => any) => any;
@@ -44,6 +45,7 @@ export function GroupChatSideDock(props?: GroupChatSideDockProps) {
   const selectedTheme = room?.activeTheme === 'meme_comedy' ? 'default' : (room?.activeTheme || 'default')
   const selectedMode = room?.dispatchMode === 'workflow_driven' ? 'default' : (room?.dispatchMode || 'default')
   const displayRoomTitle = (room?.title?.includes('特遣') || room?.title?.includes('AI 小队')) ? tx(locale,'DSH 开整天团工作台','DSH Let Them Cook Workspace') : (room?.title || tx(locale,'DSH 开整天团','DSH Let Them Cook'))
+  const assignmentSummary = summarizeAssignments(room?.assignments || [])
   const toggleLocale = () => setGroupChatLocale(locale === 'zh-CN' ? 'en-US' : 'zh-CN')
   useEffect(()=>onGroupChatLocaleChange(setLocale),[])
 
@@ -315,9 +317,19 @@ export function GroupChatSideDock(props?: GroupChatSideDockProps) {
             </div>
           </div>
           <div style={{display:'flex', alignItems:'center', gap:'6px', flexShrink:0}}>
-            {room?.assignments && room.assignments.length > 0 && (
-              <span style={{background:'#ef4444', color:'#fff', fontSize:'10px', fontWeight:700, padding:'1px 6px', borderRadius:'10px'}}>
-                🔥 {room.assignments.length}
+            {assignmentSummary.counts.active > 0 && (
+              <span style={{background:'#2563eb', color:'#fff', fontSize:'10px', fontWeight:700, padding:'1px 6px', borderRadius:'10px'}}>
+                ▶ {assignmentSummary.counts.active} {tx(locale,'活跃','active')}
+              </span>
+            )}
+            {assignmentSummary.counts.active === 0 && assignmentSummary.counts.attention > 0 && (
+              <span style={{background:'#d97706', color:'#fff', fontSize:'10px', fontWeight:700, padding:'1px 6px', borderRadius:'10px'}}>
+                ! {assignmentSummary.counts.attention} {tx(locale,'待处理','attention')}
+              </span>
+            )}
+            {assignmentSummary.counts.active === 0 && assignmentSummary.counts.attention === 0 && assignmentSummary.counts.history > 0 && (
+              <span style={{background:'rgba(100,116,139,0.35)', color:'#cbd5e1', fontSize:'10px', fontWeight:700, padding:'1px 6px', borderRadius:'10px'}}>
+                ✓ {assignmentSummary.counts.history} {tx(locale,'历史','history')}
               </span>
             )}
             <button

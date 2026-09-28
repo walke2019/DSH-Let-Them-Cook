@@ -4,6 +4,7 @@ const root = path.resolve(__dirname, '..')
 
 const { RoomManager } = require(path.join(root, 'lib/engine/room-manager.js'))
 const { registerGroupChatTools } = require(path.join(root, 'lib/tools/index.js'))
+const { summarizeAssignments } = require(path.join(root, 'lib/engine/assignment-view.js'))
 
 console.log('[SUITE-01] Pure Domain Behavioral Test: Room Lifecycle, Assignments, Mailbox & State Transition...')
 
@@ -69,7 +70,25 @@ assert.equal(sessionB.masterSessionId, 'session-b')
 assert.equal(manager.getAllRooms().filter(r => r.masterSessionId === 'session-a').map(r => r.roomId).join(','), 'dsh-session-a')
 assert.equal(manager.getAllRooms().filter(r => r.masterSessionId === 'session-b').map(r => r.roomId).join(','), 'dsh-session-b')
 
-// 6. Group-chat state stays in RoomManager and never appends private Session events
+// 6. Assignment live state and terminal history remain semantically separate
+const assignmentFixture = ['queued', 'running', 'blocked', 'completed', 'failed', 'cancelled'].map((status, index) => ({
+  assignmentId: `fixture-${status}`,
+  roomId,
+  ownerRoleId: 'backend',
+  createdByRoleId: 'commander',
+  taskType: 'backend',
+  brief: status,
+  status,
+  createdAt: index,
+  updatedAt: index,
+}))
+const summary = summarizeAssignments(assignmentFixture)
+assert.deepEqual(summary.counts, { running: 1, queued: 1, active: 2, attention: 1, completed: 1, issues: 2, history: 3 })
+assert.deepEqual(summary.active.map(item => item.status), ['running', 'queued'])
+assert.deepEqual(summary.attention.map(item => item.status), ['blocked'])
+assert.deepEqual(summary.history.map(item => item.status), ['cancelled', 'failed', 'completed'])
+
+// 7. Group-chat state stays in RoomManager and never appends private Session events
 const sessionEvents = []
 const liveAgent = {
   id: 'session-tool-state',

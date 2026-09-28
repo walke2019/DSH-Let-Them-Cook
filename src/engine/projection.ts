@@ -10,6 +10,7 @@ import type {
 import type {GroupChatLocale} from '../client/i18n.js'
 import { ORCHESTRATOR_RUNTIME_SKILL_SUMMARY } from './orchestrator-skill.js'
 import { STRUCTURED_AGENT_RESULT_PROMPT } from './structured-result.js'
+import { summarizeAssignments } from './assignment-view.js'
 
 export class ContextProjection {
   /**
@@ -116,7 +117,7 @@ ${hintLines.join('\n')}` : ''}`
   }
 
   public static formatAssignmentsForAgent(room: GroupChatRoom, targetAgent: AgentProfile, locale: GroupChatLocale = 'zh-CN'): string {
-    const own = (room.assignments || []).filter(item => item.ownerRoleId === targetAgent.id && item.status !== 'completed').slice(-6)
+    const own = summarizeAssignments((room.assignments || []).filter(item => item.ownerRoleId === targetAgent.id)).active.slice(-6)
     const inbox = (room.mailboxes?.[targetAgent.id] || []).slice(-6)
     const lines: string[] = []
     if (own.length) {
