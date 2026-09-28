@@ -31,7 +31,8 @@ This repository follows an Agent-native, contract-first architecture and keeps p
 - [`architecture/workflow-and-role-personas.md`](./architecture/workflow-and-role-personas.md) — role and workflow policy.
 - [`architecture/orchestrator-skill-and-policy.md`](./architecture/orchestrator-skill-and-policy.md) — runtime skill policy.
 - [`architecture/ecosystem-assessment-and-roadmap.md`](./architecture/ecosystem-assessment-and-roadmap.md) — current capability assessment and roadmap.
-- [`TODO.md`](./TODO.md) and [`tasks/milestones-index.md`](./tasks/milestones-index.md) — current contract plus explicitly superseded history.
+- [`TODO.md`](./TODO.md) — 按领域维护的已实现事实与真实后续事项。
+- [`tasks/milestones-index.md`](./tasks/milestones-index.md) — 领域知识索引，指向长期专著、架构说明与验证入口。
 
 ## Maintenance rules
 

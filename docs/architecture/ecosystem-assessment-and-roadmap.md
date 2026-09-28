@@ -36,7 +36,7 @@ Earlier milestones explored a middle Agent Chat view, overlays, floating or dock
 5. Workspace-scoped persistence prevents cross-session room leakage.
 6. The optional native sidebar workbench provides status and controls without becoming another chat surface.
 
-## P98 reliability and assignment-state separation
+## Reliability and assignment-state separation
 
 The native sidebar now treats `room.assignments.length` as lifetime history only. Live work is exactly `queued | running`; `blocked` is an attention state; `completed | failed | cancelled` are terminal history. Shared exhaustive selectors drive the sidebar counters and the Agent prompt projection, so terminal records cannot appear as current work.
 
@@ -44,7 +44,7 @@ The deterministic reliability matrix covers successful delivery, provider reject
 
 ## Roadmap
 
-1. Run longer real-model workflows and evaluate token usage, cancellation, and mailbox reduction quality against the deterministic P98 baseline.
+1. Run longer real-model workflows and evaluate token usage, cancellation, and mailbox reduction quality against the deterministic reliability baseline.
 2. Add a read-only workflow diagnostics view for orphan-run and Assignment/Run linkage inspection, with user-confirmed repair actions.
 3. Add more workspace workflow templates without weakening the current execution contracts.
 4. Improve persona/theme import and export while preserving role permissions.

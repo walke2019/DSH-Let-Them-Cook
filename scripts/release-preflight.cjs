@@ -114,7 +114,9 @@ if (dock.includes('<GroupChatHeroEntry') || dock.includes('GroupChatHeroEntry />
 for (const marker of ['结构化结果','标记已读','默认（沙雕整活）','默认（工作流）']) if (!hudSurface.includes(marker)) errors.push(`HUD marker missing: ${marker}`)
 
 const todo = read('docs/TODO.md')
-for (const phase of ['P0','P1','P2','P3','P4','P5','P6','P7','P8','P9','P10']) if (!todo.includes(`## ${phase}`)) errors.push(`TODO missing ${phase}`)
+for (const domain of ['UI 与生命周期','工具、账本与权限','调度、工作流与防停滞','国际化、主题与工作区','测试、发布与质量门禁','历史废弃方案','后续路线图']) {
+  if (!todo.includes(`## ${domain}`)) errors.push(`TODO missing domain: ${domain}`)
+}
 
 if (errors.length) { console.error(JSON.stringify({P11_PREFLIGHT_EXIT:1, errors}, null, 2)); process.exit(1) }
 console.log(JSON.stringify({P11_PREFLIGHT_EXIT:0, rootDocumentsOk:true, tempPatchDocs:0, requiredArtifacts:required.length, packageScripts:['typecheck','build:all','test:matrix','smoke:api','test:e2e:no-llm','test:ui:visual','test:ui:switch','test:ui:refresh','test:ui:entry','test:diagnostic:prepare','test:theme-copy','test:i18n-panel-smoke',
