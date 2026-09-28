@@ -10,7 +10,7 @@
 
 ### 1. DSH 底座原生工具直通（Native Tool Passthrough）
 - 赋予专员真实的 DSH 底座能力（`read` / `edit` / `bash` / `grep` / `glob`），严禁使用任何未落地的虚拟假工具。
-- 所有工具调用经过 `normalizeToolNames()` 规整，杜绝因名称别名造成的权限拦截。
+- 角色工具白名单必须使用 DSH 注册表中的精确原生工具名；禁止别名猜测。未知工具在官方 `toolFilter` 边界立即拒绝。
 
 ### 2. 毫秒级流式 Diff 探针
 - 实时广播工具执行状态。对于文件编辑（`edit`）自动精确解析 `+add -del` 行号差异与代码补丁指标。

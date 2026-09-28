@@ -3,6 +3,7 @@ const path = require('node:path')
 const root = path.resolve(__dirname, '..')
 
 const { RoomManager } = require(path.join(root, 'lib/engine/room-manager.js'))
+const { runMemberTurn } = require(path.join(root, 'lib/engine/agent-runtime.js'))
 
 console.log('[SUITE-03] Pure Domain Behavioral Test: Anti-Stall, Watchdogs & Master Handoff Protocol...')
 
@@ -64,4 +65,54 @@ const sampleSession = [
 ]
 assert.equal(parseAssistantSurfaceContent(sampleSession), 'Here is the verified query result.')
 
-console.log('SUITE_03_RUNTIME_ANTI_STALL_EXIT:0')
+// 4. Official Native Subagent Contract: exact parent, one-shot result, deterministic dispose
+async function verifyNativeSubagentContract() {
+  const parent = {
+    id: 'parent-session-1',
+    session: { append() {} },
+  }
+  let startRequest
+  let disposeCount = 0
+  const childSession = {
+    id: 'child-session-1',
+    snapshotEvents() { return [] },
+  }
+  const ctx = {
+    agents: { get(id) { return id === parent.id ? parent : undefined } },
+    subagents: {
+      async start(provider, request) {
+        assert.equal(provider, 'spawn')
+        startRequest = request
+        return {
+          id: childSession.id,
+          localAgent: { session: childSession },
+          result: Promise.resolve({ stopReason: 'completed', output: [{ type: 'text', text: 'native result' }] }),
+          async dispose() { disposeCount++ },
+        }
+      },
+    },
+  }
+  const result = await runMemberTurn(ctx, { provider: 'test-provider', model: 'test-model' }, 'execute assignment', new AbortController().signal, {
+    parentAgent: parent,
+    roleId: 'qa',
+    roleName: 'QA',
+    allowedTools: ['read', 'bash'],
+  })
+  assert.equal(result.content, 'native result')
+  assert.equal(startRequest.parent, parent)
+  assert.deepEqual(startRequest.toolFilter, { allow: ['read', 'bash'] })
+  assert.equal(disposeCount, 1)
+
+  await assert.rejects(() => runMemberTurn(ctx, { provider: 'test-provider', model: 'test-model' }, 'execute assignment', new AbortController().signal, {
+    parentAgent: { ...parent },
+    roleId: 'qa',
+    allowedTools: ['read'],
+  }), /exact live registry entry/)
+}
+
+verifyNativeSubagentContract().then(() => {
+  console.log('SUITE_03_RUNTIME_ANTI_STALL_EXIT:0')
+}).catch(error => {
+  console.error(error)
+  process.exitCode = 1
+})

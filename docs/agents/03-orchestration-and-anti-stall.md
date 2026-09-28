@@ -25,6 +25,12 @@
 ### 5. DAG 阶段自动化门禁（Stage Gates）
 - 每个阶段配置自动化验收命令（`verifyCommand`）。阶段晋级时强制执行门禁检验，未达标直接阻断流转。
 
+### 6. DSH 官方 Subagent 原生编排与纯血融合 (Official Subagent Integration)
+- **终态 Assignment 使用官方 one-shot seam**：角色专员（`researcher`、`backend`、`frontend`、`qa`、`writer`）通过当前主会话的精确 live parent Agent 调用 `ctx.subagents.start('spawn', ...)`；唯一完成边界是 `SubagentRun.result`，并始终执行 `run.dispose()`。持续对话才使用 Continuable Subagent，两种生命周期禁止混用。
+- **零模糊别名、零 Prompt 弱降级（Zero Fallback）**：彻底剔除工具正则别名映射（`SEMANTIC_TOOL_ALIASES`）与“工具不支持则降级为 Prompt 约束”的隐式妥协。专员工具白名单由官方 `toolFilter: { allow }` 强制执行，空名、重复名或环境缺失立即 Loud Throw。
+- **精确父会话所有权**：工具触发必须由 `exec.agent` 提供父 Agent，自动后续调度只能按 `room.masterSessionId` 从 `ctx.agents` 取得同一 live 实例；父 Agent 缺失或不一致时终止 Assignment，禁止读取全局当前房间或 Session 猜测。
+- **工作流事件与官方投影深度融合**：专员任务执行全程派发 `tool-workflow/agent-start` 与 `tool-workflow/agent-end` 原生事件，并经由 `native-projection.ts` 投影至当前 DSH Session。
+
 ---
 
 ## 🧪 对应标准验证套件

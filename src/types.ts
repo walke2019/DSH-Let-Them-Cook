@@ -371,10 +371,36 @@ export interface ApprovalTransaction {
   resolvedAt?: number
 }
 
+export type NativeSubagentProvider = 'spawn'
+
+export interface NativeSubagentAssignmentContract {
+  provider: NativeSubagentProvider
+  parentAgentId: string
+  label: string
+  prompt: string
+  persona: string
+  toolFilter: {
+    allow: readonly string[]
+  }
+  agentOptions: {
+    provider: string
+    model: string
+    maxTokens: number
+  }
+  maxDepth: number
+}
+
+export interface NativeSubagentTerminalResult {
+  childSessionId: string
+  stopReason: 'completed' | 'aborted' | 'error' | 'max-tokens' | 'refusal' | (string & {})
+  content: string
+  diagnostic?: string
+}
+
 export interface DshRuntimeTrace {
   sourceSessionId?: string
   sourceEventSeqs?: number[]
-  projectionSource?: 'dsh-session-projections' | 'event-stream-fallback'
+  projectionSource?: 'dsh-session-projections' | 'native-session-events'
   liveness?: {
     phase: string
     lastEventSeq?: number

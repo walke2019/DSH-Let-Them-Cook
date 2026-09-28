@@ -1,0 +1,3 @@
+- insert:
+    - id: dsh-let-them-cook
+      name: '@dsh-external/dsh-let-them-cook'

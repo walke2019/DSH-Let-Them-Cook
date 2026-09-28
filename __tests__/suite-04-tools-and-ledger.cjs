@@ -3,15 +3,15 @@ const path = require('node:path')
 const root = path.resolve(__dirname, '..')
 
 const { parseStructuredAgentResult, stripStructuredAgentResult } = require(path.join(root, 'lib/engine/structured-result.js'))
-const { normalizeToolNames } = require(path.join(root, 'lib/compat/dsh.js'))
+const { assertExactNativeToolFilter } = require(path.join(root, 'lib/engine/agent-runtime.js'))
 
 console.log('[SUITE-04] Pure Domain Behavioral Test: Native Tools Whitelist, Streaming Diff & Token Accounting...')
 
-// 1. Tool Normalization: Idempotent and Canonical
-const rawTools = ['bash', 'terminal', 'sh', 'web_search', 'read_file']
-const normalized = normalizeToolNames(rawTools)
-assert.ok(normalized.includes('bash'))
-assert.ok(normalized.includes('web_search'))
+// 1. Native Tool Filter: exact names only, no aliasing or silent deduplication
+const exactTools = ['bash', 'web_search', 'read']
+assert.deepEqual(assertExactNativeToolFilter(exactTools), exactTools)
+assert.throws(() => assertExactNativeToolFilter(['bash', 'bash']), /duplicate tool names/)
+assert.throws(() => assertExactNativeToolFilter(['read', '  ']), /empty tool name/)
 
 // 2. Structured Agent Result Parsing & Display Purification
 const agentMsg = `任务执行完毕。

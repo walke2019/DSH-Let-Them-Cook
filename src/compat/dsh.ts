@@ -11,6 +11,7 @@ export interface DshCompatReport {
     toolRestrict: boolean
     webServer: boolean
     agents: boolean
+    subagents: boolean
     sessionProjections: boolean
     sessionProjectionStateOf: boolean
     userQuestions?: boolean
@@ -32,38 +33,6 @@ export interface DshCompatReport {
   optimizations: string[]
 }
 
-export interface ToolScopeResult {
-  requested: string[]
-  resolved: string[]
-  missing: string[]
-  knownTools: string[]
-  effect?: any
-  enforcement?: 'applied' | 'prompt-only'
-  warning?: string
-}
-
-const LEGACY_TOOL_ALIASES: Record<string, string> = {
-  workflow_advance_stage: 'group_chat_workflow_advance',
-  workflow_reject_stage: 'group_chat_workflow_reject',
-}
-
-const SEMANTIC_TOOL_ALIASES: Record<string, string[]> = {
-  web_search: ['web_search', 'browser_search', 'search', 'agent_reach_search'],
-  web_fetch: ['web_fetch', 'fetch_url', 'stealth_read_page', 'read_page'],
-  stealth_read_page: ['web_fetch', 'stealth_read_page', 'browser_read_page', 'read_page', 'fetch_url'],
-  stealth_navigate: ['stealth_navigate', 'browser_navigate', 'navigate_page'],
-  stealth_extract: ['stealth_extract', 'browser_extract', 'extract_page'],
-  tool_fs: ['read', 'write', 'edit', 'glob', 'grep', 'tool_fs', 'read_file', 'write_file', 'edit_file', 'apply_patch'],
-  tool_jobs: ['bash', 'job_output', 'job_list', 'job_kill', 'tool_jobs', 'run_command', 'shell', 'terminal'],
-  modlens_read_image: ['read_image', 'modlens_read_image', 'view_image'],
-  read: ['read', 'read_file', 'tool_fs'],
-  write: ['write', 'write_file', 'tool_fs'],
-  edit: ['edit', 'edit_file', 'tool_fs'],
-  bash: ['bash', 'shell', 'terminal', 'run_command', 'tool_jobs'],
-  grep: ['grep', 'tool_fs'],
-  glob: ['glob', 'tool_fs'],
-}
-
 export function detectDshCompat(ctx: any): DshCompatReport {
   const warnings: string[] = []
   const optimizations: string[] = []
@@ -76,27 +45,29 @@ export function detectDshCompat(ctx: any): DshCompatReport {
     currentModel: !!ctx?.agentDefaultModel && typeof ctx.agentDefaultModel.currentSelection === 'function',
     toolRestrict: !!ctx?.tools && typeof ctx.tools.restrict === 'function',
     webServer: !!ctx?.webServer && typeof ctx.webServer.register === 'function',
-    agents: !!ctx?.agents && typeof ctx.agents.create === 'function',
+    agents: !!ctx?.agents && typeof ctx.agents.requireInitiator === 'function',
+    subagents: !!ctx?.subagents && typeof ctx.subagents.start === 'function',
     sessionProjections: !!projections,
     sessionProjectionStateOf: !!projections && typeof projections.stateOf === 'function',
     userQuestions: !!userQuestions,
     ...bridge.features,
     workflowEvents,
   }
-  if (!features.llmCatalog) warnings.push('DSH llm.listProviders/listModels 不可用，模型目录将降级为空列表。')
+  if (!features.llmCatalog) warnings.push('DSH llm.listProviders/listModels 不可用；依赖模型目录的操作将被显式阻断。')
   if (!features.currentModel) warnings.push('DSH agentDefaultModel.currentSelection 不可用，将使用空默认模型。')
-  if (!features.toolRestrict) warnings.push('DSH tools.restrict 不可用，角色工具白名单只能注入 Prompt，无法强制收口。')
+  if (!features.toolRestrict) warnings.push('DSH tools.restrict 不可用，原生 Subagent 工具权限契约无法执行。')
   if (!features.webServer) warnings.push('DSH webServer.register 不可用，插件 API 无法挂载。')
-  if (!features.agents) warnings.push('DSH agents.create 不可用，群聊角色无法执行独立 turn。')
+  if (!features.agents) warnings.push('DSH agents.requireInitiator 不可用，无法取得精确 live parent Agent。')
+  if (!features.subagents) warnings.push('DSH subagents.start 不可用，无法执行原生 one-shot assignment。')
   if (features.sessionProjectionStateOf) optimizations.push('DSH sessionProjections.stateOf 可用：优先使用 tokenUsage/sessionStats 官方投影作为账本与延迟数据源。')
-  else warnings.push('DSH sessionProjections.stateOf 不可用：账本将降级为事件流 usage 深度解析。')
-  if (features.agents) optimizations.push('DSH agents.create 可用：群聊角色以独立 subagent session 运行，保留 DSH 原生事件、工具与计量能力。')
-  if (features.toolRestrict) optimizations.push('DSH tools.restrict 可用：角色工具白名单可由底座强制执行。')
+  else warnings.push('DSH sessionProjections.stateOf 不可用：官方投影计量不可用，仅保留子 Agent 原生 Session 事件账本。')
+  if (features.agents && features.subagents) optimizations.push('DSH 原生 subagents.start 可用：assignment 通过 spawn provider 执行，并继承精确 live parent Agent。')
+  if (features.toolRestrict) optimizations.push('DSH 原生 Subagent toolFilter 可用：角色工具白名单由底座强制执行。')
   warnings.push(...bridge.warnings.filter(warning => !warning.startsWith('DSH workflow run seam 不可用')))
   if (workflowEvents) optimizations.push('DSH workflow event seam 可用：使用 tool-workflow/* 记录原生 workflow run 生命周期。')
   else warnings.push('DSH workflow event seam 不可用：无法记录原生 workflow run 生命周期。')
   optimizations.push(...bridge.optimizations)
-  const requiredOk = features.llmCatalog && features.currentModel && features.toolRestrict && features.webServer && features.agents
+  const requiredOk = features.llmCatalog && features.currentModel && features.toolRestrict && features.webServer && features.agents && features.subagents
   return {
     ok: requiredOk,
     features,
@@ -143,79 +114,5 @@ export async function safeListModelCatalog(ctx: any): Promise<{ groups: CatalogP
     }
   }))
   return { groups, warnings }
-}
-
-export function listKnownToolNames(tools: any): string[] {
-  const candidates = [tools?.names, tools?.list, tools?.all, tools?.registry, tools?._registry, tools?.store]
-  for (const candidate of candidates) {
-    try {
-      const value = typeof candidate === 'function' ? candidate.call(tools) : candidate
-      if (Array.isArray(value)) return value.map((item: any) => String(item?.name || item)).filter(Boolean)
-      if (value instanceof Map) return Array.from(value.keys()).map(String)
-      if (value && typeof value === 'object') return Object.keys(value)
-    } catch {}
-  }
-  return []
-}
-
-export function normalizeToolNames(requested: readonly string[]): string[] {
-  return Array.from(new Set((requested || []).map(item => LEGACY_TOOL_ALIASES[String(item).trim()] || String(item).trim()).filter(Boolean))).sort()
-}
-
-export function resolveToolScope(tools: any, requested: readonly string[]): ToolScopeResult {
-  const cleaned = normalizeToolNames(requested)
-  const known = listKnownToolNames(tools)
-  if (!known.length) return { requested: cleaned, resolved: cleaned, missing: [], knownTools: [] }
-  const knownSet = new Set(known)
-  const resolved: string[] = []
-  const missing: string[] = []
-  for (const name of cleaned) {
-    if (knownSet.has(name)) {
-      resolved.push(name)
-      continue
-    }
-    const aliases = (SEMANTIC_TOOL_ALIASES[name] || []).filter(item => knownSet.has(item))
-    if (aliases.length > 0) {
-      resolved.push(...aliases)
-    } else {
-      missing.push(name)
-    }
-  }
-  return { requested: cleaned, resolved: Array.from(new Set(resolved)).sort(), missing, knownTools: known }
-}
-
-export function restrictToolsCompat(tools: any, requested: readonly string[]): ToolScopeResult {
-  const scope = resolveToolScope(tools, requested)
-  if (typeof tools?.restrict !== 'function') return { ...scope, enforcement: 'prompt-only' }
-  const applyRestriction = (allow: readonly string[]) => tools.restrict({ allow })
-  try {
-    const effect = applyRestriction(scope.resolved)
-    return { ...scope, effect, enforcement: 'applied' }
-  } catch (error) {
-    const message = error instanceof Error ? error.message : String(error)
-    if (message.includes('requires a scoped context')) {
-      return {
-        ...scope,
-        enforcement: 'prompt-only',
-        warning: message,
-      }
-    }
-    const match = message.match(/known global tools: (.+)$/)
-    if (!match) throw error
-    const known = new Set(match[1].split(',').map(item => item.trim()).filter(Boolean))
-    const retried = scope.resolved.filter(name => known.has(name))
-    const missing = Array.from(new Set([...scope.missing, ...scope.resolved.filter(name => !known.has(name))])).sort()
-    try {
-      // Compatibility path is equivalent to tools.restrict({ allow: retried }).
-      const effect = applyRestriction(retried)
-      return { ...scope, resolved: retried, missing, knownTools: Array.from(known), effect, enforcement: 'applied' }
-    } catch (retryError) {
-      const retryMessage = retryError instanceof Error ? retryError.message : String(retryError)
-      if (retryMessage.includes('requires a scoped context')) {
-        return { ...scope, resolved: retried, missing, knownTools: Array.from(known), enforcement: 'prompt-only', warning: retryMessage }
-      }
-      throw retryError
-    }
-  }
 }
 

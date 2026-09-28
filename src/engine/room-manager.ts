@@ -28,7 +28,6 @@ import { ContextProjection } from './projection.js'
 import { WorkflowOrchestrator } from './workflow-orchestrator.js'
 import { THEME_CATALOG } from './themes.js'
 import { DEFAULT_ROLE_MODEL_HINTS, DEFAULT_TOOL_ROUTING_POLICY, attachRoleModelHints, createMasterSubagentStrategy } from './auto-setup.js'
-import {normalizeToolNames} from '../compat/dsh.js'
 
 export class RoomManager {
   private rooms = new Map<string, GroupChatRoom>()
@@ -129,7 +128,7 @@ export class RoomManager {
           level: 'read_write',
           canWriteScratchpad: false,
           canApproveWorkflow: false,
-          allowedTools: ['web_search', 'web_fetch', 'stealth_read_page', 'read', 'glob', 'grep', 'group_chat_room_status', 'group_chat_export_summary', 'group_chat_task_claim', 'group_chat_task_report', 'group_chat_task_block', 'group_chat_task_handoff'],
+          allowedTools: ['web_search', 'web_fetch', 'read', 'glob', 'grep', 'group_chat_room_status', 'group_chat_export_summary', 'group_chat_task_claim', 'group_chat_task_report', 'group_chat_task_block', 'group_chat_task_handoff'],
         },
         groupChatRules: {
           mentionKeywords: ['@researcher', '@调研', '@搜索', `@${mappings.researcher.name}`],
@@ -318,19 +317,19 @@ export class RoomManager {
     for (const member of room.members) {
       member.permissions ||= {level: 'read_only', canWriteScratchpad: false, canApproveWorkflow: false, allowedTools: []}
       if (member.id === 'researcher') {
-        const toolsToAdd = ['read', 'glob', 'grep', 'tool_fs', 'web_search', 'web_fetch', 'stealth_read_page', 'stealth_navigate', 'stealth_extract']
+        const toolsToAdd = ['read', 'glob', 'grep', 'web_search', 'web_fetch']
         member.permissions.allowedTools = Array.from(new Set([...(member.permissions.allowedTools || []), ...toolsToAdd]))
       } else if (member.id === 'backend') {
-        const toolsToAdd = ['read', 'write', 'edit', 'glob', 'grep', 'bash', 'tool_fs', 'tool_jobs']
+        const toolsToAdd = ['read', 'write', 'edit', 'glob', 'grep', 'bash']
         member.permissions.allowedTools = Array.from(new Set([...(member.permissions.allowedTools || []), ...toolsToAdd]))
       } else if (member.id === 'qa') {
-        const toolsToAdd = ['read', 'glob', 'grep', 'bash', 'tool_fs', 'tool_jobs']
+        const toolsToAdd = ['read', 'glob', 'grep', 'bash']
         member.permissions.allowedTools = Array.from(new Set([...(member.permissions.allowedTools || []), ...toolsToAdd]))
       } else if (member.id === 'frontend') {
-        const toolsToAdd = ['read', 'write', 'edit', 'glob', 'grep', 'modlens_read_image', 'tool_fs']
+        const toolsToAdd = ['read', 'write', 'edit', 'glob', 'grep', 'read_image']
         member.permissions.allowedTools = Array.from(new Set([...(member.permissions.allowedTools || []), ...toolsToAdd]))
       }
-      member.permissions.allowedTools = normalizeToolNames(member.permissions.allowedTools || [])
+      member.permissions.allowedTools = Array.from(new Set((member.permissions.allowedTools || []).map(tool => tool.trim()).filter(Boolean))).sort()
     }
     if (room.workflow) WorkflowOrchestrator.ensureTaskDag(room.workflow)
     room.assignments ||= []

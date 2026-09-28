@@ -3,6 +3,7 @@
  */
 
 import { defineTool } from '@deepseek-ai/dsh-tools'
+import type { Agent } from '@deepseek-ai/dsh-agent'
 import type { RoomManager } from '../engine/room-manager.js'
 import { DispatchArbiter } from '../engine/arbiter.js'
 import { ContextProjection } from '../engine/projection.js'
@@ -25,60 +26,40 @@ export interface DshNativeInteractionServices {
   }
 }
 
-function requireLiveAgent(exec: any, seamName: string): unknown {
+function requireLiveAgent(exec: any, seamName: string): Agent {
   const agent = exec?.agent
-  if (!agent) throw new Error(`${seamName} requires a live DSH agent in the current tool execution context`)
-  return agent
+  if (!agent || typeof agent.id !== 'string' || !agent.session || typeof agent.session.append !== 'function') {
+    throw new Error(`${seamName} requires the exact live DSH parent Agent in the current tool execution context`)
+  }
+  return agent as Agent
 }
 
 export function registerGroupChatTools(
   roomManager: RoomManager,
-  onTriggerAgentTurn?: (roomId: string, targetAgentId: string, assignmentId?: string, parentSession?: { append(type: string, data: Record<string, unknown>): void }) => Promise<void>,
+  onTriggerAgentTurn: (roomId: string, targetAgentId: string, assignmentId: string | undefined, parentAgent: Agent) => Promise<void>,
   nativeServices: DshNativeInteractionServices = {},
 ) {
-  function nativeSession(exec: any, seamName: string): { append(type: string, data: Record<string, unknown>): void } {
-    const session = exec?.agent?.session || exec?.session
-    if (!session || typeof session.append !== 'function') throw new Error(`${seamName} requires the live DSH session for durable workflow/projection state`)
-    return session
-  }
-
-  function publishLetThemCookProjection(roomId: string, exec: any): void {
+  function requireRoomParentAgent(roomId: string, exec: any, seamName: string): Agent {
     const room = roomManager.getRoom(roomId)
-    if (!room) throw new Error(`Cannot publish Let Them Cook projection: room ${roomId} does not exist`)
-    const session = nativeSession(exec, 'Let Them Cook session projection')
-    const currentStage = room.workflow?.stages?.[room.workflow.currentStageIndex]
-    session.append('let-them-cook/room-state', {
-      roomId,
-      title: room.title,
-      pendingTransactionCount: (room.approvalTransactions || []).filter(item => item.status === 'pending').length,
-      awaitingUserDecision: Boolean(room.awaitingUserDecision),
-      workflowStage: currentStage?.name,
-      workflowStatus: currentStage?.status,
-      assignmentCount: room.assignments?.length || 0,
-      openAssignmentCount: (room.assignments || []).filter(item => item.status === 'queued' || item.status === 'running').length,
-      ledgerTotalTokens: roomManager.getLedger(roomId)?.totalTokens || 0,
-      updatedAt: Date.now(),
-    })
+    if (!room) throw new Error(`${seamName} cannot resolve room ${roomId}`)
+    const parentAgent = requireLiveAgent(exec, seamName)
+    if (!room.masterSessionId) throw new Error(`${seamName} requires room ${roomId} to declare masterSessionId`)
+    if (String(parentAgent.id) !== room.masterSessionId) {
+      throw new Error(`${seamName} parent Agent mismatch: room ${roomId} belongs to ${room.masterSessionId}, received ${String(parentAgent.id)}`)
+    }
+    return parentAgent
   }
 
-  function resolveSessionRoomId(argsRoomId?: string, exec?: any): string {
-    if (argsRoomId && typeof argsRoomId === 'string' && argsRoomId.trim()) {
-      const trimmed = argsRoomId.trim()
-      roomManager.ensureRoomForSession(trimmed, trimmed.replace(/^dsh-/, ''))
-      roomManager.setActiveRoomId(trimmed)
-      return trimmed
+  function resolveSessionRoomId(argsRoomId: string | undefined, exec: any): string {
+    const parentAgent = requireLiveAgent(exec, 'Group chat room resolution')
+    const parentSessionId = String(parentAgent.id)
+    const scopedId = `dsh-${parentSessionId.replace(/[^a-zA-Z0-9_-]/g, '-').slice(0, 96)}`
+    if (argsRoomId && argsRoomId.trim() !== scopedId) {
+      throw new Error(`Room ${argsRoomId.trim()} is outside the calling DSH session scope ${scopedId}`)
     }
-    const agentSessionId = exec?.agent?.id || exec?.agent?.session?.id || exec?.session?.id
-    if (agentSessionId && typeof agentSessionId === 'string') {
-      const rawId = String(agentSessionId).replace(/^dsh-/, '')
-      if (!rawId.startsWith('group-chat-')) {
-        const scopedId = `dsh-${rawId.replace(/[^a-zA-Z0-9_-]/g, '-').slice(0, 96)}`
-        roomManager.ensureRoomForSession(scopedId, rawId)
-        roomManager.setActiveRoomId(scopedId)
-        return scopedId
-      }
-    }
-    return 'dsh-new-session'
+    roomManager.ensureRoomForSession(scopedId, parentSessionId)
+    roomManager.setActiveRoomId(scopedId)
+    return scopedId
   }
 
   return [
@@ -144,7 +125,6 @@ export function registerGroupChatTools(
           WorkflowOrchestrator.updateTaskStatus(room, currentStage.id, task.taskId, 'running', { assignmentId })
           roomManager.saveRoom(room)
           roomManager.broadcast({ type: 'room:updated', roomId, payload: room, timestamp: Date.now() })
-          publishLetThemCookProjection(roomId, exec)
         }
 
         roomManager.addMessage(roomId, {
@@ -160,12 +140,8 @@ export function registerGroupChatTools(
           metadata: { locale, assignmentId },
         })
 
-        if (!onTriggerAgentTurn) {
-          return locale === 'en-US' ? `Task assigned to @${member.name}, but agent runner is not attached.` : `任务已指派给 @${member.name}，但执行引擎未挂载。`
-        }
-
         try {
-          await onTriggerAgentTurn(roomId, member.id, assignmentId)
+          await onTriggerAgentTurn(roomId, member.id, assignmentId, requireRoomParentAgent(roomId, exec, 'cook_assign_task'))
         } catch (err) {
           const errMsg = err instanceof Error ? err.message : String(err)
           return locale === 'en-US'
@@ -250,12 +226,11 @@ export function registerGroupChatTools(
           return locale === 'en-US' ? `Message sent to group chat [${room.title}].\nDispatch decision: ${decision.reason}` : `消息已发送至群聊 [${room.title}]。\n调度仲裁：${decision.reason}`
         }
 
-        if (onTriggerAgentTurn) {
-          for (const targetId of decision.nextSpeakerIds) {
-            void onTriggerAgentTurn(roomId, targetId).catch(err => {
-              console.error(`[GroupChat] Trigger agent ${targetId} failed:`, err)
-            })
-          }
+        const parentAgent = requireRoomParentAgent(roomId, exec, 'group_chat_send_message')
+        for (const targetId of decision.nextSpeakerIds) {
+          void onTriggerAgentTurn(roomId, targetId, undefined, parentAgent).catch(err => {
+            console.error(`[GroupChat] Trigger agent ${targetId} failed:`, err)
+          })
         }
 
         return locale === 'en-US' ? `Message sent to group chat [${room.title}].\nAwakened members: [${decision.nextSpeakerIds.join(', ')}]\nReason: ${decision.reason}` : `消息已发送至群聊 [${room.title}]。\n唤醒成员: [${decision.nextSpeakerIds.join(', ')}]\n依据: ${decision.reason}`
@@ -336,12 +311,12 @@ export function registerGroupChatTools(
         }
 
         roomManager.saveRoom(room)
-        publishLetThemCookProjection(roomId, exec)
 
         // Agent tool surface for group-chat room, theme, scratchpad, workflow, and export actions.
-        if (result.stage && onTriggerAgentTurn) {
+        if (result.stage) {
+          const parentAgent = requireRoomParentAgent(roomId, exec, 'group_chat_workflow_advance')
           for (const nextRole of result.stage.assignedRoleIds) {
-            void onTriggerAgentTurn(roomId, nextRole).catch(console.error)
+            void onTriggerAgentTurn(roomId, nextRole, undefined, parentAgent).catch(console.error)
           }
         }
 
@@ -369,7 +344,6 @@ export function registerGroupChatTools(
 
         const result = WorkflowOrchestrator.rejectStage(room, 'commander', args.reason, locale)
         roomManager.saveRoom(room)
-        publishLetThemCookProjection(roomId, exec)
 
         return result.message
       },
@@ -544,7 +518,9 @@ export function registerGroupChatTools(
         const roomId = resolveSessionRoomId(args.roomId, exec)
         const locale = normalizeToolLocale(args.locale)
         const event = roomManager.recordCoordinationEvent(roomId, { type: 'handoff', actorRoleId: args.actorRoleId, targetRoleId: args.targetRoleId, assignmentId: args.assignmentId, taskId: args.taskId, content: args.content || '' })
-        if (event && onTriggerAgentTurn) void onTriggerAgentTurn(roomId, args.targetRoleId).catch(console.error)
+        if (event) {
+          void onTriggerAgentTurn(roomId, args.targetRoleId, args.assignmentId, requireRoomParentAgent(roomId, exec, 'group_chat_task_handoff')).catch(console.error)
+        }
         return event ? (locale === 'en-US' ? `Task handed off from @${args.actorRoleId} to @${args.targetRoleId}.` : `任务已从 @${args.actorRoleId} 移交给 @${args.targetRoleId}。`) : (locale === 'en-US' ? 'Room not found.' : '未找到房间。')
       },
     }),
@@ -688,7 +664,6 @@ export function registerGroupChatTools(
         }
         roomManager.saveRoom(room)
         roomManager.broadcast({ type: 'room:updated', roomId, payload: room, timestamp: Date.now() })
-        publishLetThemCookProjection(roomId, exec)
         const answer = await nativeServices.userQuestions.ask({
           agent: requireLiveAgent(exec, 'DSH native userQuestions.ask'),
           questions: [{
@@ -710,7 +685,6 @@ export function registerGroupChatTools(
         })
         roomManager.saveRoom(room)
         roomManager.broadcast({ type: 'room:updated', roomId, payload: room, timestamp: Date.now() })
-        publishLetThemCookProjection(roomId, exec)
         return locale === 'en-US' ? `Native user question answered: ${JSON.stringify(answer)}` : `原生用户提问已收到答复：${JSON.stringify(answer)}`
       },
     }),

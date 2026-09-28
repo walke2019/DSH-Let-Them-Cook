@@ -561,3 +561,20 @@ pm run test:hero-entry-self-click-guard 并接入 matrix/preflight。
 - [x] 方案抉择识别与调度熔断：`DispatchArbiter.detectUserDecisionRequest` 结构化解析选项并挂起调度，自愈看门狗避让。
 - [x] 前端可点击决策卡片：`GroupChatPanel.tsx` 在用户输入框上方渲染 `gc-decision-prompt-card`，支持一键点击选项回复。
 - [x] 增加回归守卫：`npm run test:user-decision`。
+
+## P97 — 官方 Agent 编排管理与 Subagent 体系无缝融合 (Official Agent & Subagent Orchestration Integration)
+- [x] **业务需求澄清与架构契约敲定**：
+  - 终态 Assignment 全面接入 DSH 官方 `ctx.subagents.start('spawn', ...)` one-shot 体系，以官方 `SubagentRun.result` 作为唯一确定性交付边界；持续对话场景另行采用 Continuable Subagent，禁止两种生命周期混用。
+  - 严格践行“三纯原则”，彻底废除别名正则推断与 Prompt 弱约束隐式降级；工具权限缺失或越权在边界立即 Loud Throw 抛出结构化异常。
+  - Universal Master Handoff 绑定官方父子 Agent 拓扑与精确 live parent Agent。
+- [x] **强类型契约重构 (`src/types.ts`)**：
+  - 定义与 `@deepseek-ai/dsh-subagent` 严格对齐的 one-shot Assignment、终态结果及生命周期强类型定义。
+  - 移除所有旧版容错别名字段与双轨逻辑标记。
+- [x] **Runtime 与调度引擎纯契约重写 (`src/engine/`)**：
+  - `agent-runtime.ts` 通过官方 `ctx.subagents.start('spawn', ...)` 执行终态 Assignment，等待 `run.result` 并始终 `dispose()`。
+  - 接入官方 `subagent/start` / `subagent/end` 生命周期和 `tool-workflow/*` 状态机。
+  - 彻底移除 `SEMANTIC_TOOL_ALIASES`、自动换模型和 Prompt 权限降级，改用原生 `toolFilter` 强断言。
+- [x] **长效架构专著同步**：
+  - 在 `docs/agents/03-orchestration-and-anti-stall.md`、`docs/agents/02-tools-and-ledger.md` 与 `docs/architecture/dispatch-engine.md` 沉淀官方编排融合标准。
+- [x] **领域套件全绿与发版红线门禁**：
+  - 已在 `suite-03` 补齐官方 one-shot subagent、精确父 Agent 与必定 dispose 的确定性行为测试，在 `suite-04` 补齐精确工具过滤强断言；`npm run typecheck`、`npm test`、`npm run preflight` 100% 通过。

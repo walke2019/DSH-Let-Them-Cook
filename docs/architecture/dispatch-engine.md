@@ -79,3 +79,9 @@ EVIDENCE: ...
 ```
 
 后端解析后剥离控制块，公开消息只展示人类可读内容；HUD 与任务状态使用结构化字段。
+
+## 8. DSH 官方 Subagent 原生编排与零兜底规范
+
+1. **官方 Subagent 树形托管**：终态 Assignment 由 `ctx.subagents.start('spawn', ...)` 创建父会话下的官方 one-shot 子 Agent，触发标准 `subagent/start` 与 `subagent/end` 事件；交付只读取 `SubagentRun.result`。持续对话型能力另行使用 Continuable Subagent，不得混入终态 Assignment。
+2. **零别名与零降级阻断**：废弃所有 `SEMANTIC_TOOL_ALIASES` 模糊匹配；专员工具白名单经官方 `toolFilter.allow` 精确传递，空名、重复名、越权或能力缺失立即 Loud Throw，杜绝弱降级到 Prompt。
+3. **父 Agent 与取消所有权**：每次执行必须携带与 `room.masterSessionId` 对应的精确 live parent Agent；one-shot 使用调用链原生 `AbortSignal`，终态后必须 `run.dispose()`。看门狗不得猜测子会话 ID 或维护第二套伪中断状态。

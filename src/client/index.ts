@@ -37,9 +37,8 @@ export function apply(ctx: ClientContext): void {
     "dsh-group-chat: native session watch",
   );
 
-  // 右栏入口：只注册 tab 类型与面板内容，不主动 openTab。
-  // dsh 0.1.5-rc.3 起 sidebarRight.openTab 在 session surface 未挂载时会抛错，
-  // 而首次加载时 surface 必然尚未挂载，主动打开会导致整个插件加载失败。
+  // Register a native DSH 0.1.7 sidebar type and expose it through the guide page.
+  // Opening remains an explicit user action; startup never mutates the saved sidebar layout.
   ctx.effect(() => {
     const disposeType = ctx.sidebarRightTabs.register({
       id: "@dsh-external/dsh-let-them-cook",
@@ -48,6 +47,7 @@ export function apply(ctx: ClientContext): void {
       title: () => "Agent 群聊",
       guide: [
         {
+          id: "open",
           order: 100,
           title: () => "Agent 群聊",
           description: () => "开整天团会话控制台",

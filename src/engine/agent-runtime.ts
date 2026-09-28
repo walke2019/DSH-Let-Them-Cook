@@ -1,14 +1,13 @@
-import { randomUUID } from 'node:crypto'
 import type { Context } from '@deepseek-ai/cordis'
-import type { AgentHandle, AgentRegistry } from '@deepseek-ai/dsh-agent'
-import type { SessionId, UserMessage } from '@deepseek-ai/dsh-session'
-import type { AgentRuntimeMetrics, DshRuntimeTrace, ModelRef, ToolCallRecord } from '../types.js'
+import type { Agent, AgentRegistry } from '@deepseek-ai/dsh-agent'
+import type { ContentBlock } from '@deepseek-ai/dsh-llm'
+import type { SubagentRuntime, SubagentRun } from '@deepseek-ai/dsh-subagent'
+import type { AgentRuntimeMetrics, DshRuntimeTrace, ModelRef, NativeSubagentAssignmentContract, NativeSubagentTerminalResult, ToolCallRecord } from '../types.js'
 import type {GroupChatLocale} from '../client/i18n.js'
-import { getCurrentModel, restrictToolsCompat } from '../compat/dsh.js'
 import { summarizeToolCalls } from './dsh-tool-event-adapter.js'
 import { classifyRuntimeLiveness, type RuntimeLivenessSnapshot } from './runtime-liveness.js'
 
-export type RuntimeContext = Context & { agents: AgentRegistry; tools: any; systemPrompt: any; agentDefaultModel: any }
+export type RuntimeContext = Context & { agents: AgentRegistry; subagents: SubagentRuntime; agentDefaultModel: any; sessionProjections?: { stateOf(session: Agent['session'], key: string): unknown } }
 
 
 export function emptyRuntimeMetrics(): AgentRuntimeMetrics {
@@ -22,55 +21,6 @@ function hasVisibleDelta(chunk: any): boolean {
 
 function asRuntimeEvents(events: unknown): readonly any[] {
   return Array.isArray(events) ? events : []
-}
-
-function findLastRuntimeEvent(events: readonly any[], predicate: (event: any) => boolean): any | undefined {
-  for (let index = events.length - 1; index >= 0; index -= 1) {
-    const event = events[index]
-    if (predicate(event)) return event
-  }
-  return undefined
-}
-
-function extractAssistantTextFromEvents(events: readonly any[]): string {
-  return events.filter(event => event.type === 'assistant/message')
-    .flatMap(event => event.data?.message?.content || [])
-    .filter(block => block?.type === 'text' && typeof block.text === 'string')
-    .map(block => block.text)
-    .join('\n')
-    .trim()
-}
-
-function extractAssistantTextFromSurface(session: any): string {
-  if (typeof session?.deriveMessages !== 'function') return ''
-  try {
-    return session.deriveMessages()
-      .filter((message: any) => message?.role === 'assistant')
-      .flatMap((message: any) => message.content || [])
-      .filter((block: any) => block?.type === 'text' && typeof block.text === 'string')
-      .map((block: any) => block.text)
-      .join('\n')
-      .trim()
-  } catch (error) {
-    console.warn?.(`[GroupChat] failed to derive assistant surface: ${error instanceof Error ? error.message : String(error)}`)
-    return ''
-  }
-}
-
-function summarizeRuntimeEventShape(events: readonly any[], session: any): string {
-  const typeCounts = new Map<string, number>()
-  for (const event of events) typeCounts.set(String(event?.type || 'unknown'), (typeCounts.get(String(event?.type || 'unknown')) || 0) + 1)
-  const types = [...typeCounts.entries()].map(([type, count]) => `${type}:${count}`).join(', ') || 'none'
-  let surface = 'unavailable'
-  if (typeof session?.deriveMessages === 'function') {
-    try {
-      const messages = session.deriveMessages()
-      surface = messages.map((message: any) => message?.role || 'unknown').join(', ') || 'empty'
-    } catch (error) {
-      surface = `error:${error instanceof Error ? error.message : String(error)}`
-    }
-  }
-  return `events=${events.length} [${types}], surface=${surface}`
 }
 
 function extractUsageFromEvent(event: any): any {
@@ -145,16 +95,16 @@ function summarizeRuntimeMetrics(events: readonly any[], promptText = '', replyC
 }
 
 
-async function waitForMemberIdle(agent: AgentHandle['agent'], signal: AbortSignal): Promise<void> {
-  if (signal.aborted) throw signal.reason instanceof Error ? signal.reason : new Error(String(signal.reason || 'group-chat turn aborted'))
-  await new Promise<void>((resolve, reject) => {
-    const onAbort = () => reject(signal.reason instanceof Error ? signal.reason : new Error(String(signal.reason || 'group-chat turn aborted')))
-    signal.addEventListener('abort', onAbort, { once: true })
-    agent.whenIdle().then(resolve, reject).finally(() => signal.removeEventListener('abort', onAbort))
-  })
+function contentBlocksToText(blocks: readonly ContentBlock[]): string {
+  return blocks
+    .filter((block): block is Extract<ContentBlock, { type: 'text' }> => block.type === 'text')
+    .map(block => block.text)
+    .join('\n')
+    .trim()
 }
 
 export interface MemberTurnRuntimeOptions {
+  parentAgent: Agent
   roleId?: string
   roleName?: string
   allowedTools?: readonly string[]
@@ -169,172 +119,159 @@ export interface MemberTurnRuntimeOptions {
   }
 }
 
-function normalizeAllowedTools(allowedTools?: readonly string[]): string[] {
-  return Array.from(new Set((allowedTools || []).map(tool => String(tool).trim()).filter(Boolean))).sort()
+export function assertExactNativeToolFilter(allowedTools?: readonly string[]): string[] {
+  const tools = (allowedTools ?? []).map(tool => tool.trim())
+  if (tools.some(tool => !tool)) throw new Error('Native subagent toolFilter contains an empty tool name')
+  if (new Set(tools).size !== tools.length) throw new Error('Native subagent toolFilter contains duplicate tool names')
+  return tools
 }
 
-function formatToolScope(roleId: string | undefined, allowedTools: readonly string[], locale: GroupChatLocale = 'zh-CN'): string {
-  const label = roleId ? (locale === 'en-US' ? `role ${roleId}` : `角色 ${roleId}`) : (locale === 'en-US' ? 'current role' : '当前角色')
-  if (!allowedTools.length) {
-    return locale === 'en-US' ? `[Tool Scope] ${label} has no external tools enabled this turn. Use only the provided context; do not claim you searched, read files, ran commands, or modified artifacts.` : `【工具权限 / Tool Scope】${label} 本轮未开放任何外部工具。你只能基于已给上下文发言；不得声称已经搜索、读取文件、执行命令或修改产物。`
-  }
-  return locale === 'en-US' ? `[Tool Scope] ${label} may call only these tools this turn: ${allowedTools.join(', ')}. Do not call or claim tools outside this list.` : `【工具权限 / Tool Scope】${label} 本轮仅允许调用这些工具：${allowedTools.join(', ')}。未列出的工具不得调用，也不得声称已执行。`
+function buildPersona(prompt: string, options: MemberTurnRuntimeOptions): string {
+  const role = options.roleName || options.roleId
+  if (!role) throw new Error('Native subagent assignment requires an explicit role identity')
+  const boundary = options.locale === 'en-US'
+    ? `You are ${role}. Act strictly within this assigned specialist role. Report only work you actually performed.`
+    : `你是${role}。必须严格在该专员职责内执行，只报告实际完成的工作。`
+  return `${boundary}\n\n${prompt}`
 }
 
-/** One isolated group-chat turn, driven by the host agent registry with role-scoped tools. */
-export async function runMemberTurn(ctx: RuntimeContext, model: ModelRef, prompt: string, signal: AbortSignal, options: MemberTurnRuntimeOptions = {}) {
+function requireLocalRun(run: SubagentRun): NonNullable<SubagentRun['localAgent']> {
+  if (!run.localAgent) throw new Error(`Native spawn subagent ${String(run.id)} did not publish a local Agent; local session metrics and tool trace are required`)
+  if (!run.localAgent.session) throw new Error(`Native spawn subagent ${String(run.id)} has no live Session`)
+  return run.localAgent
+}
+
+function readProjectionTotals(value: unknown): { uncachedInputTokens?: number; outputTokens?: number; cacheReadTokens?: number; cacheWriteTokens?: number } | undefined {
+  if (!value || typeof value !== 'object') return undefined
+  const totals = (value as { totals?: unknown }).totals
+  if (!totals || typeof totals !== 'object') return undefined
+  return totals as { uncachedInputTokens?: number; outputTokens?: number; cacheReadTokens?: number; cacheWriteTokens?: number }
+}
+
+function readProjectionStats(value: unknown): { llmMs?: number; toolMs?: number; ttftMs?: number; ttftSteps?: number } | undefined {
+  if (!value || typeof value !== 'object') return undefined
+  return value as { llmMs?: number; toolMs?: number; ttftMs?: number; ttftSteps?: number }
+}
+
+/** Execute one terminal assignment through the official DSH one-shot subagent seam. */
+export async function runMemberTurn(ctx: RuntimeContext, model: ModelRef, prompt: string, signal: AbortSignal, options: MemberTurnRuntimeOptions) {
   signal.throwIfAborted()
-  const selected = model.provider && model.model ? model : getCurrentModel(ctx)
-  const allowedTools = normalizeAllowedTools(options.allowedTools)
-  let handle: AgentHandle | undefined
-  const cancel = () => handle?.agent.cancel({ kind: 'hook', reason: 'group-chat turn cancelled' })
-  signal.addEventListener('abort', cancel, { once: true })
-  const turnStartTime = Date.now()
+  const parent = options.parentAgent
+  if (!parent?.session) throw new Error('Native subagent assignment requires an explicit exact live parent Agent')
+  if (ctx.agents.get(parent.id) !== parent) throw new Error(`Parent Agent ${String(parent.id)} is not the exact live registry entry`)
+  if (!model.provider || !model.model) throw new Error('Native subagent assignment requires an exact provider and model')
+
+  const allowedTools = assertExactNativeToolFilter(options.allowedTools)
+  const contract: NativeSubagentAssignmentContract = {
+    provider: 'spawn',
+    parentAgentId: String(parent.id),
+    label: options.roleName || options.roleId || 'specialist',
+    prompt,
+    persona: buildPersona(prompt, options),
+    toolFilter: { allow: allowedTools },
+    agentOptions: {
+      provider: model.provider,
+      model: model.model,
+      maxTokens: 2048,
+    },
+    maxDepth: 1,
+  }
+
+  let run: SubagentRun | undefined
   let workflowSettled = false
   const settleWorkflow = (outcome: 'completed' | 'failed' | 'cancelled') => {
     if (!options.workflow || workflowSettled) return
     workflowSettled = true
-    const workflowSession = options.workflow.parentSession
-    if (!workflowSession) throw new Error('DSH workflow event recording requires the parent session')
-    workflowSession.append('tool-workflow/agent-end', { runId: options.workflow.runId, seq: 1, outcome })
-    workflowSession.append('tool-workflow/run-end', { runId: options.workflow.runId, stopReason: outcome === 'completed' ? 'completed' : outcome === 'cancelled' ? 'cancelled' : 'error' })
+    const session = options.workflow.parentSession
+    if (!session) throw new Error('DSH workflow event recording requires the parent session')
+    session.append('tool-workflow/agent-end', { runId: options.workflow.runId, seq: 1, outcome })
+    session.append('tool-workflow/run-end', { runId: options.workflow.runId, stopReason: outcome === 'completed' ? 'completed' : outcome === 'cancelled' ? 'cancelled' : 'error' })
   }
+
+  const startedAt = Date.now()
   try {
-    handle = await ctx.agents.create({
-      sessionId: `group-chat-${randomUUID()}` as SessionId,
-      meta: { cwd: process.cwd(), origin: 'subagent', delegationDepth: 1 },
+    run = await ctx.subagents.start(contract.provider, {
+      label: contract.label,
+      prompt: [{ type: 'text', text: contract.prompt }],
+      parent,
       signal,
-      agentOptions: { provider: selected.provider, model: selected.model, maxTokens: 2048 },
-      setup(agentCtx) {
-        // Agent-scoped services must be resolved from the child context. Holding a
-        // registry object from the parent can register into the global layer on
-        // newer DSH builds and collide across concurrent group-chat members.
-        agentCtx.inject(['systemPrompt', 'tools'], (scopedCtx) => {
-          const scoped = scopedCtx as RuntimeContext
-          agentCtx.effect(() => {
-            const scope = restrictToolsCompat(scoped.tools, allowedTools)
-            if (scope.missing.length) console.info?.(`[GroupChat] 未找到工具别名，将跳过: ${scope.missing.join(', ')}`)
-            if (scope.warning) console.info?.(`[GroupChat] 工具白名单降级为 Prompt 约束: ${scope.warning}`)
-            return scope.effect || (() => {})
-          })
-          agentCtx.effect(() => scoped.systemPrompt.section({
-            name: 'group-chat:role', order: 0, text: `${prompt}\n\n${formatToolScope(options.roleId, allowedTools, options.locale)}`, complete: true,
-          }))
-        })
-        agentCtx.effect(() => agentCtx.on('agent/request', async (_payload, next) => ({
-          ...await next(), provider: selected.provider, model: selected.model,
-          temperature: model.temperature ?? 0.3,
-        })))
-      },
+      agentOptions: contract.agentOptions,
+      maxDepth: contract.maxDepth,
+      toolFilter: contract.toolFilter,
+      persona: contract.persona,
     })
-    signal.throwIfAborted()
+    const localAgent = requireLocalRun(run)
+
     if (options.workflow) {
-      const workflowSession = handle.agent.session
-      const childId = String((workflowSession as any).id || (workflowSession as any).sessionId || '')
-      if (!childId) throw new Error('DSH workflow event recording requires a child session id')
-      const parentSession = options.workflow.parentSession
-      if (!parentSession) throw new Error('DSH workflow event recording requires the parent session')
-      parentSession.append('tool-workflow/run-start', { runId: options.workflow.runId, name: options.workflow.name })
-      parentSession.append('tool-workflow/agent-start', { runId: options.workflow.runId, seq: 1, label: options.roleName || options.roleId || 'group-chat-agent', phase: options.workflow.phase, childId })
-    }
-    const roleTag = options.roleName || options.roleId || ''
-    const followText = options.locale === 'en-US'
-      ? (roleTag
-          ? `[Mandatory Role Boundary] You MUST speak STRICTLY as your assigned role: ${roleTag}. Never adopt, mimic, or claim to be any previous speaker. Respond to the group-chat topic only as your assigned role; do not claim tools or research you did not actually perform.`
-          : 'Respond to the group-chat topic only as your assigned role; do not claim tools or research you did not actually perform.')
-      : (roleTag
-          ? `【强制身份锚定】你的当前角色是「${roleTag}」！你必须严格代表「${roleTag}」发言，严禁自称或冒充前序发言的其他角色！不要声称执行了未执行的工具或调研。`
-          : '请基于群聊议题，仅代表你的角色发言；不要声称执行了未执行的工具或调研。')
-
-    handle.agent.followup({
-      id: randomUUID(), role: 'user', source: { kind: 'plugin', plugin: '@dsh-external/dsh-group-chat' },
-      content: [{ type: 'text', text: followText }],
-    } as UserMessage)
-
-    let progressTimer: NodeJS.Timeout | undefined
-    if (options.onProgress) {
-      let lastReported = ''
-      progressTimer = setInterval(() => {
-        try {
-          const events = asRuntimeEvents(handle?.agent.session?.events)
-          const currentCalls = summarizeToolCalls(events)
-          const liveness = classifyRuntimeLiveness(events)
-          const key = JSON.stringify({
-            seq: liveness.lastEventSeq,
-            time: liveness.lastEventAt,
-            phase: liveness.phase,
-            calls: currentCalls.map(c => ({ id: c.id, s: c.status, p: c.readWritePath })),
-          })
-          if (liveness.phase !== 'empty' && key !== lastReported) {
-            lastReported = key
-            options.onProgress?.(currentCalls, liveness)
-          }
-        } catch {}
-      }, 250)
+      const session = options.workflow.parentSession
+      if (!session) throw new Error('DSH workflow event recording requires the parent session')
+      session.append('tool-workflow/run-start', { runId: options.workflow.runId, name: options.workflow.name })
+      session.append('tool-workflow/agent-start', {
+        runId: options.workflow.runId,
+        seq: 1,
+        label: contract.label,
+        phase: options.workflow.phase,
+        childId: String(run.id),
+      })
     }
 
-    try {
-      await waitForMemberIdle(handle.agent, signal)
-    } finally {
-      if (progressTimer) clearInterval(progressTimer)
+    const result = await run.result
+    const terminal: NativeSubagentTerminalResult = {
+      childSessionId: String(run.id),
+      stopReason: result.stopReason,
+      content: contentBlocksToText(result.output),
+      diagnostic: result.diagnostic,
     }
-    signal.throwIfAborted()
-    const events = asRuntimeEvents(handle.agent.session?.events)
-    const end = findLastRuntimeEvent(events, e => e.type === 'turn/end')
-    if (end && end.data?.reason?.kind !== 'completed') {
-      if (options.workflow) {
-        settleWorkflow('failed')
-      }
-      throw new Error(`Group-chat agent turn failed: ${JSON.stringify(end.data?.reason)}`)
+    if (terminal.stopReason !== 'completed') {
+      settleWorkflow(signal.aborted || terminal.stopReason === 'aborted' ? 'cancelled' : 'failed')
+      throw new Error(`Native subagent assignment ended with ${terminal.stopReason}${terminal.diagnostic ? `: ${terminal.diagnostic}` : ''}`)
     }
-    const content = extractAssistantTextFromEvents(events) || extractAssistantTextFromSurface(handle.agent.session)
-    if (!content) {
-      throw new Error(`Group-chat model returned no assistant text after idle (${summarizeRuntimeEventShape(events, handle.agent.session)})`)
-    }
-    if (!end) {
-      console.warn?.(`[GroupChat] completed member turn without turn/end marker; accepting assistant text (${summarizeRuntimeEventShape(events, handle.agent.session)})`)
-    }
-    const durationMs = Date.now() - turnStartTime
-    const metrics = summarizeRuntimeMetrics(events, prompt, content, durationMs)
+    if (!terminal.content) throw new Error('Native subagent assignment completed without assistant output')
+
+    const events = localAgent.session.snapshotEvents()
+    const metrics = summarizeRuntimeMetrics(events, prompt, terminal.content, Date.now() - startedAt)
+    const toolCalls = summarizeToolCalls(events)
     const liveness = classifyRuntimeLiveness(events)
+    options.onProgress?.(toolCalls, liveness)
     const runtimeTrace: DshRuntimeTrace = {
-      sourceSessionId: String((handle.agent.session as any)?.id || (handle.agent.session as any)?.sessionId || ''),
-      sourceEventSeqs: events.map(event => event?.seq).filter((seq): seq is number => typeof seq === 'number'),
-      projectionSource: 'event-stream-fallback',
+      sourceSessionId: String(localAgent.session.id),
+      sourceEventSeqs: events.map(event => event.seq),
+      projectionSource: 'native-session-events',
       liveness,
     }
 
-    // Leverage latest DSH native session projections (tokenUsage & sessionStats) if registered
-    try {
-      const projections = typeof (ctx as any)?.get === 'function' ? (ctx as any).get('sessionProjections', false) : undefined
-      if (projections && handle?.agent?.session) {
-        const usageState = projections.stateOf?.(handle.agent.session, 'tokenUsage')
-        if (usageState?.totals) {
-          metrics.inputTokens = usageState.totals.uncachedInputTokens ?? metrics.inputTokens
-          metrics.outputTokens = usageState.totals.outputTokens ?? metrics.outputTokens
-          metrics.cacheReadTokens = usageState.totals.cacheReadTokens ?? metrics.cacheReadTokens
-          metrics.cacheWriteTokens = usageState.totals.cacheWriteTokens ?? metrics.cacheWriteTokens
-          runtimeTrace.projectionSource = 'dsh-session-projections'
-        }
-        const statsState = projections.stateOf?.(handle.agent.session, 'sessionStats')
-        if (statsState) {
-          if (statsState.llmMs > 0) metrics.llmMs = statsState.llmMs
-          if (statsState.toolMs > 0) metrics.toolMs = statsState.toolMs
-          if (statsState.ttftMs > 0 && statsState.ttftSteps > 0) {
-            metrics.firstTokenMsTotal = statsState.ttftMs
-            metrics.firstTokenCount = statsState.ttftSteps
-          }
+    if (ctx.sessionProjections) {
+      const totals = readProjectionTotals(ctx.sessionProjections.stateOf(localAgent.session, 'tokenUsage'))
+      if (totals) {
+        metrics.inputTokens = totals.uncachedInputTokens ?? metrics.inputTokens
+        metrics.outputTokens = totals.outputTokens ?? metrics.outputTokens
+        metrics.cacheReadTokens = totals.cacheReadTokens ?? metrics.cacheReadTokens
+        metrics.cacheWriteTokens = totals.cacheWriteTokens ?? metrics.cacheWriteTokens
+        runtimeTrace.projectionSource = 'dsh-session-projections'
+      }
+      const stats = readProjectionStats(ctx.sessionProjections.stateOf(localAgent.session, 'sessionStats'))
+      if (stats) {
+        if (typeof stats.llmMs === 'number') metrics.llmMs = stats.llmMs
+        if (typeof stats.toolMs === 'number') metrics.toolMs = stats.toolMs
+        if (typeof stats.ttftMs === 'number' && typeof stats.ttftSteps === 'number') {
+          metrics.firstTokenMsTotal = stats.ttftMs
+          metrics.firstTokenCount = stats.ttftSteps
         }
       }
-    } catch {}
-
-    if (options.workflow) {
-      settleWorkflow('completed')
     }
-    return { content, reasoningContent: '', providerUsed: selected.provider, modelUsed: selected.model, metrics, toolCalls: summarizeToolCalls(events), runtimeTrace }
+
+    settleWorkflow('completed')
+    return {
+      content: terminal.content,
+      reasoningContent: '',
+      providerUsed: model.provider,
+      modelUsed: model.model,
+      metrics,
+      toolCalls,
+      runtimeTrace,
+    }
   } finally {
     if (signal.aborted) settleWorkflow('cancelled')
-    signal.removeEventListener('abort', cancel)
-    await handle?.dispose()
+    await run?.dispose()
   }
 }

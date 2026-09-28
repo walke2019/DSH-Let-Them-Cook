@@ -6,27 +6,26 @@ import {WorkspaceRoomStateStore} from './engine/workspace-settings.js'
  */
 
 import type { Context } from '@deepseek-ai/cordis'
+import type { Agent } from '@deepseek-ai/dsh-agent'
 import z from '@deepseek-ai/schemastery'
 import { RoomManager } from './engine/room-manager.js'
 import { SharedToolBus } from './engine/tool-bus.js'
-import { ModelFallbackError, ModelResilienceManager } from './engine/resilience.js'
 import { DispatchArbiter } from './engine/arbiter.js'
 import { ContextProjection } from './engine/projection.js'
 import { WorkflowOrchestrator } from './engine/workflow-orchestrator.js'
 import { runMemberTurn, type RuntimeContext } from './engine/agent-runtime.js'
 import { registerGroupChatTools } from './tools/index.js'
 import { createThemeDraft, createWorkflowDraft } from './engine/theme-factory.js'
-import { buildAutoSetupDraft, classifyAutoSetupIntent, formatAutoSetupApplied, formatAutoSetupCancelled, formatAutoSetupDraft, DEFAULT_ROLE_MODEL_HINTS } from './engine/auto-setup.js'
+import { buildAutoSetupDraft, classifyAutoSetupIntent, formatAutoSetupApplied, formatAutoSetupCancelled, formatAutoSetupDraft } from './engine/auto-setup.js'
 import { recommendModelsForRoles } from './engine/model-recommender.js'
 import { detectDshCompat, getCurrentModel, safeListModelCatalog } from './compat/dsh.js'
-import { letThemCookProjectionDefinition } from './engine/native-projection.js'
 import { isRuntimeLivenessActive, isRuntimeLivenessTerminal } from './engine/runtime-liveness.js'
 import { inferAgentTaskStatus, parseStructuredAgentResult, stripStructuredAgentResult } from './engine/structured-result.js'
 import type {GroupChatLocale} from './client/i18n.js'
 import type { DispatchMode, GroupTaskTier, PersonaThemeKey } from './types.js'
 
 export const name = '@dsh-external/dsh-let-them-cook'
-export const inject = ['tools', 'webServer', 'agents', 'systemPrompt', 'agentDefaultModel', 'llm', 'userQuestions', 'approval', 'sessionProjections']
+export const inject = ['tools', 'webServer', 'agents', 'subagents', 'systemPrompt', 'agentDefaultModel', 'llm', 'userQuestions', 'approval']
 
 export interface Config {
   defaultMode: string
@@ -46,15 +45,11 @@ export type AppContext = RuntimeContext & {
   tools: any
   userQuestions: any
   approval: any
-  sessionProjections: {
-    register(definition: typeof letThemCookProjectionDefinition): () => void
-  }
   logger: any
 }
 
 export function apply(ctx: AppContext, config: Config): void {
   const logger = ctx.logger?.('@dsh-external/dsh-let-them-cook') || console
-  ctx.effect(() => ctx.sessionProjections.register(letThemCookProjectionDefinition), 'dsh-group-chat: native session projection')
   const compatReport = detectDshCompat(ctx)
   for (const warning of compatReport.warnings) logger.warn?.(`[compat] ${warning}`)
 
@@ -73,7 +68,6 @@ export function apply(ctx: AppContext, config: Config): void {
     if(saved)roomManager.updateAgentProfile(room.roomId,member.id,saved)
   }
   const toolBus = new SharedToolBus()
-  const resilience = new ModelResilienceManager()
 
   const lifetime = new AbortController()
   const timers = new Set<ReturnType<typeof setTimeout>>()
@@ -97,6 +91,25 @@ export function apply(ctx: AppContext, config: Config): void {
     const current = roomManager.getRoom(roomId)
     if (current) workspaceStore.saveSnapshot(current, roomManager.getMessages(roomId), roomManager.getLedger(roomId))
   }
+
+  const requireRoomParentAgent = (roomId: string): Agent => {
+    const room = roomManager.getRoom(roomId)
+    if (!room) throw new Error(`Cannot resolve DSH parent Agent: room ${roomId} does not exist`)
+    const parentSessionId = room.masterSessionId?.trim()
+    if (!parentSessionId) throw new Error(`Room ${roomId} has no masterSessionId; native child start is forbidden`)
+    const parentAgent = ctx.agents.get(parentSessionId as Agent['id'])
+    if (!parentAgent) throw new Error(`DSH parent Agent ${parentSessionId} for room ${roomId} is not live; native child start is forbidden`)
+    return parentAgent
+  }
+
+  const assertRoomParentAgent = (roomId: string, parentAgent: Agent): Agent => {
+    const authoritativeParent = requireRoomParentAgent(roomId)
+    if (authoritativeParent !== parentAgent) {
+      throw new Error(`DSH parent Agent mismatch for room ${roomId}: expected ${String(authoritativeParent.id)}, received ${String(parentAgent?.id)}`)
+    }
+    return parentAgent
+  }
+
   const expectedMsForTier = (tier: GroupTaskTier | undefined, agentId: string, roomId?: string): number => {
     const member = roomId ? roomManager.getRoom(roomId)?.members.find(item => item.id === agentId) : undefined
     const policyTimeout = member?.resiliencePolicy?.timeoutMs || 0
@@ -175,7 +188,7 @@ export function apply(ctx: AppContext, config: Config): void {
               content: locale === 'en-US' ? `[Task Interrupted] Watchdog stopped task after exceeding runtime limit.` : `[任务中断] 任务执行耗时超出限额，已由看门狗停止，请指挥官介入统筹。`,
             })
             schedule(() => {
-              void triggerAgentTurn(roomId, masterId).catch(console.error)
+              void triggerAutonomousAgentTurn(roomId, masterId).catch(console.error)
             }, 1500)
           }
         }, delayMs)
@@ -206,13 +219,14 @@ export function apply(ctx: AppContext, config: Config): void {
   /**
  * Host plugin entry: REST API, message dispatch, workflow actions, and lifecycle-safe registration.
  */
-  const triggerAgentTurn = async (roomId: string, targetAgentId: string, assignmentId?: string): Promise<void> => {
+  const triggerAgentTurn = async (roomId: string, targetAgentId: string, assignmentId: string | undefined, parentAgent: Agent): Promise<void> => {
     if (lifetime.signal.aborted) return
+    const exactParentAgent = assertRoomParentAgent(roomId, parentAgent)
     const room = roomManager.getRoom(roomId)
-    if (!room) return
+    if (!room) throw new Error(`Cannot start member turn: room ${roomId} does not exist`)
 
     const member = room.members.find(m => m.id === targetAgentId)
-    if (!member) return
+    if (!member) throw new Error(`Cannot start member turn: role ${targetAgentId} is not registered in room ${roomId}`)
 
     const messages = roomManager.getMessages(roomId)
     const activeAssignment = assignmentId ? room.assignments?.find(a => a.assignmentId === assignmentId) : undefined
@@ -253,56 +267,48 @@ export function apply(ctx: AppContext, config: Config): void {
     let reasoningContent = ''
     let modelUsed = member.llmConfig.model
     let providerUsed = member.llmConfig.provider
-    let isFallback = false
-    let fallbackChain: string[] = []
     let runtimeMetrics: import('./types.js').AgentRuntimeMetrics | undefined
     let runtimeTrace: import('./types.js').DshRuntimeTrace | undefined
     let toolCalls: import('./types.js').ToolCallRecord[] = []
 
     try {
-      const modelHint = member.modelHint || room.orchestration?.modelHints?.[member.id] || DEFAULT_ROLE_MODEL_HINTS[member.id]
-      const profile = member.llmConfig.provider && member.llmConfig.model ? { ...member, modelHint } : {
-        ...member, modelHint, llmConfig: { ...getCurrentModel(ctx), temperature: member.llmConfig.temperature },
-      }
-      const execution = await resilience.executeWithFallback(profile, (modelRef, signal) =>
-        runMemberTurn(ctx, modelRef, systemPrompt, signal, {
-          roleId: member.id,
-          roleName: member.name,
-          allowedTools: member.permissions.allowedTools, locale,
-          workflow: assignmentId ? { runId: `dsh-group-chat-${assignmentId}`, name: `Let Them Cook · ${room.title}`, phase: room.workflow?.stages?.[room.workflow.currentStageIndex]?.name, parentSession: (ctx as any).session } : undefined,
-          onProgress: (liveToolCalls, liveness) => {
-            toolCalls = liveToolCalls
-            if (assignmentId) {
-              const currentRoom = roomManager.getRoom(roomId)
-              const assignment = currentRoom?.assignments?.find(a => a.assignmentId === assignmentId)
-              if (assignment) {
-                assignment.toolCalls = liveToolCalls
-                assignment.runtimeTrace = { ...(assignment.runtimeTrace || {}), liveness }
-                assignment.updatedAt = Date.now()
-                roomManager.broadcast({ type: 'assignment:updated', roomId, payload: assignment, timestamp: Date.now() })
-              }
+      const selectedModel = member.llmConfig.provider && member.llmConfig.model
+        ? member.llmConfig
+        : getCurrentModel(ctx)
+      if (!selectedModel.provider || !selectedModel.model) throw new Error(`Role ${member.id} has no exact DSH provider/model route`)
+      const execution = await runMemberTurn(ctx, selectedModel, systemPrompt, lifetime.signal, {
+        roleId: member.id,
+        roleName: member.name,
+        allowedTools: member.permissions.allowedTools, locale,
+        parentAgent: exactParentAgent,
+        workflow: assignmentId ? { runId: `dsh-group-chat-${assignmentId}`, name: `Let Them Cook · ${room.title}`, phase: room.workflow?.stages?.[room.workflow.currentStageIndex]?.name, parentSession: exactParentAgent.session } : undefined,
+        onProgress: (liveToolCalls, liveness) => {
+          toolCalls = liveToolCalls
+          if (assignmentId) {
+            const currentRoom = roomManager.getRoom(roomId)
+            const assignment = currentRoom?.assignments?.find(a => a.assignmentId === assignmentId)
+            if (assignment) {
+              assignment.toolCalls = liveToolCalls
+              assignment.runtimeTrace = { ...(assignment.runtimeTrace || {}), liveness }
+              assignment.updatedAt = Date.now()
+              roomManager.broadcast({ type: 'assignment:updated', roomId, payload: assignment, timestamp: Date.now() })
             }
-          },
-        }), lifetime.signal)
-      replyContent = execution.result.content
-      modelUsed = execution.result.modelUsed
-      providerUsed = execution.result.providerUsed
-      isFallback = execution.isFallback
-      fallbackChain = execution.fallbackChain
-      runtimeMetrics = execution.result.metrics
-      runtimeTrace = execution.result.runtimeTrace
-      toolCalls = execution.result.toolCalls || []
-      logger.info?.(`[GroupChat] ${member.name} completed with ${providerUsed}/${modelUsed}; elapsed=${execution.totalElapsedMs}ms; attempts=${execution.attempts.length}`)
-      try{
-        for(const attempt of execution.attempts) modelSettings.markResult({provider:attempt.provider,model:attempt.model}, !attempt.error, attempt.error)
-        modelSettings.remember({provider:providerUsed,model:modelUsed})
-      }catch(error){logger.warn?.('最近模型/可用性记录保存失败',error)}
+          }
+        },
+      })
+      replyContent = execution.content
+      modelUsed = execution.modelUsed
+      providerUsed = execution.providerUsed
+      runtimeMetrics = execution.metrics
+      runtimeTrace = execution.runtimeTrace
+      toolCalls = execution.toolCalls || []
+      logger.info?.(`[GroupChat] ${member.name} completed through native subagent ${providerUsed}/${modelUsed}`)
+      modelSettings.markResult({provider:providerUsed,model:modelUsed}, true)
+      modelSettings.remember({provider:providerUsed,model:modelUsed})
     } catch (err) {
       if (lifetime.signal.aborted) return
       const message = err instanceof Error ? err.message : String(err)
-      if(err instanceof ModelFallbackError){
-        try{for(const attempt of err.attempts) modelSettings.markResult({provider:attempt.provider,model:attempt.model}, false, attempt.error)}catch(error){logger.warn?.('模型可用性失败记录保存失败',error)}
-      }
+      if (providerUsed && modelUsed) modelSettings.markResult({provider: providerUsed, model: modelUsed}, false, message)
       logger.warn?.(`[GroupChat] ${member.name}: ${message}`)
       roomManager.broadcast({ type: 'error:notice', roomId,
         payload: { agentId: member.id, message }, timestamp: Date.now() })
@@ -331,7 +337,7 @@ export function apply(ctx: AppContext, config: Config): void {
           content: locale === 'en-US' ? `[Task Error] ${member.name} encountered error: ${message}` : `[任务执行受阻] ${member.name} 执行出错：${message}`,
         })
         schedule(() => {
-          void triggerAgentTurn(roomId, masterId).catch(console.error)
+          void triggerAgentTurn(roomId, masterId, undefined, exactParentAgent).catch(console.error)
         }, 1500)
       }
       return
@@ -371,8 +377,6 @@ export function apply(ctx: AppContext, config: Config): void {
       metadata: {
         modelUsed,
         providerUsed,
-        isFallback,
-        fallbackChain,
         runtimeMetrics,
         assignmentId,
         taskTier: room.assignments?.find(a=>a.assignmentId===assignmentId)?.taskTier,
@@ -455,11 +459,24 @@ export function apply(ctx: AppContext, config: Config): void {
           : `[协作任务 - 前序成员 ${member.name} 交付汇报]`
         const nextAssignment = createTurnAssignment(roomId, nextId, `${briefPrefix}：${visibleReplyContent.slice(0, 180)}`, envelope.messageId, member.id, envelope.metadata?.stageId, envelope.metadata?.taskTier)
         schedule(() => {
-          void triggerAgentTurn(roomId, nextId, nextAssignment?.assignmentId).catch(err => {
+          void triggerAgentTurn(roomId, nextId, nextAssignment?.assignmentId, exactParentAgent).catch(err => {
             logger.warn?.(`[GroupChat] Turn error for ${nextId}:`, err)
           })
         }, 1200)
       }
+    }
+  }
+
+  const triggerAutonomousAgentTurn = async (roomId: string, targetAgentId: string, assignmentId?: string): Promise<void> => {
+    try {
+      await triggerAgentTurn(roomId, targetAgentId, assignmentId, requireRoomParentAgent(roomId))
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error)
+      if (assignmentId) {
+        roomManager.completeAssignment(roomId, assignmentId, 'native-parent-unavailable', message)
+        persistRoomState(roomId)
+      }
+      throw error
     }
   }
 
@@ -504,7 +521,7 @@ export function apply(ctx: AppContext, config: Config): void {
       const brief = `[自愈流转] 汇总 ${unreadReports.length} 份 SubAgent 交付汇报，请总指挥官审阅并收口阶段 [${currentStage.name}]。`
       const assignment = createTurnAssignment(roomId, masterId, brief, undefined, 'system-healer', currentStage.id, 'long')
       schedule(() => {
-        void triggerAgentTurn(roomId, masterId, assignment?.assignmentId).catch(err => {
+        void triggerAutonomousAgentTurn(roomId, masterId, assignment?.assignmentId).catch(err => {
           logger.warn?.(`[GroupChat Anti-Stall] Turn error for ${masterId}:`, err)
         })
       }, 500)
@@ -528,7 +545,7 @@ export function apply(ctx: AppContext, config: Config): void {
         for (const role of targetRoles) {
           const assignment = createTurnAssignment(roomId, role, `接续推进阶段 [${result.stage.name}]：${result.stage.description}`, undefined, masterId, result.stage.id, 'long')
           schedule(() => {
-            void triggerAgentTurn(roomId, role, assignment?.assignmentId).catch(console.error)
+            void triggerAutonomousAgentTurn(roomId, role, assignment?.assignmentId).catch(console.error)
           }, 600)
         }
       }
@@ -547,7 +564,7 @@ export function apply(ctx: AppContext, config: Config): void {
       for (const role of readyRoles) {
         const assignment = createTurnAssignment(roomId, role, `[自愈流转] 继续执行阶段 [${currentStage.name}] 待办任务`, undefined, masterId, currentStage.id, 'long')
         schedule(() => {
-          void triggerAgentTurn(roomId, role, assignment?.assignmentId).catch(console.error)
+          void triggerAutonomousAgentTurn(roomId, role, assignment?.assignmentId).catch(console.error)
         }, 500)
       }
       return true
@@ -867,7 +884,7 @@ export function apply(ctx: AppContext, config: Config): void {
               const currentStage = taskTier === 'long' ? room.workflow?.stages[room.workflow.currentStageIndex] : undefined
               const assignment = createTurnAssignment(roomId, targetId, content.slice(0, 240), envelope.messageId, room.orchestration?.masterAgentId || room.moderatorAgentId || 'commander', currentStage?.id, taskTier)
               schedule(() => {
-                void triggerAgentTurn(roomId, targetId, assignment?.assignmentId).catch(console.error)
+                void triggerAutonomousAgentTurn(roomId, targetId, assignment?.assignmentId).catch(console.error)
               }, taskTier === 'quick' ? 250 : 600)
             }
           }
@@ -1104,7 +1121,7 @@ export function apply(ctx: AppContext, config: Config): void {
               for (const nextRole of readyRoles) {
                 const assignment = createTurnAssignment(roomId, nextRole, locale === 'en-US' ? `Workflow advanced: ${result.message}` : `工作流推进：${result.message}`, undefined, body.approverRoleId || 'commander', result.stage?.id, 'long')
                 schedule(() => {
-                  void triggerAgentTurn(roomId, nextRole, assignment?.assignmentId).catch(console.error)
+                  void triggerAutonomousAgentTurn(roomId, nextRole, assignment?.assignmentId).catch(console.error)
                 }, 600)
               }
             }
