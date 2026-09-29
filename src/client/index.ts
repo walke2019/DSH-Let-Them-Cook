@@ -48,9 +48,9 @@ export function apply(ctx: ClientContext): void {
       guide: [
         {
           id: "open",
-          order: 100,
+          order: 40,
           title: () => "Agent 群聊",
-          description: () => "开整天团会话控制台",
+          description: () => "多 Agent 角色协同与工作流闭环",
         },
       ],
     });
