@@ -114,8 +114,8 @@ export interface MemberTurnRuntimeOptions {
     runId: string
     name: string
     phase?: string
-    parentSession?: { append(type: string, data: Record<string, unknown>): void }
-    onEvent?: (session: { append(type: string, data: Record<string, unknown>): void }) => void
+    parentSession?: { append(type: any, data: any, ...rest: any[]): unknown }
+    onEvent?: (session: { append(type: any, data: any, ...rest: any[]): unknown }) => void
   }
 }
 
@@ -237,7 +237,7 @@ export async function runMemberTurn(ctx: RuntimeContext, model: ModelRef, prompt
     options.onProgress?.(toolCalls, liveness)
     const runtimeTrace: DshRuntimeTrace = {
       sourceSessionId: String(localAgent.session.id),
-      sourceEventSeqs: events.map(event => event.seq),
+      sourceEventSeqs: events.map((event: any) => event.seq),
       projectionSource: 'native-session-events',
       liveness,
     }
